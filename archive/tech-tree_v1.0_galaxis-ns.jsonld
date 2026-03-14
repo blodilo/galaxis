@@ -1,0 +1,813 @@
+{
+  "@context": {
+    "galaxis": "https://galaxis-game/ontology#",
+    "schema": "https://schema.org/",
+    "name": "schema:name",
+    "description": "schema:description"
+  },
+  "@type": "galaxis:Project",
+  "@id": "galaxis:project/tech-tree",
+  "name": "Galaxis – Technologiebaum",
+  "description": "Forschungs- und Technologiebaum für das Strategiespiel Galaxis. Nodes = Technologien, Edges = Forschungsvoraussetzungen.",
+
+  "nodeTypes": [
+    {
+      "@id": "galaxis:node-type/sensors",
+      "@type": "galaxis:NodeType",
+      "name": "Sensoren",
+      "description": "Optische und FTL-Sensortechnologien, Aufklärung",
+      "icon_path": "library:tabler/eye",
+      "default_style": {
+        "size": 60,
+        "background_color": "#dbeafe",
+        "border_color": "#3b82f6",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "galaxis:node-type/propulsion",
+      "@type": "galaxis:NodeType",
+      "name": "Antrieb",
+      "description": "Sublicht- und FTL-Antriebstechnologien",
+      "icon_path": "library:tabler/rocket",
+      "default_style": {
+        "size": 60,
+        "background_color": "#fef9c3",
+        "border_color": "#ca8a04",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "galaxis:node-type/ftl-modification",
+      "@type": "galaxis:NodeType",
+      "name": "FTL-Modifikation",
+      "description": "Technologien zur Manipulation des FTLW-Skalarfelds",
+      "icon_path": "library:tabler/topology-star",
+      "default_style": {
+        "size": 60,
+        "background_color": "#f3e8ff",
+        "border_color": "#9333ea",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "galaxis:node-type/weapons",
+      "@type": "galaxis:NodeType",
+      "name": "Waffensysteme",
+      "description": "Kinetische, Energie- und Lenkwaffensysteme",
+      "icon_path": "library:tabler/crosshair",
+      "default_style": {
+        "size": 60,
+        "background_color": "#fee2e2",
+        "border_color": "#dc2626",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "galaxis:node-type/defense",
+      "@type": "galaxis:NodeType",
+      "name": "Verteidigung",
+      "description": "Panzerung, Schilde, Gegenmaßnahmen",
+      "icon_path": "library:tabler/shield",
+      "default_style": {
+        "size": 60,
+        "background_color": "#dcfce7",
+        "border_color": "#16a34a",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "galaxis:node-type/economy",
+      "@type": "galaxis:NodeType",
+      "name": "Wirtschaft & Logistik",
+      "description": "Abbau, Produktion, Lieferketten, Handel",
+      "icon_path": "library:tabler/building-factory",
+      "default_style": {
+        "size": 60,
+        "background_color": "#fff7ed",
+        "border_color": "#ea580c",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "galaxis:node-type/planetary",
+      "@type": "galaxis:NodeType",
+      "name": "Planetare Entwicklung",
+      "description": "Besiedlung, Habitate, Terraforming, Bevölkerung",
+      "icon_path": "library:tabler/planet",
+      "default_style": {
+        "size": 60,
+        "background_color": "#f0fdf4",
+        "border_color": "#22c55e",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "galaxis:node-type/military-infrastructure",
+      "@type": "galaxis:NodeType",
+      "name": "Militärinfrastruktur",
+      "description": "Werften, Befestigungen, Kommandosysteme",
+      "icon_path": "library:tabler/castle",
+      "default_style": {
+        "size": 60,
+        "background_color": "#f1f5f9",
+        "border_color": "#475569",
+        "font_size": 11
+      }
+    }
+  ],
+
+  "relationTypes": [
+    {
+      "@id": "galaxis:relation-type/requires",
+      "@type": "galaxis:RelationType",
+      "name": "requires",
+      "display_label": "erfordert",
+      "description": "Diese Technologie kann erst erforscht werden, wenn die Vorgänger-Technologie abgeschlossen ist.",
+      "style": {
+        "line_style": "solid",
+        "line_color": "#6b7280",
+        "width": 1.5,
+        "target_arrow_shape": "triangle",
+        "target_arrow_color": "#6b7280",
+        "curve_style": "bezier"
+      }
+    },
+    {
+      "@id": "galaxis:relation-type/enables",
+      "@type": "galaxis:RelationType",
+      "name": "enables",
+      "display_label": "ermöglicht",
+      "description": "Diese Technologie schaltet ein Gebäude, eine Schiffskomponente oder eine Spielmechanik frei.",
+      "style": {
+        "line_style": "dashed",
+        "line_color": "#3b82f6",
+        "width": 1.5,
+        "target_arrow_shape": "vee",
+        "target_arrow_color": "#3b82f6",
+        "curve_style": "bezier"
+      }
+    },
+    {
+      "@id": "galaxis:relation-type/synergy",
+      "@type": "galaxis:RelationType",
+      "name": "synergy",
+      "display_label": "Synergie",
+      "description": "Zwei Technologien zusammen ergeben einen Bonus über die Summe ihrer Einzelboni hinaus.",
+      "style": {
+        "line_style": "dotted",
+        "line_color": "#f59e0b",
+        "width": 1.5,
+        "target_arrow_shape": "none",
+        "target_arrow_color": "#f59e0b",
+        "curve_style": "unbundled-bezier"
+      }
+    }
+  ],
+
+  "nodes": [
+
+    {
+      "@id": "galaxis:tech/basic-optics",
+      "@type": "galaxis:Node",
+      "label": "Basisoptik",
+      "description": "Grundlegende Teleskoptechnologie. Ermöglicht den Bau von Scout-Arrays auf Schiffen und kleinen Außenposten.",
+      "node_type": "galaxis:node-type/sensors",
+      "tier": 1,
+      "research_cost": { "credits": 500, "resources": {} },
+      "research_duration_ticks": 10,
+      "tags": ["sensors", "tier-1"],
+      "unlocks": ["ship-scout-array", "outpost-sensor"]
+    },
+    {
+      "@id": "galaxis:tech/advanced-optics",
+      "@type": "galaxis:Node",
+      "label": "Hochleistungsoptik",
+      "description": "Vergrößerte Apertur, verbesserte Spiegeltechnologie. Ermöglicht planetare Observatorien (SR bis 177 m²).",
+      "node_type": "galaxis:node-type/sensors",
+      "tier": 2,
+      "research_cost": { "credits": 2000, "resources": { "titanium": 50 } },
+      "research_duration_ticks": 30,
+      "tags": ["sensors", "tier-2"],
+      "unlocks": ["planetary-observatory"]
+    },
+    {
+      "@id": "galaxis:tech/sensor-array-networking",
+      "@type": "galaxis:Node",
+      "label": "Sensornetzwerk-Protokoll",
+      "description": "Ermöglicht die additive Kombination stationärer Sensoren zu einem Interferometer-Netzwerk. Netzwerk-SR = Summe aller verbundenen Stationen.",
+      "node_type": "galaxis:node-type/sensors",
+      "tier": 2,
+      "research_cost": { "credits": 1500, "resources": { "neodymium": 20 } },
+      "research_duration_ticks": 25,
+      "tags": ["sensors", "tier-2", "network"],
+      "unlocks": ["sensor-network-link"]
+    },
+    {
+      "@id": "galaxis:tech/deep-space-array",
+      "@type": "galaxis:Node",
+      "label": "Deep-Space-Array",
+      "description": "Massive Megastruktur-Sensoren auf Planetenoberflächen (SR bis 707 m²+). Erfordert ausgebaute Infrastruktur.",
+      "node_type": "galaxis:node-type/sensors",
+      "tier": 3,
+      "research_cost": { "credits": 8000, "resources": { "titanium": 200, "neodymium": 100 } },
+      "research_duration_ticks": 80,
+      "tags": ["sensors", "tier-3"],
+      "unlocks": ["deep-space-array-structure"]
+    },
+    {
+      "@id": "galaxis:tech/ftl-sensor-theory",
+      "@type": "galaxis:Node",
+      "label": "FTL-Sensortheorie",
+      "description": "Grundlagenforschung zur Messung von FTLW-Skalarfeld-Gradienten. Voraussetzung für alle FTL-Sensoren.",
+      "node_type": "galaxis:node-type/sensors",
+      "tier": 2,
+      "research_cost": { "credits": 3000, "resources": { "yttrium": 30 } },
+      "research_duration_ticks": 40,
+      "tags": ["sensors", "ftl", "tier-2"],
+      "unlocks": ["ftl-sensor-station"]
+    },
+    {
+      "@id": "galaxis:tech/ftl-sensor-advanced",
+      "@type": "galaxis:Node",
+      "label": "FTL-Warp-Signatur-Analyse",
+      "description": "Erkennt die kurzzeitige FTL-Signatur von Schiffen beim Warp-Eintritt. Ermöglicht frühzeitige Warnung vor feindlichen Flottenbewegungen.",
+      "node_type": "galaxis:node-type/sensors",
+      "tier": 3,
+      "research_cost": { "credits": 6000, "resources": { "yttrium": 80, "californium-252": 5 } },
+      "research_duration_ticks": 60,
+      "tags": ["sensors", "ftl", "tier-3"],
+      "unlocks": ["ftl-warp-detector"]
+    },
+
+    {
+      "@id": "galaxis:tech/fusion-drive",
+      "@type": "galaxis:Node",
+      "label": "Fusionsantrieb",
+      "description": "Primärer Sublicht-Antrieb für alle Schiffe. Treibstoff: Deuterium. Baseline für alle weiteren Antriebstechnologien.",
+      "node_type": "galaxis:node-type/propulsion",
+      "tier": 1,
+      "research_cost": { "credits": 800, "resources": { "deuterium": 100 } },
+      "research_duration_ticks": 15,
+      "tags": ["propulsion", "tier-1"],
+      "unlocks": ["fusion-drive-component"]
+    },
+    {
+      "@id": "galaxis:tech/ftl-warp-basic",
+      "@type": "galaxis:Node",
+      "label": "FTL-Warp (Grundlagen)",
+      "description": "Ermöglicht Überlichtflug zwischen Sternensystemen. Geschwindigkeit invers proportional zum lokalen FTLW-Widerstand.",
+      "node_type": "galaxis:node-type/propulsion",
+      "tier": 1,
+      "research_cost": { "credits": 2000, "resources": { "deuterium": 200, "helium-3": 50 } },
+      "research_duration_ticks": 40,
+      "tags": ["propulsion", "ftl", "tier-1"],
+      "unlocks": ["ftl-core-component"]
+    },
+    {
+      "@id": "galaxis:tech/ftl-warp-efficiency",
+      "@type": "galaxis:Node",
+      "label": "FTL-Effizienz I",
+      "description": "Reduziert den Energiebedarf pro FTLW-Einheit um 20%. Schiffe reisen effektiver durch dichte Gebiete.",
+      "node_type": "galaxis:node-type/propulsion",
+      "tier": 2,
+      "research_cost": { "credits": 3000, "resources": { "helium-3": 150, "platinum": 30 } },
+      "research_duration_ticks": 50,
+      "tags": ["propulsion", "ftl", "tier-2"],
+      "unlocks": []
+    },
+    {
+      "@id": "galaxis:tech/ftl-warp-efficiency-2",
+      "@type": "galaxis:Node",
+      "label": "FTL-Effizienz II",
+      "description": "Weitere 20% Reduktion des FTLW-Energiebedarfs. Ermöglicht Flüge durch mitteldichte galaktische Kernbereiche.",
+      "node_type": "galaxis:node-type/propulsion",
+      "tier": 3,
+      "research_cost": { "credits": 8000, "resources": { "helium-3": 400, "platinum": 100 } },
+      "research_duration_ticks": 80,
+      "tags": ["propulsion", "ftl", "tier-3"],
+      "unlocks": []
+    },
+
+    {
+      "@id": "galaxis:tech/ftlw-tunnel-theory",
+      "@type": "galaxis:Node",
+      "label": "Skalarfeld-Manipulation",
+      "description": "Grundlagenforschung zur aktiven Modifikation des FTLW-Skalarfelds. Voraussetzung für Tunnel und Tore.",
+      "node_type": "galaxis:node-type/ftl-modification",
+      "tier": 3,
+      "research_cost": { "credits": 10000, "resources": { "uranium-235": 50, "yttrium": 100 } },
+      "research_duration_ticks": 100,
+      "tags": ["ftl-modification", "tier-3"],
+      "unlocks": []
+    },
+    {
+      "@id": "galaxis:tech/ftlw-stabilizer",
+      "@type": "galaxis:Node",
+      "label": "FTLW-Stabilisator",
+      "description": "Lokale Anlage, die den FTLW-Widerstand in einem Voxel-Bereich dauerhaft reduziert (Multiplikator < 1,0). Korridor durch dichte Gebiete.",
+      "node_type": "galaxis:node-type/ftl-modification",
+      "tier": 4,
+      "research_cost": { "credits": 20000, "resources": { "uranium-235": 200, "californium-252": 20 } },
+      "research_duration_ticks": 150,
+      "tags": ["ftl-modification", "tier-4"],
+      "unlocks": ["ftlw-stabilizer-structure"]
+    },
+    {
+      "@id": "galaxis:tech/jump-gate",
+      "@type": "galaxis:Node",
+      "label": "Sprungtor",
+      "description": "Megastruktur. Schafft einen festen Punkt-zu-Punkt-Kanal mit minimalem FTLW-Widerstand zwischen zwei Systemen. Ultimative Lategame-Logistikstruktur.",
+      "node_type": "galaxis:node-type/ftl-modification",
+      "tier": 5,
+      "research_cost": { "credits": 100000, "resources": { "californium-252": 100, "uranium-235": 1000, "titanium": 5000 } },
+      "research_duration_ticks": 500,
+      "tags": ["ftl-modification", "tier-5", "megastructure"],
+      "unlocks": ["jump-gate-structure"]
+    },
+
+    {
+      "@id": "galaxis:tech/railgun-basic",
+      "@type": "galaxis:Node",
+      "label": "Railgun (Grundlagen)",
+      "description": "Elektromagnetische Beschleunigung von Wolfram-Projektilen. Unterstützt Keplerbahn-Berechnung für orbitale Gefechte.",
+      "node_type": "galaxis:node-type/weapons",
+      "tier": 1,
+      "research_cost": { "credits": 1000, "resources": { "tungsten": 100, "iron": 500 } },
+      "research_duration_ticks": 20,
+      "tags": ["weapons", "kinetic", "tier-1"],
+      "unlocks": ["railgun-component-mk1"]
+    },
+    {
+      "@id": "galaxis:tech/railgun-advanced",
+      "@type": "galaxis:Node",
+      "label": "Hochgeschwindigkeits-Railgun",
+      "description": "Muzzle-Velocity > 100 km/s. Gravitations-Slingshot-Manöver werden effizienter. Erhöhte Durchschlagsleistung.",
+      "node_type": "galaxis:node-type/weapons",
+      "tier": 2,
+      "research_cost": { "credits": 3000, "resources": { "tungsten": 300, "neodymium": 50 } },
+      "research_duration_ticks": 45,
+      "tags": ["weapons", "kinetic", "tier-2"],
+      "unlocks": ["railgun-component-mk2"]
+    },
+    {
+      "@id": "galaxis:tech/lpp-torpedo",
+      "@type": "galaxis:Node",
+      "label": "LPP-Drohnen-Torpedo",
+      "description": "Autonome Kill Vehicles mit Laser-Produced-Plasma-Nutzlast (Hohlladungs-Prinzip). Hocheffektiv gegen Radiatoren und Sensorik.",
+      "node_type": "galaxis:node-type/weapons",
+      "tier": 2,
+      "research_cost": { "credits": 4000, "resources": { "tungsten": 150, "tin": 200, "platinum": 20 } },
+      "research_duration_ticks": 55,
+      "tags": ["weapons", "missile", "tier-2"],
+      "unlocks": ["lpp-torpedo-component"]
+    },
+    {
+      "@id": "galaxis:tech/laser-tier1",
+      "@type": "galaxis:Node",
+      "label": "Infrarot-/UV-Laser",
+      "description": "Punktverteidigung gegen Drohnen und Torpedos. Treffen instantan auf gerader Linie.",
+      "node_type": "galaxis:node-type/weapons",
+      "tier": 1,
+      "research_cost": { "credits": 1200, "resources": { "silicon": 200, "copper": 100 } },
+      "research_duration_ticks": 18,
+      "tags": ["weapons", "energy", "tier-1"],
+      "unlocks": ["laser-pdb-component"]
+    },
+    {
+      "@id": "galaxis:tech/graser",
+      "@type": "galaxis:Node",
+      "label": "Gamma-Ray-Laser (Graser)",
+      "description": "Positronen-gepumpter Gamma-Laser. Nutzt Elektron-Positron-Annihilation. Durchschlägt Panzerung auf atomarer Ebene. Extremer Energie- und Antimaterieaufwand.",
+      "node_type": "galaxis:node-type/weapons",
+      "tier": 5,
+      "research_cost": { "credits": 80000, "resources": { "californium-252": 50, "platinum": 500 } },
+      "research_duration_ticks": 400,
+      "tags": ["weapons", "energy", "tier-5", "antimaterie"],
+      "unlocks": ["graser-component"]
+    },
+    {
+      "@id": "galaxis:tech/antimaterie-production",
+      "@type": "galaxis:Node",
+      "label": "Antimaterie-Produktion",
+      "description": "Ermöglicht die kontrollierte Erzeugung und Speicherung von Positronen. Voraussetzung für Graser und Antimaterie-Reaktoren.",
+      "node_type": "galaxis:node-type/weapons",
+      "tier": 4,
+      "research_cost": { "credits": 30000, "resources": { "californium-252": 20, "uranium-235": 100 } },
+      "research_duration_ticks": 200,
+      "tags": ["weapons", "energy", "tier-4"],
+      "unlocks": ["antimatter-storage-component"]
+    },
+
+    {
+      "@id": "galaxis:tech/sandcaster",
+      "@type": "galaxis:Node",
+      "label": "Sandcaster",
+      "description": "Partikel-Dispenser, der Schlackewolken ausstößt. Kinetische Projektile verdampfen an der Wolke zu harmlosem Plasma.",
+      "node_type": "galaxis:node-type/defense",
+      "tier": 1,
+      "research_cost": { "credits": 800, "resources": { "iron": 300, "silicon": 100 } },
+      "research_duration_ticks": 15,
+      "tags": ["defense", "tier-1"],
+      "unlocks": ["sandcaster-component"]
+    },
+    {
+      "@id": "galaxis:tech/advanced-armor",
+      "@type": "galaxis:Node",
+      "label": "Verbundpanzerung",
+      "description": "Mehrschichtige Verbundmaterialien aus Titan und Karbonfaser. Reduziert Massezuwachs pro Panzerungsvoxel.",
+      "node_type": "galaxis:node-type/defense",
+      "tier": 2,
+      "research_cost": { "credits": 2500, "resources": { "titanium": 150, "carbon": 200 } },
+      "research_duration_ticks": 35,
+      "tags": ["defense", "tier-2"],
+      "unlocks": ["composite-armor-component"]
+    },
+    {
+      "@id": "galaxis:tech/thermal-management",
+      "@type": "galaxis:Node",
+      "label": "Thermisches Management",
+      "description": "Optimierte Radiator-Kühltechnologie. Reduziert die Abwärme-Signatur und erlaubt höhere Energieanforderungen ohne Überhitzung.",
+      "node_type": "galaxis:node-type/defense",
+      "tier": 2,
+      "research_cost": { "credits": 2000, "resources": { "titanium": 80, "manganese": 50 } },
+      "research_duration_ticks": 30,
+      "tags": ["defense", "thermal", "tier-2"],
+      "unlocks": ["advanced-radiator-component"]
+    },
+
+    {
+      "@id": "galaxis:tech/basic-mining",
+      "@type": "galaxis:Node",
+      "label": "Basisbergbau",
+      "description": "Einfache Abbauanlagen für Gesteinsplaneten und Asteroiden. Fördert Tier-1-Ressourcen (Fe, Al, Si, Cu).",
+      "node_type": "galaxis:node-type/economy",
+      "tier": 1,
+      "research_cost": { "credits": 300, "resources": {} },
+      "research_duration_ticks": 5,
+      "tags": ["economy", "mining", "tier-1"],
+      "unlocks": ["basic-mine-structure"]
+    },
+    {
+      "@id": "galaxis:tech/rare-earth-extraction",
+      "@type": "galaxis:Node",
+      "label": "Seltene-Erden-Förderung",
+      "description": "Spezialisierte Extraktionsverfahren für Neodym, Yttrium, Platin und Wolfram. Erfordert veredelte Anlagen.",
+      "node_type": "galaxis:node-type/economy",
+      "tier": 2,
+      "research_cost": { "credits": 2000, "resources": { "iron": 200, "silicon": 100 } },
+      "research_duration_ticks": 30,
+      "tags": ["economy", "mining", "tier-2"],
+      "unlocks": ["rare-earth-mine-structure"]
+    },
+    {
+      "@id": "galaxis:tech/detail-mode-production",
+      "@type": "galaxis:Node",
+      "label": "Produktionsketten-System",
+      "description": "Ermöglicht den Wechsel einzelner Anlagen in den Detail-Modus: komplexe Lieferketten mit ~50% Effizienzbonus (Einbahnstraße).",
+      "node_type": "galaxis:node-type/economy",
+      "tier": 2,
+      "research_cost": { "credits": 3000, "resources": { "silicon": 300, "copper": 200 } },
+      "research_duration_ticks": 40,
+      "tags": ["economy", "production", "tier-2"],
+      "unlocks": ["detail-mode-upgrade"]
+    },
+    {
+      "@id": "galaxis:tech/mass-driver",
+      "@type": "galaxis:Node",
+      "label": "Massentreiber",
+      "description": "Elektromagnetischer Katapult für Roherz vom Planeten in den Orbit. Billig, aber nicht für Lebewesen geeignet.",
+      "node_type": "galaxis:node-type/economy",
+      "tier": 2,
+      "research_cost": { "credits": 1500, "resources": { "iron": 300, "copper": 100 } },
+      "research_duration_ticks": 20,
+      "tags": ["economy", "logistics", "tier-2"],
+      "unlocks": ["mass-driver-structure"]
+    },
+    {
+      "@id": "galaxis:tech/space-elevator",
+      "@type": "galaxis:Node",
+      "label": "Weltraumaufzug",
+      "description": "Lategame-Megastruktur. Reduziert Orbit-Transportkosten nahezu auf null. Extrem teuer, transformiert Planeten zu Logistikzentren.",
+      "node_type": "galaxis:node-type/economy",
+      "tier": 5,
+      "research_cost": { "credits": 150000, "resources": { "titanium": 10000, "carbon": 20000 } },
+      "research_duration_ticks": 600,
+      "tags": ["economy", "logistics", "tier-5", "megastructure"],
+      "unlocks": ["space-elevator-structure"]
+    },
+
+    {
+      "@id": "galaxis:tech/basic-habitats",
+      "@type": "galaxis:Node",
+      "label": "Basishabitate",
+      "description": "Einfache geschlossene Habitate für die eigene Spezies auf fremden Atmosphären-Typen. 10–20% Nutzfläche auf inkompatiblen Welten.",
+      "node_type": "galaxis:node-type/planetary",
+      "tier": 1,
+      "research_cost": { "credits": 500, "resources": {} },
+      "research_duration_ticks": 10,
+      "tags": ["planetary", "tier-1"],
+      "unlocks": ["basic-habitat-structure"]
+    },
+    {
+      "@id": "galaxis:tech/terraforming-basic",
+      "@type": "galaxis:Node",
+      "label": "Terraforming (Grundlagen)",
+      "description": "Langfristige Veränderung der Atmosphärenzusammensetzung eines Planeten. Sehr langer Break-even, aber volle Nutzfläche auf umgewandelten Welten.",
+      "node_type": "galaxis:node-type/planetary",
+      "tier": 4,
+      "research_cost": { "credits": 25000, "resources": { "nitrogen": 5000, "yttrium": 200 } },
+      "research_duration_ticks": 200,
+      "tags": ["planetary", "terraforming", "tier-4"],
+      "unlocks": ["terraforming-station-structure"]
+    },
+
+    {
+      "@id": "galaxis:tech/basic-shipyard",
+      "@type": "galaxis:Node",
+      "label": "Basiswerft",
+      "description": "Orbitale Werft für Standard-Modus-Produktion. Kann beliebige Schiffe aus Rohstoffen + Credits bauen.",
+      "node_type": "galaxis:node-type/military-infrastructure",
+      "tier": 1,
+      "research_cost": { "credits": 1000, "resources": { "iron": 500 } },
+      "research_duration_ticks": 20,
+      "tags": ["military", "shipyard", "tier-1"],
+      "unlocks": ["basic-shipyard-structure"]
+    },
+    {
+      "@id": "galaxis:tech/advanced-shipyard",
+      "@type": "galaxis:Node",
+      "label": "Hochleistungswerft",
+      "description": "Detail-Modus-fähige Werft. Verarbeitet Komponenten statt Roherze. Bis zu 50% schneller bei vollständiger Lieferkette.",
+      "node_type": "galaxis:node-type/military-infrastructure",
+      "tier": 3,
+      "research_cost": { "credits": 10000, "resources": { "titanium": 300, "silicon": 200 } },
+      "research_duration_ticks": 80,
+      "tags": ["military", "shipyard", "tier-3"],
+      "unlocks": ["advanced-shipyard-structure"]
+    },
+    {
+      "@id": "galaxis:tech/orbital-fortress",
+      "@type": "galaxis:Node",
+      "label": "Orbitalfestung",
+      "description": "Permanente bewaffnete Orbitalbasis. Kann nicht fliegen, aber extrem schwer zu zerstören und dient als Gefechtsknotenpunkt.",
+      "node_type": "galaxis:node-type/military-infrastructure",
+      "tier": 3,
+      "research_cost": { "credits": 15000, "resources": { "iron": 2000, "titanium": 500 } },
+      "research_duration_ticks": 120,
+      "tags": ["military", "defense", "tier-3"],
+      "unlocks": ["orbital-fortress-structure"]
+    }
+  ],
+
+  "edges": [
+    {
+      "@id": "galaxis:edge/advanced-optics-requires-basic-optics",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/advanced-optics",
+      "target": "galaxis:tech/basic-optics",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/sensor-networking-requires-advanced-optics",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/sensor-array-networking",
+      "target": "galaxis:tech/advanced-optics",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/deep-space-requires-sensor-networking",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/deep-space-array",
+      "target": "galaxis:tech/sensor-array-networking",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/ftl-sensor-theory-requires-advanced-optics",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/ftl-sensor-theory",
+      "target": "galaxis:tech/advanced-optics",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/ftl-sensor-advanced-requires-theory",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/ftl-sensor-advanced",
+      "target": "galaxis:tech/ftl-sensor-theory",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/ftl-warp-requires-fusion",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/ftl-warp-basic",
+      "target": "galaxis:tech/fusion-drive",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/ftl-efficiency1-requires-ftl-basic",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/ftl-warp-efficiency",
+      "target": "galaxis:tech/ftl-warp-basic",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/ftl-efficiency2-requires-efficiency1",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/ftl-warp-efficiency-2",
+      "target": "galaxis:tech/ftl-warp-efficiency",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/ftlw-tunnel-requires-ftl-efficiency2",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/ftlw-tunnel-theory",
+      "target": "galaxis:tech/ftl-warp-efficiency-2",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/ftlw-tunnel-requires-ftl-sensor-theory",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/ftlw-tunnel-theory",
+      "target": "galaxis:tech/ftl-sensor-theory",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/stabilizer-requires-tunnel-theory",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/ftlw-stabilizer",
+      "target": "galaxis:tech/ftlw-tunnel-theory",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/jump-gate-requires-stabilizer",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/jump-gate",
+      "target": "galaxis:tech/ftlw-stabilizer",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/jump-gate-requires-space-elevator",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/jump-gate",
+      "target": "galaxis:tech/space-elevator",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/railgun-advanced-requires-basic",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/railgun-advanced",
+      "target": "galaxis:tech/railgun-basic",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/lpp-torpedo-requires-railgun-basic",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/lpp-torpedo",
+      "target": "galaxis:tech/railgun-basic",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/antimaterie-requires-rare-earth",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/antimaterie-production",
+      "target": "galaxis:tech/rare-earth-extraction",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/graser-requires-antimaterie",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/graser",
+      "target": "galaxis:tech/antimaterie-production",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/graser-requires-laser",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/graser",
+      "target": "galaxis:tech/laser-tier1",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/advanced-armor-requires-basic-mining",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/advanced-armor",
+      "target": "galaxis:tech/basic-mining",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/rare-earth-requires-basic-mining",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/rare-earth-extraction",
+      "target": "galaxis:tech/basic-mining",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/detail-mode-requires-basic-mining",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/detail-mode-production",
+      "target": "galaxis:tech/basic-mining",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/mass-driver-requires-railgun",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/mass-driver",
+      "target": "galaxis:tech/railgun-basic",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/space-elevator-requires-advanced-armor",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/space-elevator",
+      "target": "galaxis:tech/advanced-armor",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/space-elevator-requires-mass-driver",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/space-elevator",
+      "target": "galaxis:tech/mass-driver",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/terraforming-requires-habitats",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/terraforming-basic",
+      "target": "galaxis:tech/basic-habitats",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/terraforming-requires-rare-earth",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/terraforming-basic",
+      "target": "galaxis:tech/rare-earth-extraction",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/advanced-shipyard-requires-basic-shipyard",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/advanced-shipyard",
+      "target": "galaxis:tech/basic-shipyard",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/advanced-shipyard-requires-detail-mode",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/advanced-shipyard",
+      "target": "galaxis:tech/detail-mode-production",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/orbital-fortress-requires-advanced-shipyard",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/requires",
+      "source": "galaxis:tech/orbital-fortress",
+      "target": "galaxis:tech/advanced-shipyard",
+      "label": null
+    },
+    {
+      "@id": "galaxis:edge/synergy-sensor-network-ftl-sensor",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/synergy",
+      "source": "galaxis:tech/sensor-array-networking",
+      "target": "galaxis:tech/ftl-sensor-theory",
+      "label": "Kombiniertes optisch/FTL-Netzwerk"
+    },
+    {
+      "@id": "galaxis:edge/synergy-thermal-graser",
+      "@type": "galaxis:Edge",
+      "relation_type": "galaxis:relation-type/synergy",
+      "source": "galaxis:tech/thermal-management",
+      "target": "galaxis:tech/graser",
+      "label": "Graser-Abwärme beherrschbar"
+    }
+  ]
+}

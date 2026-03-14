@@ -1,0 +1,537 @@
+# Galaxis – Biochemie-Archetypen
+# Version: 1.0 · Datum: 2026-03-14
+# GDD-Referenz: v1.24
+#
+# Zweck: Definition der bewohnbaren Atmosphären-Archetypen für alternative Biochemien.
+#        Jeder Archetyp definiert eine physikalisch plausible Lebensgrundlage.
+#        Spieler wählen bei Spielstart einen Archetyp für ihre Spezies.
+#
+# Erweiterbarkeit:
+#   - Neue Archetypen können jederzeit als weiterer Eintrag unter `archetypes:` ergänzt werden.
+#   - Der Generator liest die Liste dynamisch – keine Code-Änderung nötig.
+#   - Der Eintrag `enabled: false` deaktiviert einen Archetyp ohne ihn zu löschen.
+#
+# Konventionen:
+#   [PHYSIK]     – Wert aus Primärliteratur abgeleitet (Messdaten, Modellrechnung)
+#   [BALANCING]  – Gameplay-Entscheidung auf physikalischer Basis
+#   [SPEKULATIV] – Kein robuster Primärnachweis; wissenschaftlich plausibel, aber hypothetisch
+#
+# Treibhauseffekt-Notiz:
+#   greenhouse_delta_k_per_atm gibt die approximative Oberflächenerwärmung pro Atmosphäre
+#   des jeweiligen Gases an. Diese Werte sind Einzelgas-Approximationen und überschätzen
+#   den Gesamteffekt (Spektralüberlappungen). Für die Implementierung: Gesamteffekt =
+#   Summe der Einzelbeiträge × 0.75 (Overlap-Korrektur) [BALANCING].
+#   Quelle Grundformel: Pierrehumbert 2010, Kap. 4.
+#
+# Hauptquellen:
+#   Bains 2004      – Bains, W. (2004). Many chemistries could be used to build living systems.
+#                     Astrobiology 4(2), 137–167. https://doi.org/10.1089/153110704323175124
+#   Schulze-Makuch  – Schulze-Makuch, D. & Irwin, L.N. (2008). Life in the Universe:
+#                     Expectations and Constraints. Springer. ISBN 978-3-540-76816-6
+#   Pierrehumbert10 – Pierrehumbert, R.T. (2010). Principles of Planetary Climate.
+#                     Cambridge University Press. ISBN 978-0-521-86556-2
+#   Seager2020      – Seager, S. et al. (2020). The Biochemistry of Hydrogen as a Fuel
+#                     for Life on Exoplanets. arXiv:2009.10247
+#   P&G2011         – Pierrehumbert, R. & Gaidos, E. (2011). Hydrogen Greenhouse Planets
+#                     Beyond the Habitable Zone. ApJL 734(1), L13.
+#                     https://doi.org/10.1088/2041-8205/734/1/L13
+#   Pavlov2000      – Pavlov, A.A. et al. (2000). Greenhouse warming by CH4 in the early Earth.
+#                     J. Geophys. Res. 105(E5), 11981–11990.
+#                     https://doi.org/10.1029/1999JE001134
+#   Haqq-Misra2008  – Haqq-Misra, J.D. et al. (2008). A Revised, Hazy Methane Greenhouse
+#                     for the Archean Earth. Astrobiology 8(6), 1127–1137.
+#                     https://doi.org/10.1089/ast.2008.0289
+#   Bullock2001     – Bullock, M.A. & Grinspoon, D.H. (2001). The Recent Evolution of
+#                     Climate on Venus. Icarus 150(1), 19–37.
+#                     https://doi.org/10.1006/icar.2000.6570
+#   HITRAN2020      – Gordon, I.E. et al. (2022). The HITRAN2020 molecular spectroscopic
+#                     database. J. Quant. Spectrosc. Radiat. Transfer 277, 107949.
+#                     https://doi.org/10.1016/j.jqsrt.2021.107949
+#   Kasting1993     – Kasting, J.F. et al. (1993). Habitable Zones around Main Sequence Stars.
+#                     Icarus 101(1), 108–128. https://doi.org/10.1006/icar.1993.1010
+#   Seager2016      – Seager, S. et al. (2016). Toward a List of Molecules as Potential
+#                     Biosignature Gases. Astrobiology 16(6), 465–485.
+#                     https://doi.org/10.1089/ast.2015.1404
+#   Wordsworth2012  – Wordsworth, R. (2012). Transient conditions for biogenesis on low-mass
+#                     exoplanets with escaping hydrogen atmospheres. Icarus 219(1), 267–273.
+#                     https://doi.org/10.1016/j.icarus.2012.02.010
+
+# ═══════════════════════════════════════════════════════════════════
+# ARCHETYPEN
+# ═══════════════════════════════════════════════════════════════════
+
+archetypes:
+
+  # ─────────────────────────────────────────────────────────────────
+  oxic:
+    enabled: true
+    label: "Oxidative Phosphorylierung"
+    label_short: "Oxisch"
+    primary_gases: ["O2", "N2"]
+
+    # Metabolismus (Referenzreaktion)
+    metabolic_reaction: "C6H12O6 + 6 O2 → 6 CO2 + 6 H2O + ATP"
+    metabolic_description: >
+      Aerobe Zellatmung: Glukose wird unter Verbrauch von Sauerstoff vollständig
+      zu CO2 und Wasser oxidiert. Energie wird in Form von ATP gespeichert.
+      Referenzorganismen: praktisch alle vielzelligen Lebewesen der Erde.
+    science_note: >
+      Der einzige Archetyp mit direkter biologischer Evidenz auf der Erde.
+      Sauerstoff als Oxidationsmittel ermöglicht die höchste Energieausbeute
+      pro Mol Glukose (36–38 ATP) aller bekannten Stoffwechselwege.
+    sources:
+      - "Kasting 1993 (Habitable Zone Temperaturbereich)"
+      - "HITRAN2020 (O2, N2, CO2, H2O IR-Absorption)"
+
+    # Kanonische Zusammensetzung (Erdatmosphäre, NIST-Daten)
+    # Jitter-Werte: ±composition_jitter_fraction auf jeden Anteil,
+    # danach re-normalisiert auf Summe 1.
+    canonical_composition:   # [PHYSIK]
+      N2:  0.780
+      O2:  0.210
+      Ar:  0.009
+      CO2: 0.001   # leicht erhöht vs. Erde für Gameplay-Varianz
+    composition_jitter_fraction: 0.15  # [BALANCING]
+
+    # Bewohnbarkeits-Fenster (ohne Habitat)
+    temp_range_k: [250, 330]     # [PHYSIK] Kasting 1993; flüssiges Wasser als Lösungsmittel
+    pressure_range_atm: [0.5, 3.0]  # [PHYSIK] O2-Partialdruck mind. 0.1 atm erforderlich
+    gravity_range_g: [0.3, 2.0]  # [BALANCING] physiologische Belastungsgrenze
+
+    # Treibhausgas-Beiträge dieser Atmosphäre
+    greenhouse_gases:
+      CO2:
+        delta_k_per_atm: 5.0   # [PHYSIK] Myhre et al. 1998; ΔF = 5.35·ln(C/C0) W/m²
+        source: "Myhre, G. et al. (1998). Geophys. Res. Lett. 25(14). https://doi.org/10.1029/98GL01908"
+      H2O:
+        delta_k_per_atm: 15.0  # [PHYSIK] Wasserdampf-Rückkopplung dominiert Erdklima; Pierrehumbert10
+        source: "Pierrehumbert 2010, Kap. 6"
+      # N2 und O2: kein nennenswerter direkter Treibhauseffekt (transparente Fenster)
+
+    # Photolytische Stabilität des Primärgases
+    photolytic_stability: "hoch"
+    photolytic_note: >
+      O2 ist unter UV photolytisch stabil (bildet O3-Schutzschild).
+      N2 ist vollständig stabil. Keine kontinuierliche Nachlieferung nötig.
+
+    # Biomasse-Potential bei optimalem Temperatur/Druck (0–1 Skala)
+    biomass_potential_max: 1.0  # [BALANCING]
+    biomass_requires_liquid_water: true
+
+    # In-Game Enzyklopädie (wird dem Spieler angezeigt)
+    encyclopedia_text: >
+      Deine Spezies atmet Sauerstoff – das reaktivste stabile Oxidationsmittel
+      im Periodensystem. Sauerstoff ermöglicht die höchste Energiedichte aller
+      bekannten Stoffwechsel und ist der Grund, warum auf der Erde komplexes
+      vielzelliges Leben entstand. Deine idealen Welten sind warm, feucht und
+      haben blauen Himmel. Sie konkurrieren mit anderen Oxisch-Spezies um die
+      gleichen Welten – Konflikte sind unvermeidlich.
+
+  # ─────────────────────────────────────────────────────────────────
+  reducing:
+    enabled: true
+    label: "Methanogenese"
+    label_short: "Reduktiv"
+    primary_gases: ["H2", "CH4"]
+
+    metabolic_reaction: "CO2 + 4 H2 → CH4 + 2 H2O + ΔG (−131 kJ/mol)"
+    metabolic_description: >
+      Hydrogenotrophe Methanogenese: Wasserstoff wird als Elektronendonor,
+      CO2 als Elektronenakzeptor genutzt. Methan und Wasser sind die Ausscheidungsprodukte.
+      Referenzorganismen (Erde): Methanobacterium thermoautotrophicum,
+      Methanococcus jannaschii – anaerobe Archaeen in Hydrothermalsystemen.
+    science_note: >
+      Methanogenese ist einer der ältesten Stoffwechselwege der Erde (>3,5 Ga).
+      Er ist unabhängig von Sonnenlicht (chemolithotroph) und funktioniert in
+      Tiefseehydrothermalsystemen. Für Raumfahrt-Spezies: eine Lebensform, die
+      auf Welten existiert, die für Sauerstoff-Atmer tödlich kalt wären.
+    sources:
+      - "Seager 2020 (H2-Biochemie auf Exoplaneten)"
+      - "P&G2011 (H2-CIA-Treibhauseffekt)"
+      - "Pavlov 2000 (CH4-Treibhauseffekt)"
+      - "Wordsworth 2012 (H2 in N2-Atmosphären)"
+
+    canonical_composition:   # [PHYSIK] Titan-Analogon + frühe Erde, Seager 2020
+      H2:  0.60
+      CH4: 0.25
+      N2:  0.13
+      NH3: 0.01   # Spur, hydrothermale Quelle
+      CO2: 0.01   # Substrat für Methanogenese
+    composition_jitter_fraction: 0.20  # [BALANCING] reduktive Atmosphären variieren stärker
+
+    temp_range_k: [150, 280]     # [PHYSIK] P&G2011 (H2-CIA ermöglicht flüssiges Wasser bis 2 AU)
+    pressure_range_atm: [0.3, 8.0]  # [PHYSIK] H2-CIA wirkt druckabhängig (∝ P²)
+    gravity_range_g: [0.3, 2.5]  # [BALANCING]
+
+    greenhouse_gases:
+      H2:
+        # Collision-Induced Absorption (CIA): H2–H2 und H2–N2 Stöße erzeugen
+        # transiente Dipolmomente → Far-IR-Absorption (50–1000 µm).
+        # Effekt skaliert mit P(H2)² – nicht-linearer Druckeffekt.
+        delta_k_per_atm: 50.0   # [PHYSIK] bei 1 AU, sonnenähnlichem Stern; P&G2011 Fig.2
+        # Konkret: 0.1 bar H2 → +20–25 K; 1.0 bar H2 → +50–60 K; 3.0 bar → +70–80 K
+        # Wert hier: mittlere Steigung im linearen Bereich (0.1–1.0 bar).
+        source: "Pierrehumbert & Gaidos 2011, ApJL 734(1) L13. https://doi.org/10.1088/2041-8205/734/1/L13"
+        nonlinear_note: >
+          Effekt saturiert bei >3 bar H2. Implementierung: min(P_H2 * 50, 80) K.
+      CH4:
+        delta_k_per_atm: 12.0   # [PHYSIK] Pavlov 2000, frühe Erde
+        source: "Pavlov et al. 2000, JGR 105(E5). https://doi.org/10.1029/1999JE001134"
+        haze_warning: >
+          Bei CH4 > 1% vol. bilden sich Tholin-Aerosolschleier (Anti-Treibhaus: −10 bis −20 K).
+          Implementierung: Netto-Effekt = 0 bei CH4 > 2% ohne CO2-Puffer.
+          Quelle: Pavlov et al. 2001, JGR 106(E10). https://doi.org/10.1029/2000JE001448
+      NH3:
+        delta_k_per_atm: 30.0   # [PHYSIK / SPEKULATIV] Sagan & Mullen 1972; Haqq-Misra 2008
+        # 100 ppm NH3 → +5 bis +15 K; 1000 ppm → +20 bis +40 K (nichtlinear, unsicher ±50%)
+        source: "Sagan & Mullen 1972, Science 177(4043). https://doi.org/10.1126/science.177.4043.52; Haqq-Misra 2008, Astrobiology 8(6). https://doi.org/10.1089/ast.2008.0289"
+
+    photolytic_stability: "niedrig"
+    photolytic_note: >
+      H2 entweicht bei geringer Planetenmasse (Jeans-Flucht). Empfohlene Planetenmasse: >0.5 Me.
+      NH3 wird durch UV photolytisch zerstört (Lebensdauer 10–40 Jahre ohne UV-Schild).
+      Biogene Nachlieferung (Methanogenese selbst) oder vulkanische Ausgasung nötig.
+      Quelle: Kuhn & Atreya 1979, Icarus 37(1). https://doi.org/10.1016/0019-1035(79)90126-X
+
+    biomass_potential_max: 0.7   # [BALANCING] Geringer als Oxisch (weniger ATP pro Reaktion)
+    biomass_requires_liquid_water: true   # H2O als Lösungsmittel
+
+    encyclopedia_text: >
+      Deine Spezies lebt von Wasserstoff – dem häufigsten Element im Universum.
+      Wo andere erstickten, atmet du auf: deine Heimatwelten sind kalt, mit
+      rotbraunem Himmel aus organischem Dunst. Gasriesen sind dein strategisches
+      Rückgrat – sie liefern endlos Deuterium und H2. Du siehst Temperaturen
+      von -120°C als gemäßigt. Sauerstoff-Atmer können auf deinen Welten nur
+      in Schutzanzügen überleben.
+
+  # ─────────────────────────────────────────────────────────────────
+  carbonic:
+    enabled: true
+    label: "Chemolithotrophe CO2-Fixierung"
+    label_short: "Carbonisch"
+    primary_gases: ["CO2", "N2"]
+
+    metabolic_reaction: "CO2 + H2S → CH2O + S  (vereinfacht; Calvin-Zyklus-Analogon)"
+    metabolic_description: >
+      Chemolithotrophe Kohlenstoff-Fixierung: CO2 wird als Kohlenstoffquelle genutzt,
+      anorganische Verbindungen (H2S, Fe2+, S) als Elektronendonoren.
+      Referenzorganismen (Erde): Thiobacillus, Acidithiobacillus (schwefeloxidierende Bakterien),
+      Hydrothermalsystem-Chemolithotrophe. Kein Sonnenlicht erforderlich.
+    science_note: >
+      Chemolithotrophe sind auf der Erde in Tiefsee-Hydrothermalfeldern, sauren Bergbaugewässern
+      und vulkanischen Gebieten verbreitet. Eine CO2-dominierte Welt (Mars/Venus-Spektrum) wäre
+      für eine solche Spezies ein Paradies – ein Ozean aus Nahrung.
+    sources:
+      - "Bains 2004 (alternative Biochemien)"
+      - "Schulze-Makuch & Irwin 2008, Kap. 4"
+      - "Bullock & Grinspoon 2001 (Venus/CO2-Atmosphären)"
+
+    canonical_composition:   # [PHYSIK] Venus-Analogon (Bullock & Grinspoon 2001)
+      CO2: 0.93
+      N2:  0.05
+      SO2: 0.015
+      H2S: 0.005
+    composition_jitter_fraction: 0.12  # [BALANCING]
+
+    temp_range_k: [220, 420]     # [BALANCING] Breites Fenster: kalt-Mars bis warm-Venus-ähnlich
+    pressure_range_atm: [1.0, 20.0]  # [BALANCING] Druck-Varianz: Mars (0.006) zu niedrig,
+                                      # Venus (92 atm) zu hoch; Gameplay-Korridor
+    gravity_range_g: [0.3, 3.0]  # [BALANCING]
+
+    greenhouse_gases:
+      CO2:
+        delta_k_per_atm: 5.0    # [PHYSIK] Myhre 1998; Standard-Treibhausformel
+        source: "Myhre et al. 1998, Geophys. Res. Lett. 25(14). https://doi.org/10.1029/98GL01908"
+        note: >
+          Bei >10 bar CO2 sättigt der Effekt durch Druck-Verbreiterung der Linien.
+          Venus: ~500 K Treibhauserwärmung durch 92 bar CO2. Modellannahme hier
+          ist konservativ (linearer Bereich bis ~5 bar).
+      SO2:
+        delta_k_per_atm: 8.0    # [PHYSIK / SPEKULATIV] Bullock & Grinspoon 2001
+        source: "Bullock & Grinspoon 2001, Icarus 150(1). https://doi.org/10.1006/icar.2000.6570"
+        bifurcation_note: >
+          SO2 wirkt als Treibhausgas (gasförmig, tiefe Atmosphäre) ODER als
+          Kühlmittel (H2SO4-Aerosol, hohe Atmosphäre). Schwellenwert:
+          T < 500 K UND H2O-Aktivität > 0.01 → Aerosol-Bildung dominiert (Abkühlung).
+          Treibhaus-Wert gilt nur für trockene, heiße Atmosphären. Quelle: Bullock 2001.
+        aerosol_cooling_k_per_atm: -25.0   # [PHYSIK] Aerosol-Gegenwirkung; Bullock 2001
+
+    photolytic_stability: "mittel"
+    photolytic_note: >
+      CO2 ist UV-photochemisch stabil. SO2 und H2S werden photolytisch zersetzt,
+      benötigen vulkanische Nachlieferung. Auf aktiv vulkanischen Welten kein Problem.
+
+    biomass_potential_max: 0.5   # [BALANCING] Niedrigere ATP-Ausbeute als aerobe Pfade
+    biomass_requires_liquid_water: false
+    biomass_solvent_note: >
+      Möglicher Alternativlösungsmittel: flüssiges CO2 (superkritisch) bei >7.4 bar, >304 K,
+      oder H2SO4-Lösungen (spekulativ). Für Gameplay: Biomasse möglich ohne flüssiges Wasser.
+
+    encyclopedia_text: >
+      Deine Spezies lebt in dicken CO2-Hüllen. Was für andere eine giftige Todeswelt ist,
+      ist für dich Heimat: schweflige Luft, dichter Himmel, Säureregen. Deine Welten sind
+      überall dort, wo Vulkanismus tobt – und das ist ein großer Teil der Galaxie. Du wirst
+      selten in direktem Kampf mit Sauerstoff-Atmern stehen, aber Ressourcen wie
+      Titanium und Wolfram findet ihr in denselben gefährlichen Systemen.
+
+  # ─────────────────────────────────────────────────────────────────
+  ammonic:
+    enabled: true
+    label: "Ammoniak-Biochemie"
+    label_short: "Ammonisch"
+    primary_gases: ["NH3", "N2"]
+
+    metabolic_reaction: "N2 + 3 H2 → 2 NH3  (Stickstoff-Fixierung als Energiepfad; hypothetisch)"
+    metabolic_description: >
+      Hypothetischer Ammoniak-Metabolismus: NH3 als polares Lösungsmittel statt Wasser.
+      Stickstoff-Fixierung als Energiequelle. Kein Erdanalogon bekannt; aber:
+      NH3 hat ähnliche polare Eigenschaften wie H2O (Dipolmoment: 1.47 D vs. 1.85 D für H2O),
+      löst organische Moleküle, ermöglicht Säure-Base-Reaktionen in NH3-Lösungen.
+    science_note: >
+      Erstmals systematisch diskutiert von Haldane (1954) und Bains (2004).
+      NH3 ist bei 1 atm flüssig von 195 K bis 240 K – ein enges Fenster.
+      In Hochdruckatmosphären verschiebt sich der Siedepunkt.
+      Schulze-Makuch & Irwin (2008) bewerten NH3-Biochemie als plausibel für kalte Welten.
+    sources:
+      - "Haldane, J.B.S. (1954). The Origins of Life. New Biology 16."
+      - "Bains 2004, Astrobiology 4(2). https://doi.org/10.1089/153110704323175124"
+      - "Schulze-Makuch & Irwin 2008, Kap. 5"
+      - "Haqq-Misra 2008 (NH3-Treibhauseffekt)"
+
+    canonical_composition:   # [SPEKULATIV] abgeleitet aus NH3-Phasendiagramm + Haqq-Misra 2008
+      NH3: 0.70
+      N2:  0.25
+      H2:  0.04
+      CH4: 0.01
+    composition_jitter_fraction: 0.18  # [BALANCING]
+
+    temp_range_k: [160, 270]     # [PHYSIK / SPEKULATIV] NH3 flüssig bei 195–240 K (1 atm);
+                                  # Hochdruck-Erweiterung nach oben. Siedepunkt NH3: 239.7 K (1 atm).
+    pressure_range_atm: [0.5, 4.0]  # [BALANCING] Hochdruck erhöht Siedepunkt von NH3
+    gravity_range_g: [0.2, 2.0]  # [BALANCING]
+
+    greenhouse_gases:
+      NH3:
+        delta_k_per_atm: 35.0    # [PHYSIK / SPEKULATIV] Sagan & Mullen 1972; Haqq-Misra 2008
+        # Bei 100 ppm NH3: +5 bis +15 K; bei 1000 ppm: +20 bis +40 K (nichtlinear, ±50% unsicher)
+        # NH3 absorbiert stark im 10.5-µm-Fenster (IR-Fenster, HITRAN-Band ν2).
+        # Wert hier: Mittelwert aus Sagan & Mullen + Haqq-Misra, linear extrapoliert.
+        source: "Sagan & Mullen 1972, Science 177(4043). https://doi.org/10.1126/science.177.4043.52; HITRAN2020 Mol.11 (NH3)"
+        confidence: "niedrig – ±50% Unsicherheit"
+      N2:
+        delta_k_per_atm: 2.0     # [PHYSIK] N2-N2 CIA (schwach); Wordsworth 2012
+        source: "Wordsworth 2012, Icarus 219(1). https://doi.org/10.1016/j.icarus.2012.02.010"
+
+    photolytic_stability: "sehr niedrig"
+    photolytic_note: >
+      NH3 wird durch UV (< 230 nm) mit einer atmosphärischen Lebensdauer von nur 10–40 Jahren
+      photolytisch zersetzt. Ohne Ozonschild oder opaque Dunstschicht ist NH3 in
+      der Stratosphäre instabil. Biogene Nachlieferung zwingend erforderlich.
+      Quelle: Kuhn & Atreya 1979, Icarus 37(1). https://doi.org/10.1016/0019-1035(79)90126-X
+      Gameplay-Implikation: Ammonische Welten ohne aktive Biosphäre degenerieren
+      zu reinen N2-Welten. Biosphäre schützt sich selbst durch UV-absorbierende Aerosole.
+
+    biomass_potential_max: 0.4   # [BALANCING / SPEKULATIV] geringere Energiedichte als H2O-Pfade
+    biomass_requires_liquid_water: false
+    biomass_solvent_note: >
+      Lösungsmittel: flüssiges NH3 (bei 195–240 K, 1 atm). Dichte organische Chemie
+      in NH3-Lösungen möglich; Säure-Base-Analogie: NH4+ / NH2- statt H3O+ / OH-.
+
+    encyclopedia_text: >
+      Deine Spezies lebt in bitterkalten Ammoniak-Ozeanen. Deine Welten riechen nach
+      Reinigungsmittel und sind für alle anderen tödlich. Das Paradoxe: deine Biochemie
+      ist fragil – ohne ständige biologische Aktivität zersetzt UV-Strahlung deine
+      Atmosphäre. Dein Heimatsystem ist ein lebendiges Ökosystem oder es ist tot.
+      Kein Mittelweg.
+
+  # ─────────────────────────────────────────────────────────────────
+  chloric:
+    enabled: true
+    label: "Chlor-Reduktase-Metabolismus"
+    label_short: "Chlorisch"
+    primary_gases: ["Cl2", "SO2"]
+
+    metabolic_reaction: "2 HCl + ½ O2 → Cl2 + H2O  (Cl2 als terminaler Elektronenakzeptor, reversibel)"
+    metabolic_description: >
+      Hypothetischer Chlor-Reduktase-Pfad: Cl2 dient als terminaler Elektronenakzeptor
+      analog zu O2 in der aeroben Atmung. Reduktion: Cl2 + 2e⁻ → 2 Cl⁻.
+      Erdanalogon: Perchlorate-reduzierende Bakterien (Dechloromonas) nutzen ClO4⁻ als
+      Akzeptor. Cl2 selbst als Atemgas ist rein spekulativ.
+      Atmosphärenwärme kommt von CO2/SO2-Treibhaus, nicht von Cl2 (kein IR-Dipol).
+    science_note: >
+      Cl2 ist ein homonukleares Diatomeres ohne permanentes Dipolmoment – es ist
+      kein Treibhausgas (symmetrisch verbotene IR-Fundamentale bei 16.9 µm).
+      Es ist primär ein UV-Absorber (320–400 nm) und starkes Oxidationsmittel.
+      Als Biosignatur wäre Cl2 hochinteressant: abiotisch würde es sofort mit H2O
+      zu HCl/HOCl reagieren. Ansammlung setzt aktive biologische Produktion voraus.
+    sources:
+      - "Seager 2016 (Cl2 als Biosignatur). https://doi.org/10.1089/ast.2015.1404"
+      - "HITRAN2020 Mol.32 (Cl2, schwache IR-Absorption)"
+      - "Schulze-Makuch & Irwin 2008 (Halogene als alternative Oxidantien)"
+
+    canonical_composition:   # [SPEKULATIV] keine Primärquelle; abgeleitet aus Chemie-Randbedingungen
+      Cl2: 0.45
+      SO2: 0.30
+      CO2: 0.20
+      N2:  0.05
+    composition_jitter_fraction: 0.20  # [BALANCING] hohe Varianz (spekulative Basis)
+
+    temp_range_k: [300, 500]     # [BALANCING] Heiße Vulkanwelten; CO2/SO2-Treibhaus
+    pressure_range_atm: [2.0, 30.0]  # [BALANCING] Dichte Atmosphäre nötig für SO2/CO2-Wärme
+    gravity_range_g: [0.5, 3.0]  # [BALANCING]
+
+    greenhouse_gases:
+      CO2:
+        delta_k_per_atm: 5.0    # [PHYSIK] Myhre 1998
+        source: "Myhre et al. 1998, Geophys. Res. Lett. 25(14)."
+      SO2:
+        delta_k_per_atm: 8.0    # [PHYSIK] Bullock & Grinspoon 2001 (trockene Atmosphäre)
+        source: "Bullock & Grinspoon 2001, Icarus 150(1). https://doi.org/10.1006/icar.2000.6570"
+        bifurcation_note: >
+          SO2-Aerosol-Abkühlung bei Feuchtigkeit > Schwellenwert (siehe carbonic-Archetyp).
+          Chlorische Atmosphären sind typischerweise wasserarm → Treibhaus-Effekt dominiert.
+      Cl2:
+        delta_k_per_atm: 0.0    # [PHYSIK] kein IR-Dipolmoment; Seager 2016
+        source: "Seager et al. 2016, Astrobiology 16(6). Cl2 = homonukleare Diatomere, keine IR-Fundamentale."
+
+    photolytic_stability: "niedrig"
+    photolytic_note: >
+      Cl2 wird durch UV (< 400 nm) effizient photolytisch zu 2 Cl• zersetzt.
+      In einer SO2-reichen Atmosphäre wird UV teilweise absorbiert (SO2 absorbiert < 390 nm).
+      Biogene Cl2-Produktion muss photolytische Verluste übersteigen.
+      Als Biosignatur: atmosphärisches Cl2 > 1 ppm wäre ein starkes Lebenszeichen (Seager 2016).
+
+    biomass_potential_max: 0.3   # [BALANCING / SPEKULATIV] höchste Unsicherheit
+    biomass_requires_liquid_water: false
+    biomass_solvent_note: >
+      Spekulativer Lösungsmittelkandidat: flüssiges SO2 (Siedepunkt: -10°C bei 1 atm;
+      bei Hochdruck bis +100°C stabil). Organische Chemie in flüssigem SO2 ist
+      experimentell nachgewiesen (Lichtenthaler 2000, CRC Handbook).
+
+    encyclopedia_text: >
+      Deine Spezies lebt in einer Welt, die anderen Lebensformen sofort die Lungen verbrennt.
+      Chlor – das Bleichmittel, das Waffen tötete – ist dein Atemgas. Deine Welten sind heiß,
+      schweflig und korrosiv. Dafür bist du biologisch gesehen das stärkste Oxidationsmittel
+      in der Galaxis. Deine Atmosphäre ist ein aktives Biosignaturgas – jeder FTL-Sensor
+      in der Umgebung kann deine Welten an ihrem Cl2-Spektrum erkennen.
+      Das macht sie auch zum leichteren Ziel.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# GLOBALE BALANCING-PARAMETER
+# ═══════════════════════════════════════════════════════════════════
+
+balancing:
+  # Overlap-Korrektur für additive Treibhausgasberechnung:
+  # Spektralüberlappungen zwischen Gasen werden pauschal korrigiert.
+  # 0.75 = 25% Reduktion auf Summe aller Einzelbeiträge.
+  # [BALANCING] (grobe Näherung; exakt nur mit LBL-Strahlungstransfer)
+  greenhouse_overlap_correction: 0.75
+
+  # Zielverteilung bewohnbarer Planeten pro Archetyp (Anteil an allen
+  # atmosphärenführenden Planeten mit pressure > 0.1 atm).
+  # Summe aller enabled-Archetypen ≤ 1.0 (Rest = nicht-atembar).
+  # Wird nur auf physikalisch "grenznah" klassifizierbare Planeten angewendet.
+  # [BALANCING]
+  target_fraction:
+    oxic:     0.18
+    reducing: 0.18
+    carbonic: 0.18
+    ammonic:  0.18
+    chloric:  0.18
+    # ~10% verbleiben nicht-atembar (Vakuum, Edelgas, Extremdruck)
+
+  # Toleranzband für Balancing-Check in der Statistik-Ausgabe.
+  # Abweichung > tolerance → Warnung in der Generator-Ausgabe.
+  # [BALANCING]
+  balance_tolerance_fraction: 0.05  # ±5% Abweichung akzeptabel
+
+
+# ═══════════════════════════════════════════════════════════════════
+# VOLLSTÄNDIGES QUELLENVERZEICHNIS
+# ═══════════════════════════════════════════════════════════════════
+
+bibliography:
+  - id: "Bains2004"
+    citation: "Bains, W. (2004). Many chemistries could be used to build living systems. Astrobiology 4(2), 137–167."
+    doi: "https://doi.org/10.1089/153110704323175124"
+    used_for: "Grundlagenwerk alternative Biochemien; alle Archetypen außer Oxisch"
+
+  - id: "Schulze-Makuch2008"
+    citation: "Schulze-Makuch, D. & Irwin, L.N. (2008). Life in the Universe: Expectations and Constraints. Springer."
+    isbn: "978-3-540-76816-6"
+    used_for: "NH3-, H2-, Cl2-Biochemie; alternative Lösungsmittel"
+
+  - id: "Pierrehumbert2010"
+    citation: "Pierrehumbert, R.T. (2010). Principles of Planetary Climate. Cambridge University Press."
+    isbn: "978-0-521-86556-2"
+    used_for: "Treibhauseffekt-Grundformeln; CO2, H2O, CIA"
+
+  - id: "PandG2011"
+    citation: "Pierrehumbert, R. & Gaidos, E. (2011). Hydrogen Greenhouse Planets Beyond the Habitable Zone. ApJL 734(1), L13."
+    doi: "https://doi.org/10.1088/2041-8205/734/1/L13"
+    used_for: "H2-CIA-Treibhauswerte (Reducing-Archetyp); Tabellenwerte aus Fig.2"
+
+  - id: "Pavlov2000"
+    citation: "Pavlov, A.A. et al. (2000). Greenhouse warming by CH4 in the early Earth. JGR 105(E5), 11981–11990."
+    doi: "https://doi.org/10.1029/1999JE001134"
+    used_for: "CH4-Treibhauswerte (Reducing-Archetyp)"
+
+  - id: "Pavlov2001"
+    citation: "Pavlov, A.A. et al. (2001). UV shielding of NH3 and O2 by organic hazes in the Archean atmosphere. JGR 106(E10), 23267–23287."
+    doi: "https://doi.org/10.1029/2000JE001448"
+    used_for: "Tholin-Haze-Abkühlung bei CH4 > 1% (Reducing-Archetyp)"
+
+  - id: "SaganMullen1972"
+    citation: "Sagan, C. & Mullen, G. (1972). Earth and Mars: Evolution of Atmospheres and Surface Temperatures. Science 177(4043), 52–56."
+    doi: "https://doi.org/10.1126/science.177.4043.52"
+    used_for: "NH3-Treibhauseffekt-Schätzwerte (Ammonic-Archetyp)"
+
+  - id: "HaqqMisra2008"
+    citation: "Haqq-Misra, J.D. et al. (2008). A Revised, Hazy Methane Greenhouse for the Archean Earth. Astrobiology 8(6), 1127–1137."
+    doi: "https://doi.org/10.1089/ast.2008.0289"
+    used_for: "Revision NH3-Treibhauswerte; Unsicherheitseinschätzung"
+
+  - id: "KuhnAtreya1979"
+    citation: "Kuhn, W.R. & Atreya, S.K. (1979). Ammonia photolysis and the greenhouse effect in the primordial atmosphere of the Earth. Icarus 37(1), 207–213."
+    doi: "https://doi.org/10.1016/0019-1035(79)90126-X"
+    used_for: "Photolytische Zersetzung von NH3 (Ammonic-Archetyp)"
+
+  - id: "Bullock2001"
+    citation: "Bullock, M.A. & Grinspoon, D.H. (2001). The Recent Evolution of Climate on Venus. Icarus 150(1), 19–37."
+    doi: "https://doi.org/10.1006/icar.2000.6570"
+    used_for: "SO2-Treibhauseffekt und Aerosol-Kühlmechanismus (Carbonic, Chloric)"
+
+  - id: "HITRAN2020"
+    citation: "Gordon, I.E. et al. (2022). The HITRAN2020 molecular spectroscopic database. J. Quant. Spectrosc. Radiat. Transfer 277, 107949."
+    doi: "https://doi.org/10.1016/j.jqsrt.2021.107949"
+    used_for: "IR-Absorptionsbanden aller Gase; NH3 Mol.11, Cl2 Mol.32, SO2 Mol.9"
+
+  - id: "Myhre1998"
+    citation: "Myhre, G. et al. (1998). New estimates of radiative forcing due to well mixed greenhouse gases. Geophys. Res. Lett. 25(14), 2715–2718."
+    doi: "https://doi.org/10.1029/98GL01908"
+    used_for: "CO2-Treibhausformel: ΔF = 5.35 · ln(C/C0) W/m²"
+
+  - id: "Kasting1993"
+    citation: "Kasting, J.F. et al. (1993). Habitable Zones around Main Sequence Stars. Icarus 101(1), 108–128."
+    doi: "https://doi.org/10.1006/icar.1993.1010"
+    used_for: "Temperaturbereich Oxisch-Archetyp; Habitable Zone Definition"
+
+  - id: "Seager2016"
+    citation: "Seager, S. et al. (2016). Toward a List of Molecules as Potential Biosignature Gases. Astrobiology 16(6), 465–485."
+    doi: "https://doi.org/10.1089/ast.2015.1404"
+    used_for: "Cl2 als Biosignatur; Cl2 kein IR-Treibhausgas (Chloric-Archetyp)"
+
+  - id: "Seager2020"
+    citation: "Seager, S. et al. (2020). The Biochemistry of Hydrogen as a Fuel for Life on Exoplanets. arXiv:2009.10247."
+    doi: "https://arxiv.org/abs/2009.10247"
+    used_for: "Methanogenese-Reaktion und H2-Biochemie (Reducing-Archetyp)"
+
+  - id: "Wordsworth2012"
+    citation: "Wordsworth, R. (2012). Transient conditions for biogenesis on low-mass exoplanets with escaping hydrogen atmospheres. Icarus 219(1), 267–273."
+    doi: "https://doi.org/10.1016/j.icarus.2012.02.010"
+    used_for: "H2-N2-CIA-Beitrag; 5% H2 in N2 → +5 bis +10 K"
+
+  - id: "Haldane1954"
+    citation: "Haldane, J.B.S. (1954). The Origins of Life. New Biology 16."
+    used_for: "Erste systematische Diskussion NH3 als alternatives Lösungsmittel (Ammonic)"

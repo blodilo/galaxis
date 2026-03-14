@@ -1,0 +1,2332 @@
+{
+  "@context": {
+    "kg": "https://kg-app/ontology#",
+    "schema": "https://schema.org/",
+    "name": "schema:name",
+    "description": "schema:description"
+  },
+  "@type": "kg:Project",
+  "@id": "kg:project/galaxis-tech-tree",
+  "name": "Galaxis – Technologiebaum",
+  "description": "Forschungs- und Technologiebaum für das Strategiespiel Galaxis. Nodes = Technologien, Edges = Forschungsvoraussetzungen. Jede Technologie erzeugt nach Abschluss einen Bauplan (Konstruktionsunterlagen).",
+  "nodeTypes": [
+    {
+      "@id": "kg:node-type/tech-sensors",
+      "@type": "kg:NodeType",
+      "name": "Sensoren",
+      "description": "Optische und FTL-Sensortechnologien, Aufklärung",
+      "icon_path": "library:tabler/eye",
+      "default_style": {
+        "size": 60,
+        "background_color": "#dbeafe",
+        "border_color": "#3b82f6",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "kg:node-type/tech-propulsion",
+      "@type": "kg:NodeType",
+      "name": "Antrieb",
+      "description": "Sublicht- und FTL-Antriebstechnologien",
+      "icon_path": "library:tabler/rocket",
+      "default_style": {
+        "size": 60,
+        "background_color": "#fef9c3",
+        "border_color": "#ca8a04",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "kg:node-type/tech-ftl-modification",
+      "@type": "kg:NodeType",
+      "name": "FTL-Modifikation",
+      "description": "Technologien zur Manipulation des FTLW-Skalarfelds",
+      "icon_path": "library:tabler/topology-star",
+      "default_style": {
+        "size": 60,
+        "background_color": "#f3e8ff",
+        "border_color": "#9333ea",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "kg:node-type/tech-weapons",
+      "@type": "kg:NodeType",
+      "name": "Waffensysteme",
+      "description": "Kinetische, Energie- und Lenkwaffensysteme",
+      "icon_path": "library:tabler/crosshair",
+      "default_style": {
+        "size": 60,
+        "background_color": "#fee2e2",
+        "border_color": "#dc2626",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "kg:node-type/tech-defense",
+      "@type": "kg:NodeType",
+      "name": "Verteidigung",
+      "description": "Panzerung, Gegenmaßnahmen, thermisches Management",
+      "icon_path": "library:tabler/shield",
+      "default_style": {
+        "size": 60,
+        "background_color": "#dcfce7",
+        "border_color": "#16a34a",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "kg:node-type/tech-economy",
+      "@type": "kg:NodeType",
+      "name": "Wirtschaft & Logistik",
+      "description": "Abbau, Produktion, Lieferketten, Handel",
+      "icon_path": "library:tabler/building-factory",
+      "default_style": {
+        "size": 60,
+        "background_color": "#fff7ed",
+        "border_color": "#ea580c",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "kg:node-type/tech-planetary",
+      "@type": "kg:NodeType",
+      "name": "Planetare Entwicklung",
+      "description": "Besiedlung, Habitate, Terraforming, Bevölkerung",
+      "icon_path": "library:tabler/planet",
+      "default_style": {
+        "size": 60,
+        "background_color": "#f0fdf4",
+        "border_color": "#22c55e",
+        "font_size": 11
+      }
+    },
+    {
+      "@id": "kg:node-type/tech-military",
+      "@type": "kg:NodeType",
+      "name": "Militärinfrastruktur",
+      "description": "Werften, Befestigungen, Kommandosysteme",
+      "icon_path": "library:tabler/castle",
+      "default_style": {
+        "size": 60,
+        "background_color": "#f1f5f9",
+        "border_color": "#475569",
+        "font_size": 11
+      }
+    }
+  ],
+  "relationTypes": [
+    {
+      "@id": "kg:relation-type/requires",
+      "@type": "kg:RelationType",
+      "name": "requires",
+      "display_label": "erfordert",
+      "description": "Diese Technologie kann erst erforscht werden, wenn die Vorgänger-Technologie abgeschlossen ist.",
+      "style": {
+        "line_style": "solid",
+        "line_color": "#6b7280",
+        "width": 1.5,
+        "target_arrow_shape": "triangle",
+        "target_arrow_color": "#6b7280",
+        "curve_style": "bezier"
+      }
+    },
+    {
+      "@id": "kg:relation-type/enables",
+      "@type": "kg:RelationType",
+      "name": "enables",
+      "display_label": "ermöglicht",
+      "description": "Diese Technologie schaltet ein Gebäude, eine Schiffskomponente oder eine Spielmechanik frei.",
+      "style": {
+        "line_style": "dashed",
+        "line_color": "#3b82f6",
+        "width": 1.5,
+        "target_arrow_shape": "vee",
+        "target_arrow_color": "#3b82f6",
+        "curve_style": "bezier"
+      }
+    },
+    {
+      "@id": "kg:relation-type/synergy",
+      "@type": "kg:RelationType",
+      "name": "synergy",
+      "display_label": "Synergie",
+      "description": "Zwei Technologien zusammen ergeben einen Bonus über die Summe ihrer Einzelboni hinaus.",
+      "style": {
+        "line_style": "dotted",
+        "line_color": "#f59e0b",
+        "width": 1.5,
+        "target_arrow_shape": "none",
+        "target_arrow_color": "#f59e0b",
+        "curve_style": "unbundled-bezier"
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "@id": "kg:node/tech-basic-optics",
+      "@type": "kg:Node",
+      "label": "Basisoptik",
+      "description": "Grundlegende Teleskoptechnologie. Ermöglicht den Bau von Scout-Arrays auf Schiffen und kleinen Außenposten.",
+      "node_type": "kg:node-type/tech-sensors",
+      "tags": [
+        "sensors",
+        "tier-1"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 1,
+          "risk_per_tick": 0.05,
+          "risk_category": "Gesichert",
+          "research_inputs": {
+            "labs_required": 1,
+            "scientists_required": 1,
+            "credits_per_tick": 50,
+            "materials_per_tick": {}
+          },
+          "research_duration_ticks": 10,
+          "blueprint": {
+            "unlocks": [
+              "ship-scout-array",
+              "outpost-sensor"
+            ],
+            "production_inputs": {
+              "credits": 200,
+              "silicon": 50,
+              "aluminum": 30
+            },
+            "production_time_ticks": 3,
+            "ship_integration": {
+              "mass_tons": 2,
+              "energy_mw": 0.1,
+              "heat_kw": 0.5,
+              "voxel_count": 1,
+              "mount_type": "sensor"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "sensor_sr_bonus",
+                "value": 0.07,
+                "description": "Scout-Array SR 0,07 m²"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-advanced-optics",
+      "@type": "kg:Node",
+      "label": "Hochleistungsoptik",
+      "description": "Vergrößerte Apertur, verbesserte Spiegeltechnologie. Ermöglicht planetare Observatorien (SR bis 177 m²).",
+      "node_type": "kg:node-type/tech-sensors",
+      "tags": [
+        "sensors",
+        "tier-2"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.15,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 2,
+            "scientists_required": 2,
+            "credits_per_tick": 150,
+            "materials_per_tick": {
+              "silicon": 2,
+              "aluminum": 1
+            }
+          },
+          "research_duration_ticks": 30,
+          "blueprint": {
+            "unlocks": [
+              "planetary-observatory"
+            ],
+            "production_inputs": {
+              "credits": 2000,
+              "titanium": 50,
+              "silicon": 200
+            },
+            "production_time_ticks": 15,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 2,
+              "power_draw_mw": 1.5,
+              "workforce_required": 20,
+              "build_time_ticks": 15,
+              "terrain_requirements": [
+                "flat"
+              ]
+            },
+            "effects": [
+              {
+                "type": "sensor_sr_bonus",
+                "value": 177,
+                "description": "Planetares Observatorium SR 177 m²"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-sensor-array-networking",
+      "@type": "kg:Node",
+      "label": "Sensornetzwerk-Protokoll",
+      "description": "Ermöglicht die additive Kombination stationärer Sensoren zu einem Interferometer-Netzwerk. Netzwerk-SR = Summe aller verbundenen Stationen.",
+      "node_type": "kg:node-type/tech-sensors",
+      "tags": [
+        "sensors",
+        "tier-2",
+        "network"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.2,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 2,
+            "scientists_required": 3,
+            "credits_per_tick": 200,
+            "materials_per_tick": {
+              "neodymium": 1,
+              "silicon": 3
+            }
+          },
+          "research_duration_ticks": 25,
+          "blueprint": {
+            "unlocks": [
+              "sensor-network-link"
+            ],
+            "production_inputs": {
+              "credits": 1500,
+              "neodymium": 20,
+              "silicon": 100
+            },
+            "production_time_ticks": 10,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 1,
+              "power_draw_mw": 3.0,
+              "workforce_required": 10,
+              "build_time_ticks": 8,
+              "terrain_requirements": []
+            },
+            "effects": [
+              {
+                "type": "sensor_network_additive",
+                "value": true,
+                "description": "Alle stationären Sensoren im Überlappungsbereich addieren ihre SR"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-deep-space-array",
+      "@type": "kg:Node",
+      "label": "Deep-Space-Array",
+      "description": "Massive Megastruktur-Sensoren (SR bis 707 m²+). Erfordert ausgebaute planetare Infrastruktur.",
+      "node_type": "kg:node-type/tech-sensors",
+      "tags": [
+        "sensors",
+        "tier-3"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 3,
+          "risk_per_tick": 0.3,
+          "risk_category": "Riskant",
+          "research_inputs": {
+            "labs_required": 4,
+            "scientists_required": 5,
+            "credits_per_tick": 500,
+            "materials_per_tick": {
+              "titanium": 5,
+              "neodymium": 3,
+              "silicon": 10
+            }
+          },
+          "research_duration_ticks": 80,
+          "blueprint": {
+            "unlocks": [
+              "deep-space-array-structure"
+            ],
+            "production_inputs": {
+              "credits": 8000,
+              "titanium": 200,
+              "neodymium": 100,
+              "silicon": 500
+            },
+            "production_time_ticks": 50,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 6,
+              "power_draw_mw": 10.0,
+              "workforce_required": 100,
+              "build_time_ticks": 50,
+              "terrain_requirements": [
+                "flat",
+                "no-ocean"
+              ]
+            },
+            "effects": [
+              {
+                "type": "sensor_sr_bonus",
+                "value": 707,
+                "description": "Deep-Space-Array SR 707 m²"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-ftl-sensor-theory",
+      "@type": "kg:Node",
+      "label": "FTL-Sensortheorie",
+      "description": "Grundlagenforschung zur Messung von FTLW-Skalarfeld-Gradienten. Voraussetzung für alle FTL-Sensoren.",
+      "node_type": "kg:node-type/tech-sensors",
+      "tags": [
+        "sensors",
+        "ftl",
+        "tier-2"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.35,
+          "risk_category": "Riskant",
+          "research_inputs": {
+            "labs_required": 3,
+            "scientists_required": 4,
+            "credits_per_tick": 300,
+            "materials_per_tick": {
+              "yttrium": 2,
+              "silicon": 5
+            }
+          },
+          "research_duration_ticks": 40,
+          "blueprint": {
+            "unlocks": [
+              "ftl-sensor-station"
+            ],
+            "production_inputs": {
+              "credits": 3000,
+              "yttrium": 30,
+              "silicon": 200
+            },
+            "production_time_ticks": 20,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 3,
+              "power_draw_mw": 8.0,
+              "workforce_required": 40,
+              "build_time_ticks": 20,
+              "terrain_requirements": []
+            },
+            "effects": [
+              {
+                "type": "ftl_sensor_sr",
+                "value": 50,
+                "description": "FTL-Basis-Sensor SR 50 m²"
+              },
+              {
+                "type": "detects_black_holes",
+                "value": true,
+                "description": "Schwarze Löcher durch Skalarfeld-Anomalie sichtbar"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-ftl-sensor-advanced",
+      "@type": "kg:Node",
+      "label": "FTL-Warp-Signatur-Analyse",
+      "description": "Erkennt FTL-Signaturen von Schiffen beim Warp-Eintritt. Ermöglicht frühzeitige Warnung vor feindlichen Flottenbewegungen.",
+      "node_type": "kg:node-type/tech-sensors",
+      "tags": [
+        "sensors",
+        "ftl",
+        "tier-3"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 3,
+          "risk_per_tick": 0.4,
+          "risk_category": "Riskant",
+          "research_inputs": {
+            "labs_required": 4,
+            "scientists_required": 5,
+            "credits_per_tick": 450,
+            "materials_per_tick": {
+              "yttrium": 4,
+              "californium-252": 0.1
+            }
+          },
+          "research_duration_ticks": 60,
+          "blueprint": {
+            "unlocks": [
+              "ftl-warp-detector"
+            ],
+            "production_inputs": {
+              "credits": 6000,
+              "yttrium": 80,
+              "californium-252": 5
+            },
+            "production_time_ticks": 30,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 4,
+              "power_draw_mw": 20.0,
+              "workforce_required": 60,
+              "build_time_ticks": 30,
+              "terrain_requirements": []
+            },
+            "effects": [
+              {
+                "type": "ftl_sensor_sr",
+                "value": 300,
+                "description": "Fortgeschrittener FTL-Sensor SR 300 m²"
+              },
+              {
+                "type": "detects_warp_signature",
+                "value": true,
+                "description": "FTL-Warp-Signaturen für N Ticks nach Sprung sichtbar"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-fusion-drive",
+      "@type": "kg:Node",
+      "label": "Fusionsantrieb",
+      "description": "Primärer Sublicht-Antrieb für alle Schiffe. Treibstoff: Deuterium.",
+      "node_type": "kg:node-type/tech-propulsion",
+      "tags": [
+        "propulsion",
+        "tier-1"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 1,
+          "risk_per_tick": 0.1,
+          "risk_category": "Gesichert",
+          "research_inputs": {
+            "labs_required": 1,
+            "scientists_required": 2,
+            "credits_per_tick": 80,
+            "materials_per_tick": {
+              "deuterium": 5
+            }
+          },
+          "research_duration_ticks": 15,
+          "blueprint": {
+            "unlocks": [
+              "fusion-drive-component"
+            ],
+            "production_inputs": {
+              "credits": 800,
+              "deuterium": 100,
+              "iron": 200
+            },
+            "production_time_ticks": 8,
+            "ship_integration": {
+              "mass_tons": 80,
+              "energy_mw": -50.0,
+              "heat_kw": 200.0,
+              "voxel_count": 6,
+              "mount_type": "engine"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "sublicht_thrust_kn",
+                "value": 500,
+                "description": "500 kN Schub (Sublicht)"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-ftl-warp-basic",
+      "@type": "kg:Node",
+      "label": "FTL-Warp (Grundlagen)",
+      "description": "Ermöglicht Überlichtflug zwischen Sternensystemen. Geschwindigkeit invers proportional zum lokalen FTLW-Widerstand.",
+      "node_type": "kg:node-type/tech-propulsion",
+      "tags": [
+        "propulsion",
+        "ftl",
+        "tier-1"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 1,
+          "risk_per_tick": 0.25,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 2,
+            "scientists_required": 3,
+            "credits_per_tick": 200,
+            "materials_per_tick": {
+              "deuterium": 10,
+              "helium-3": 3
+            }
+          },
+          "research_duration_ticks": 40,
+          "blueprint": {
+            "unlocks": [
+              "ftl-core-component"
+            ],
+            "production_inputs": {
+              "credits": 2000,
+              "deuterium": 200,
+              "helium-3": 50,
+              "titanium": 100
+            },
+            "production_time_ticks": 20,
+            "ship_integration": {
+              "mass_tons": 150,
+              "energy_mw": -200.0,
+              "heat_kw": 800.0,
+              "voxel_count": 12,
+              "mount_type": "engine",
+              "size_class": "frigate+"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "ftl_capable",
+                "value": true,
+                "description": "Schiff kann FTL-Warp initiieren"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-ftl-warp-efficiency",
+      "@type": "kg:Node",
+      "label": "FTL-Effizienz I",
+      "description": "Reduziert den Energiebedarf pro FTLW-Einheit um 20%.",
+      "node_type": "kg:node-type/tech-propulsion",
+      "tags": [
+        "propulsion",
+        "ftl",
+        "tier-2"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.25,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 3,
+            "scientists_required": 3,
+            "credits_per_tick": 250,
+            "materials_per_tick": {
+              "helium-3": 8,
+              "platinum": 1
+            }
+          },
+          "research_duration_ticks": 50,
+          "blueprint": {
+            "unlocks": [],
+            "production_inputs": {},
+            "production_time_ticks": 0,
+            "ship_integration": null,
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "ftlw_energy_reduction",
+                "value": 0.2,
+                "description": "20% weniger Energie pro FTLW-Einheit"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-ftl-warp-efficiency-2",
+      "@type": "kg:Node",
+      "label": "FTL-Effizienz II",
+      "description": "Weitere 20% Reduktion des FTLW-Energiebedarfs.",
+      "node_type": "kg:node-type/tech-propulsion",
+      "tags": [
+        "propulsion",
+        "ftl",
+        "tier-3"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 3,
+          "risk_per_tick": 0.35,
+          "risk_category": "Riskant",
+          "research_inputs": {
+            "labs_required": 4,
+            "scientists_required": 4,
+            "credits_per_tick": 400,
+            "materials_per_tick": {
+              "helium-3": 15,
+              "platinum": 3
+            }
+          },
+          "research_duration_ticks": 80,
+          "blueprint": {
+            "unlocks": [],
+            "production_inputs": {},
+            "production_time_ticks": 0,
+            "ship_integration": null,
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "ftlw_energy_reduction",
+                "value": 0.2,
+                "description": "Weitere 20% Energiereduktion (kumulativ: 40%)"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-ftlw-tunnel-theory",
+      "@type": "kg:Node",
+      "label": "Skalarfeld-Manipulation",
+      "description": "Grundlagenforschung zur aktiven Modifikation des FTLW-Skalarfelds.",
+      "node_type": "kg:node-type/tech-ftl-modification",
+      "tags": [
+        "ftl-modification",
+        "tier-3"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 3,
+          "risk_per_tick": 0.5,
+          "risk_category": "Gefährlich",
+          "research_inputs": {
+            "labs_required": 5,
+            "scientists_required": 6,
+            "credits_per_tick": 800,
+            "materials_per_tick": {
+              "uranium-235": 3,
+              "yttrium": 5
+            }
+          },
+          "research_duration_ticks": 100,
+          "blueprint": {
+            "unlocks": [],
+            "production_inputs": {},
+            "production_time_ticks": 0,
+            "ship_integration": null,
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "unlocks_ftlw_modification",
+                "value": true,
+                "description": "Ermöglicht Bau von FTLW-Stabilisatoren"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-ftlw-stabilizer",
+      "@type": "kg:Node",
+      "label": "FTLW-Stabilisator",
+      "description": "Lokale Anlage, die den FTLW-Widerstand in einem Voxel-Bereich dauerhaft reduziert.",
+      "node_type": "kg:node-type/tech-ftl-modification",
+      "tags": [
+        "ftl-modification",
+        "tier-4"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 4,
+          "risk_per_tick": 0.55,
+          "risk_category": "Gefährlich",
+          "research_inputs": {
+            "labs_required": 6,
+            "scientists_required": 8,
+            "credits_per_tick": 1500,
+            "materials_per_tick": {
+              "uranium-235": 8,
+              "californium-252": 0.5
+            }
+          },
+          "research_duration_ticks": 150,
+          "blueprint": {
+            "unlocks": [
+              "ftlw-stabilizer-structure"
+            ],
+            "production_inputs": {
+              "credits": 20000,
+              "uranium-235": 200,
+              "californium-252": 20,
+              "titanium": 500
+            },
+            "production_time_ticks": 80,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 8,
+              "power_draw_mw": 500.0,
+              "workforce_required": 200,
+              "build_time_ticks": 80,
+              "terrain_requirements": [
+                "flat"
+              ]
+            },
+            "effects": [
+              {
+                "type": "ftlw_voxel_multiplier",
+                "value": 0.3,
+                "radius_ly": 1500,
+                "description": "Reduziert FTLW in 1.500 ly Umkreis auf 30% (70% Reduktion)"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-jump-gate",
+      "@type": "kg:Node",
+      "label": "Sprungtor",
+      "description": "Megastruktur. Punkt-zu-Punkt-Kanal mit minimalem FTLW-Widerstand. Ultimative Lategame-Logistikstruktur.",
+      "node_type": "kg:node-type/tech-ftl-modification",
+      "tags": [
+        "ftl-modification",
+        "tier-5",
+        "megastructure"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 5,
+          "risk_per_tick": 0.7,
+          "risk_category": "Experimentell",
+          "research_inputs": {
+            "labs_required": 10,
+            "scientists_required": 15,
+            "credits_per_tick": 5000,
+            "materials_per_tick": {
+              "californium-252": 2,
+              "uranium-235": 20,
+              "titanium": 50
+            }
+          },
+          "research_duration_ticks": 500,
+          "blueprint": {
+            "unlocks": [
+              "jump-gate-structure"
+            ],
+            "production_inputs": {
+              "credits": 100000,
+              "californium-252": 100,
+              "uranium-235": 1000,
+              "titanium": 5000
+            },
+            "production_time_ticks": 400,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 20,
+              "power_draw_mw": 5000.0,
+              "workforce_required": 1000,
+              "build_time_ticks": 400,
+              "terrain_requirements": [
+                "orbital"
+              ]
+            },
+            "effects": [
+              {
+                "type": "ftlw_gate_link",
+                "value": 0.01,
+                "description": "Verbindet zwei Systeme mit FTLW-Widerstand nahe 0"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-railgun-basic",
+      "@type": "kg:Node",
+      "label": "Railgun (Grundlagen)",
+      "description": "Elektromagnetische Beschleunigung von Wolfram-Projektilen. Keplerbahn-Berechnung für orbitale Gefechte.",
+      "node_type": "kg:node-type/tech-weapons",
+      "tags": [
+        "weapons",
+        "kinetic",
+        "tier-1"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 1,
+          "risk_per_tick": 0.1,
+          "risk_category": "Gesichert",
+          "research_inputs": {
+            "labs_required": 1,
+            "scientists_required": 2,
+            "credits_per_tick": 100,
+            "materials_per_tick": {
+              "tungsten": 5,
+              "copper": 3
+            }
+          },
+          "research_duration_ticks": 20,
+          "blueprint": {
+            "unlocks": [
+              "railgun-component-mk1"
+            ],
+            "production_inputs": {
+              "credits": 1000,
+              "tungsten": 100,
+              "iron": 200,
+              "copper": 50
+            },
+            "production_time_ticks": 10,
+            "ship_integration": {
+              "mass_tons": 40,
+              "energy_mw": 15.0,
+              "heat_kw": 60.0,
+              "voxel_count": 4,
+              "mount_type": "weapon",
+              "size_class": "frigate+"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "railgun_velocity_km_s",
+                "value": 50,
+                "description": "Mündungsgeschwindigkeit 50 km/s"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-railgun-advanced",
+      "@type": "kg:Node",
+      "label": "Hochgeschwindigkeits-Railgun",
+      "description": "Muzzle-Velocity > 100 km/s. Gravitations-Slingshot-Manöver effizienter.",
+      "node_type": "kg:node-type/tech-weapons",
+      "tags": [
+        "weapons",
+        "kinetic",
+        "tier-2"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.2,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 2,
+            "scientists_required": 3,
+            "credits_per_tick": 200,
+            "materials_per_tick": {
+              "tungsten": 10,
+              "neodymium": 2
+            }
+          },
+          "research_duration_ticks": 45,
+          "blueprint": {
+            "unlocks": [
+              "railgun-component-mk2"
+            ],
+            "production_inputs": {
+              "credits": 3000,
+              "tungsten": 300,
+              "neodymium": 50,
+              "iron": 300
+            },
+            "production_time_ticks": 18,
+            "ship_integration": {
+              "mass_tons": 70,
+              "energy_mw": 35.0,
+              "heat_kw": 150.0,
+              "voxel_count": 6,
+              "mount_type": "weapon",
+              "size_class": "cruiser+"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "railgun_velocity_km_s",
+                "value": 120,
+                "description": "Mündungsgeschwindigkeit 120 km/s"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-lpp-torpedo",
+      "@type": "kg:Node",
+      "label": "LPP-Drohnen-Torpedo",
+      "description": "Autonome Kill Vehicles mit Laser-Produced-Plasma-Nutzlast. Hocheffektiv gegen Radiatoren und Sensorik.",
+      "node_type": "kg:node-type/tech-weapons",
+      "tags": [
+        "weapons",
+        "missile",
+        "tier-2"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.25,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 3,
+            "scientists_required": 4,
+            "credits_per_tick": 300,
+            "materials_per_tick": {
+              "tungsten": 8,
+              "tin": 10,
+              "platinum": 1
+            }
+          },
+          "research_duration_ticks": 55,
+          "blueprint": {
+            "unlocks": [
+              "lpp-torpedo-component"
+            ],
+            "production_inputs": {
+              "credits": 500,
+              "tungsten": 30,
+              "tin": 50,
+              "silicon": 20
+            },
+            "production_time_ticks": 5,
+            "ship_integration": {
+              "mass_tons": 8,
+              "energy_mw": 0.5,
+              "heat_kw": 2.0,
+              "voxel_count": 1,
+              "mount_type": "weapon"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "autonomous_homing",
+                "value": true,
+                "description": "Verfolgt Ziel selbstständig"
+              },
+              {
+                "type": "plasma_penetration",
+                "value": true,
+                "description": "Durchschlägt leichte Panzerung, zerstört Radiatoren"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-laser-tier1",
+      "@type": "kg:Node",
+      "label": "Infrarot-/UV-Laser",
+      "description": "Punktverteidigung gegen Drohnen und Torpedos. Treffen instantan auf gerader Linie.",
+      "node_type": "kg:node-type/tech-weapons",
+      "tags": [
+        "weapons",
+        "energy",
+        "tier-1"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 1,
+          "risk_per_tick": 0.08,
+          "risk_category": "Gesichert",
+          "research_inputs": {
+            "labs_required": 1,
+            "scientists_required": 2,
+            "credits_per_tick": 90,
+            "materials_per_tick": {
+              "silicon": 3,
+              "copper": 2
+            }
+          },
+          "research_duration_ticks": 18,
+          "blueprint": {
+            "unlocks": [
+              "laser-pdb-component"
+            ],
+            "production_inputs": {
+              "credits": 800,
+              "silicon": 100,
+              "copper": 50,
+              "aluminum": 30
+            },
+            "production_time_ticks": 6,
+            "ship_integration": {
+              "mass_tons": 10,
+              "energy_mw": 5.0,
+              "heat_kw": 20.0,
+              "voxel_count": 2,
+              "mount_type": "weapon"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "point_defense",
+                "value": true,
+                "description": "Kann Torpedos und Drohnen abfangen"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-antimaterie-production",
+      "@type": "kg:Node",
+      "label": "Antimaterie-Produktion",
+      "description": "Ermöglicht die kontrollierte Erzeugung und Speicherung von Positronen. Voraussetzung für Graser.",
+      "node_type": "kg:node-type/tech-weapons",
+      "tags": [
+        "weapons",
+        "energy",
+        "tier-4"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 4,
+          "risk_per_tick": 0.6,
+          "risk_category": "Gefährlich",
+          "research_inputs": {
+            "labs_required": 8,
+            "scientists_required": 10,
+            "credits_per_tick": 2000,
+            "materials_per_tick": {
+              "californium-252": 1,
+              "uranium-235": 5
+            }
+          },
+          "research_duration_ticks": 200,
+          "blueprint": {
+            "unlocks": [
+              "antimatter-storage-component",
+              "antimatter-reactor"
+            ],
+            "production_inputs": {
+              "credits": 30000,
+              "californium-252": 20,
+              "uranium-235": 100,
+              "titanium": 200
+            },
+            "production_time_ticks": 100,
+            "ship_integration": {
+              "mass_tons": 200,
+              "energy_mw": -800.0,
+              "heat_kw": 3000.0,
+              "voxel_count": 20,
+              "mount_type": "utility",
+              "size_class": "capital+"
+            },
+            "planetary_integration": {
+              "footprint_sectors": 10,
+              "power_draw_mw": 2000.0,
+              "workforce_required": 500,
+              "build_time_ticks": 100,
+              "terrain_requirements": [
+                "flat",
+                "no-ocean"
+              ]
+            },
+            "effects": [
+              {
+                "type": "produces_antimatter",
+                "value": true,
+                "description": "Produziert Antimaterie als Ressource pro Tick"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-graser",
+      "@type": "kg:Node",
+      "label": "Gamma-Ray-Laser (Graser)",
+      "description": "Positronen-gepumpter Gamma-Laser. Durchschlägt Panzerung auf atomarer Ebene. Extremer Antimaterie- und Wärmeaufwand.",
+      "node_type": "kg:node-type/tech-weapons",
+      "tags": [
+        "weapons",
+        "energy",
+        "tier-5"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 5,
+          "risk_per_tick": 0.75,
+          "risk_category": "Experimentell",
+          "research_inputs": {
+            "labs_required": 12,
+            "scientists_required": 15,
+            "credits_per_tick": 5000,
+            "materials_per_tick": {
+              "californium-252": 3,
+              "platinum": 10
+            }
+          },
+          "research_duration_ticks": 400,
+          "blueprint": {
+            "unlocks": [
+              "graser-component"
+            ],
+            "production_inputs": {
+              "credits": 80000,
+              "californium-252": 50,
+              "platinum": 500,
+              "titanium": 1000
+            },
+            "production_time_ticks": 200,
+            "ship_integration": {
+              "mass_tons": 500,
+              "energy_mw": 1000.0,
+              "heat_kw": 50000.0,
+              "voxel_count": 40,
+              "mount_type": "weapon",
+              "size_class": "capital+"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "armor_penetration_atomic",
+                "value": true,
+                "description": "Durchdringt jede Panzerung auf atomarer Ebene"
+              },
+              {
+                "type": "antimatter_per_shot",
+                "value": 10,
+                "description": "Verbraucht 10 Einheiten Antimaterie pro Schuss"
+              },
+              {
+                "type": "crew_lethality",
+                "value": true,
+                "description": "Tötet Crew durch Gammastrahlung"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-sandcaster",
+      "@type": "kg:Node",
+      "label": "Sandcaster",
+      "description": "Partikel-Dispenser gegen kinetische Projektile.",
+      "node_type": "kg:node-type/tech-defense",
+      "tags": [
+        "defense",
+        "tier-1"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 1,
+          "risk_per_tick": 0.08,
+          "risk_category": "Gesichert",
+          "research_inputs": {
+            "labs_required": 1,
+            "scientists_required": 1,
+            "credits_per_tick": 60,
+            "materials_per_tick": {
+              "iron": 10,
+              "silicon": 5
+            }
+          },
+          "research_duration_ticks": 15,
+          "blueprint": {
+            "unlocks": [
+              "sandcaster-component"
+            ],
+            "production_inputs": {
+              "credits": 500,
+              "iron": 100,
+              "silicon": 50
+            },
+            "production_time_ticks": 5,
+            "ship_integration": {
+              "mass_tons": 15,
+              "energy_mw": 1.0,
+              "heat_kw": 3.0,
+              "voxel_count": 2,
+              "mount_type": "utility"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "kinetic_intercept_radius_km",
+                "value": 500,
+                "description": "Abfangradius 500 km für Kinetik-Geschosse"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-advanced-armor",
+      "@type": "kg:Node",
+      "label": "Verbundpanzerung",
+      "description": "Mehrschichtige Verbundmaterialien aus Titan und Karbonfaser. Reduziert Massezuwachs pro Panzerungsvoxel.",
+      "node_type": "kg:node-type/tech-defense",
+      "tags": [
+        "defense",
+        "tier-2"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.15,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 2,
+            "scientists_required": 2,
+            "credits_per_tick": 150,
+            "materials_per_tick": {
+              "titanium": 5,
+              "carbon": 8
+            }
+          },
+          "research_duration_ticks": 35,
+          "blueprint": {
+            "unlocks": [
+              "composite-armor-component"
+            ],
+            "production_inputs": {
+              "credits": 1500,
+              "titanium": 100,
+              "carbon": 150
+            },
+            "production_time_ticks": 10,
+            "ship_integration": {
+              "mass_tons": 30,
+              "energy_mw": 0.0,
+              "heat_kw": 0.0,
+              "voxel_count": 2,
+              "mount_type": "hull"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "armor_mass_reduction",
+                "value": 0.2,
+                "description": "20% weniger Masse pro Panzerungsvoxel gegenüber Basisstahl"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-thermal-management",
+      "@type": "kg:Node",
+      "label": "Thermisches Management",
+      "description": "Optimierte Radiator-Kühltechnologie. Reduziert Abwärme-Signatur und ermöglicht höhere Energieaufnahme.",
+      "node_type": "kg:node-type/tech-defense",
+      "tags": [
+        "defense",
+        "thermal",
+        "tier-2"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.15,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 2,
+            "scientists_required": 2,
+            "credits_per_tick": 130,
+            "materials_per_tick": {
+              "titanium": 3,
+              "manganese": 2
+            }
+          },
+          "research_duration_ticks": 30,
+          "blueprint": {
+            "unlocks": [
+              "advanced-radiator-component"
+            ],
+            "production_inputs": {
+              "credits": 1200,
+              "titanium": 60,
+              "manganese": 40
+            },
+            "production_time_ticks": 8,
+            "ship_integration": {
+              "mass_tons": 20,
+              "energy_mw": 0.0,
+              "heat_kw": -500.0,
+              "voxel_count": 3,
+              "mount_type": "utility"
+            },
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "heat_dissipation_kw",
+                "value": 500,
+                "description": "Ableitung von 500 kW Abwärme"
+              },
+              {
+                "type": "thermal_signature_reduction",
+                "value": 0.3,
+                "description": "30% geringere IR-Signatur im Standby"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-basic-mining",
+      "@type": "kg:Node",
+      "label": "Basisbergbau",
+      "description": "Einfache Abbauanlagen für Gesteinsplaneten und Asteroiden. Fördert Tier-1-Ressourcen.",
+      "node_type": "kg:node-type/tech-economy",
+      "tags": [
+        "economy",
+        "mining",
+        "tier-1"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 1,
+          "risk_per_tick": 0.05,
+          "risk_category": "Gesichert",
+          "research_inputs": {
+            "labs_required": 1,
+            "scientists_required": 1,
+            "credits_per_tick": 30,
+            "materials_per_tick": {}
+          },
+          "research_duration_ticks": 5,
+          "blueprint": {
+            "unlocks": [
+              "basic-mine-structure"
+            ],
+            "production_inputs": {
+              "credits": 300,
+              "iron": 100,
+              "silicon": 50
+            },
+            "production_time_ticks": 4,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 2,
+              "power_draw_mw": 2.0,
+              "workforce_required": 30,
+              "build_time_ticks": 5,
+              "terrain_requirements": [
+                "no-ocean"
+              ]
+            },
+            "effects": [
+              {
+                "type": "resource_extraction_rate",
+                "value": 100,
+                "description": "100 Einheiten Tier-1-Ressource pro Tick"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-rare-earth-extraction",
+      "@type": "kg:Node",
+      "label": "Seltene-Erden-Förderung",
+      "description": "Spezialisierte Extraktionsverfahren für Neodym, Yttrium, Platin und Wolfram.",
+      "node_type": "kg:node-type/tech-economy",
+      "tags": [
+        "economy",
+        "mining",
+        "tier-2"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.2,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 2,
+            "scientists_required": 3,
+            "credits_per_tick": 180,
+            "materials_per_tick": {
+              "iron": 8,
+              "silicon": 4
+            }
+          },
+          "research_duration_ticks": 30,
+          "blueprint": {
+            "unlocks": [
+              "rare-earth-mine-structure"
+            ],
+            "production_inputs": {
+              "credits": 2000,
+              "iron": 200,
+              "silicon": 100,
+              "titanium": 50
+            },
+            "production_time_ticks": 12,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 3,
+              "power_draw_mw": 5.0,
+              "workforce_required": 50,
+              "build_time_ticks": 12,
+              "terrain_requirements": [
+                "no-ocean"
+              ]
+            },
+            "effects": [
+              {
+                "type": "rare_earth_extraction",
+                "value": true,
+                "description": "Ermöglicht Förderung von Tier-3-Ressourcen"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-detail-mode-production",
+      "@type": "kg:Node",
+      "label": "Produktionsketten-System",
+      "description": "Ermöglicht den Wechsel einzelner Anlagen in den Detail-Modus: ~50% Effizienzbonus (Einbahnstraße).",
+      "node_type": "kg:node-type/tech-economy",
+      "tags": [
+        "economy",
+        "production",
+        "tier-2"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.2,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 2,
+            "scientists_required": 3,
+            "credits_per_tick": 200,
+            "materials_per_tick": {
+              "silicon": 8,
+              "copper": 5
+            }
+          },
+          "research_duration_ticks": 40,
+          "blueprint": {
+            "unlocks": [
+              "detail-mode-upgrade"
+            ],
+            "production_inputs": {},
+            "production_time_ticks": 0,
+            "ship_integration": null,
+            "planetary_integration": null,
+            "effects": [
+              {
+                "type": "detail_mode_unlocked",
+                "value": true,
+                "description": "Anlagen können in den Detail-Modus upgegraded werden"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-mass-driver",
+      "@type": "kg:Node",
+      "label": "Massentreiber",
+      "description": "Elektromagnetischer Katapult für Roherz vom Planeten in den Orbit. Billig, aber nicht für Lebewesen geeignet.",
+      "node_type": "kg:node-type/tech-economy",
+      "tags": [
+        "economy",
+        "logistics",
+        "tier-2"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 2,
+          "risk_per_tick": 0.1,
+          "risk_category": "Gesichert",
+          "research_inputs": {
+            "labs_required": 1,
+            "scientists_required": 2,
+            "credits_per_tick": 100,
+            "materials_per_tick": {
+              "iron": 5,
+              "copper": 3
+            }
+          },
+          "research_duration_ticks": 20,
+          "blueprint": {
+            "unlocks": [
+              "mass-driver-structure"
+            ],
+            "production_inputs": {
+              "credits": 1500,
+              "iron": 300,
+              "copper": 100
+            },
+            "production_time_ticks": 10,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 3,
+              "power_draw_mw": 20.0,
+              "workforce_required": 20,
+              "build_time_ticks": 10,
+              "terrain_requirements": [
+                "flat"
+              ]
+            },
+            "effects": [
+              {
+                "type": "orbit_transport_cost_reduction",
+                "value": 0.7,
+                "description": "70% günstigerer Orbitaltransport für Roherze"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-space-elevator",
+      "@type": "kg:Node",
+      "label": "Weltraumaufzug",
+      "description": "Lategame-Megastruktur. Reduziert Orbit-Transportkosten nahezu auf null.",
+      "node_type": "kg:node-type/tech-economy",
+      "tags": [
+        "economy",
+        "logistics",
+        "tier-5",
+        "megastructure"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 5,
+          "risk_per_tick": 0.4,
+          "risk_category": "Riskant",
+          "research_inputs": {
+            "labs_required": 6,
+            "scientists_required": 8,
+            "credits_per_tick": 1000,
+            "materials_per_tick": {
+              "titanium": 20,
+              "carbon": 40
+            }
+          },
+          "research_duration_ticks": 200,
+          "blueprint": {
+            "unlocks": [
+              "space-elevator-structure"
+            ],
+            "production_inputs": {
+              "credits": 150000,
+              "titanium": 10000,
+              "carbon": 20000
+            },
+            "production_time_ticks": 400,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 1,
+              "power_draw_mw": 50.0,
+              "workforce_required": 100,
+              "build_time_ticks": 400,
+              "terrain_requirements": [
+                "equatorial",
+                "flat"
+              ]
+            },
+            "effects": [
+              {
+                "type": "orbit_transport_cost_reduction",
+                "value": 0.99,
+                "description": "99% günstigerer Orbitaltransport aller Güter"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-basic-habitats",
+      "@type": "kg:Node",
+      "label": "Basishabitate",
+      "description": "Geschlossene Habitate für die eigene Spezies auf fremden Atmosphären-Typen. 10–20% Nutzfläche.",
+      "node_type": "kg:node-type/tech-planetary",
+      "tags": [
+        "planetary",
+        "tier-1"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 1,
+          "risk_per_tick": 0.08,
+          "risk_category": "Gesichert",
+          "research_inputs": {
+            "labs_required": 1,
+            "scientists_required": 1,
+            "credits_per_tick": 50,
+            "materials_per_tick": {}
+          },
+          "research_duration_ticks": 10,
+          "blueprint": {
+            "unlocks": [
+              "basic-habitat-structure"
+            ],
+            "production_inputs": {
+              "credits": 500,
+              "iron": 100,
+              "silicon": 50
+            },
+            "production_time_ticks": 6,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 1,
+              "power_draw_mw": 1.0,
+              "workforce_required": 0,
+              "build_time_ticks": 6,
+              "terrain_requirements": []
+            },
+            "effects": [
+              {
+                "type": "usable_surface_on_hostile",
+                "value": 0.1,
+                "description": "10% Nutzfläche auf inkompatiblen Welten"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-terraforming-basic",
+      "@type": "kg:Node",
+      "label": "Terraforming (Grundlagen)",
+      "description": "Langfristige Veränderung der Atmosphärenzusammensetzung. Sehr langer Break-even, volle Nutzfläche nach Abschluss.",
+      "node_type": "kg:node-type/tech-planetary",
+      "tags": [
+        "planetary",
+        "terraforming",
+        "tier-4"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 4,
+          "risk_per_tick": 0.35,
+          "risk_category": "Riskant",
+          "research_inputs": {
+            "labs_required": 5,
+            "scientists_required": 6,
+            "credits_per_tick": 600,
+            "materials_per_tick": {
+              "nitrogen": 50,
+              "yttrium": 3
+            }
+          },
+          "research_duration_ticks": 200,
+          "blueprint": {
+            "unlocks": [
+              "terraforming-station-structure"
+            ],
+            "production_inputs": {
+              "credits": 25000,
+              "nitrogen": 5000,
+              "yttrium": 200,
+              "iron": 1000
+            },
+            "production_time_ticks": 150,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 5,
+              "power_draw_mw": 100.0,
+              "workforce_required": 200,
+              "build_time_ticks": 150,
+              "terrain_requirements": []
+            },
+            "effects": [
+              {
+                "type": "atmosphere_conversion",
+                "duration_ticks": 2000,
+                "description": "Konvertiert Atmosphäre über 2000 Ticks zum kompatiblen Typ → volle Nutzfläche"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-basic-shipyard",
+      "@type": "kg:Node",
+      "label": "Basiswerft",
+      "description": "Orbitale Werft für Standard-Modus-Produktion aus Rohstoffen + Credits.",
+      "node_type": "kg:node-type/tech-military",
+      "tags": [
+        "military",
+        "shipyard",
+        "tier-1"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 1,
+          "risk_per_tick": 0.1,
+          "risk_category": "Gesichert",
+          "research_inputs": {
+            "labs_required": 1,
+            "scientists_required": 2,
+            "credits_per_tick": 80,
+            "materials_per_tick": {
+              "iron": 5
+            }
+          },
+          "research_duration_ticks": 20,
+          "blueprint": {
+            "unlocks": [
+              "basic-shipyard-structure"
+            ],
+            "production_inputs": {
+              "credits": 1000,
+              "iron": 500,
+              "silicon": 100
+            },
+            "production_time_ticks": 15,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 0,
+              "power_draw_mw": 10.0,
+              "workforce_required": 100,
+              "build_time_ticks": 15,
+              "terrain_requirements": [
+                "orbital"
+              ]
+            },
+            "effects": [
+              {
+                "type": "shipyard_capacity_class",
+                "value": "frigate",
+                "description": "Kann Fregatten und kleiner bauen"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-advanced-shipyard",
+      "@type": "kg:Node",
+      "label": "Hochleistungswerft",
+      "description": "Detail-Modus-fähige Werft. 50% schneller bei vollständiger Lieferkette.",
+      "node_type": "kg:node-type/tech-military",
+      "tags": [
+        "military",
+        "shipyard",
+        "tier-3"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 3,
+          "risk_per_tick": 0.2,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 3,
+            "scientists_required": 4,
+            "credits_per_tick": 350,
+            "materials_per_tick": {
+              "titanium": 5,
+              "silicon": 8
+            }
+          },
+          "research_duration_ticks": 80,
+          "blueprint": {
+            "unlocks": [
+              "advanced-shipyard-structure"
+            ],
+            "production_inputs": {
+              "credits": 10000,
+              "titanium": 300,
+              "silicon": 200,
+              "iron": 500
+            },
+            "production_time_ticks": 40,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 0,
+              "power_draw_mw": 30.0,
+              "workforce_required": 300,
+              "build_time_ticks": 40,
+              "terrain_requirements": [
+                "orbital"
+              ]
+            },
+            "effects": [
+              {
+                "type": "shipyard_capacity_class",
+                "value": "capital",
+                "description": "Kann alle Schiffsklassen bauen"
+              },
+              {
+                "type": "detail_mode_production",
+                "value": true,
+                "description": "Verarbeitet Komponenten aus Lieferketten"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "@id": "kg:node/tech-orbital-fortress",
+      "@type": "kg:Node",
+      "label": "Orbitalfestung",
+      "description": "Permanente bewaffnete Orbitalbasis. Extrem robust, dient als Gefechtsknotenpunkt.",
+      "node_type": "kg:node-type/tech-military",
+      "tags": [
+        "military",
+        "defense",
+        "tier-3"
+      ],
+      "business_unit": null,
+      "icon_override": null,
+      "position_x": null,
+      "position_y": null,
+      "extra_data": {
+        "galaxis": {
+          "tier": 3,
+          "risk_per_tick": 0.15,
+          "risk_category": "Normal",
+          "research_inputs": {
+            "labs_required": 3,
+            "scientists_required": 4,
+            "credits_per_tick": 400,
+            "materials_per_tick": {
+              "iron": 20,
+              "titanium": 8
+            }
+          },
+          "research_duration_ticks": 120,
+          "blueprint": {
+            "unlocks": [
+              "orbital-fortress-structure"
+            ],
+            "production_inputs": {
+              "credits": 15000,
+              "iron": 2000,
+              "titanium": 500
+            },
+            "production_time_ticks": 80,
+            "ship_integration": null,
+            "planetary_integration": {
+              "footprint_sectors": 0,
+              "power_draw_mw": 50.0,
+              "workforce_required": 500,
+              "build_time_ticks": 80,
+              "terrain_requirements": [
+                "orbital"
+              ]
+            },
+            "effects": [
+              {
+                "type": "orbital_defense_platform",
+                "value": true,
+                "description": "Stationäre Waffenplattform im Orbit"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "@id": "kg:edge/tech-advanced-optics-requires-basic-optics",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-advanced-optics",
+      "target": "kg:node/tech-basic-optics",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-sensor-net-requires-advanced-optics",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-sensor-array-networking",
+      "target": "kg:node/tech-advanced-optics",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-deep-space-requires-sensor-net",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-deep-space-array",
+      "target": "kg:node/tech-sensor-array-networking",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-ftl-theory-requires-advanced-optics",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-ftl-sensor-theory",
+      "target": "kg:node/tech-advanced-optics",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-ftl-adv-requires-ftl-theory",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-ftl-sensor-advanced",
+      "target": "kg:node/tech-ftl-sensor-theory",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-ftl-warp-requires-fusion",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-ftl-warp-basic",
+      "target": "kg:node/tech-fusion-drive",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-ftl-eff1-requires-ftl-basic",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-ftl-warp-efficiency",
+      "target": "kg:node/tech-ftl-warp-basic",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-ftl-eff2-requires-eff1",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-ftl-warp-efficiency-2",
+      "target": "kg:node/tech-ftl-warp-efficiency",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-tunnel-requires-eff2",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-ftlw-tunnel-theory",
+      "target": "kg:node/tech-ftl-warp-efficiency-2",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-tunnel-requires-ftl-theory",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-ftlw-tunnel-theory",
+      "target": "kg:node/tech-ftl-sensor-theory",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-stabilizer-requires-tunnel",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-ftlw-stabilizer",
+      "target": "kg:node/tech-ftlw-tunnel-theory",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-gate-requires-stabilizer",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-jump-gate",
+      "target": "kg:node/tech-ftlw-stabilizer",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-gate-requires-elevator",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-jump-gate",
+      "target": "kg:node/tech-space-elevator",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-railgun-adv-requires-basic",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-railgun-advanced",
+      "target": "kg:node/tech-railgun-basic",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-lpp-requires-railgun",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-lpp-torpedo",
+      "target": "kg:node/tech-railgun-basic",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-antimatter-requires-rare-earth",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-antimaterie-production",
+      "target": "kg:node/tech-rare-earth-extraction",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-graser-requires-antimatter",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-graser",
+      "target": "kg:node/tech-antimaterie-production",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-graser-requires-laser",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-graser",
+      "target": "kg:node/tech-laser-tier1",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-adv-armor-requires-mining",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-advanced-armor",
+      "target": "kg:node/tech-basic-mining",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-rare-earth-requires-mining",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-rare-earth-extraction",
+      "target": "kg:node/tech-basic-mining",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-detail-mode-requires-mining",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-detail-mode-production",
+      "target": "kg:node/tech-basic-mining",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-mass-driver-requires-railgun",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-mass-driver",
+      "target": "kg:node/tech-railgun-basic",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-elevator-requires-armor",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-space-elevator",
+      "target": "kg:node/tech-advanced-armor",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-elevator-requires-mass-driver",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-space-elevator",
+      "target": "kg:node/tech-mass-driver",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-terraform-requires-habitats",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-terraforming-basic",
+      "target": "kg:node/tech-basic-habitats",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-terraform-requires-rare-earth",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-terraforming-basic",
+      "target": "kg:node/tech-rare-earth-extraction",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-adv-shipyard-requires-basic",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-advanced-shipyard",
+      "target": "kg:node/tech-basic-shipyard",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-adv-shipyard-requires-detail",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-advanced-shipyard",
+      "target": "kg:node/tech-detail-mode-production",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-fortress-requires-adv-shipyard",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/requires",
+      "source": "kg:node/tech-orbital-fortress",
+      "target": "kg:node/tech-advanced-shipyard",
+      "label": null
+    },
+    {
+      "@id": "kg:edge/tech-synergy-sensor-net-ftl",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/synergy",
+      "source": "kg:node/tech-sensor-array-networking",
+      "target": "kg:node/tech-ftl-sensor-theory",
+      "label": "Kombiniertes optisch/FTL-Netzwerk"
+    },
+    {
+      "@id": "kg:edge/tech-synergy-thermal-graser",
+      "@type": "kg:Edge",
+      "relation_type": "kg:relation-type/synergy",
+      "source": "kg:node/tech-thermal-management",
+      "target": "kg:node/tech-graser",
+      "label": "Graser-Abwärme beherrschbar"
+    }
+  ]
+}
