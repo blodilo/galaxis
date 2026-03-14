@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "game-params_v1.0.yaml", "Path to game-params YAML")
+	configPath := flag.String("config", "game-params_v1.1.yaml", "Path to game-params YAML")
 	name := flag.String("name", "", "Galaxy name (default: instance name from config)")
 	flag.Parse()
 

@@ -7,10 +7,10 @@ build:
 
 # ── Run ────────────────────────────────────────────────────────────────────────
 run-server:
-	go run ./cmd/server --config game-params_v1.0.yaml
+	go run ./cmd/server --config game-params_v1.1.yaml
 
 run-gen:
-	go run ./cmd/galaxy-gen --config game-params_v1.0.yaml
+	go run ./cmd/galaxy-gen --config game-params_v1.1.yaml
 
 # ── Database ───────────────────────────────────────────────────────────────────
 db-up:
@@ -20,7 +20,7 @@ db-down:
 	docker compose down
 
 migrate:
-	go run ./cmd/server --config game-params_v1.0.yaml --migrate-only
+	go run ./cmd/server --config game-params_v1.1.yaml --migrate-only
 
 # ── Dev ────────────────────────────────────────────────────────────────────────
 lint:

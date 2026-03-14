@@ -8,108 +8,108 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config is the top-level structure mirroring game-params_v1.0.yaml.
+// Config is the top-level structure mirroring game-params_v1.1.yaml.
 type Config struct {
-	Galaxy        GalaxyConfig        `yaml:"galaxy"`
-	FTLW          FTLWConfig          `yaml:"ftlw"`
-	Sensors       SensorsConfig       `yaml:"sensors"`
-	Time          TimeConfig          `yaml:"time"`
-	Economy       EconomyConfig       `yaml:"economy"`
-	PlanetGen     PlanetGenConfig     `yaml:"planet_generation"`
-	Research      ResearchConfig      `yaml:"research"`
-	Combat        CombatConfig        `yaml:"combat"`
-	Server        ServerConfig        `yaml:"server"`
+	Galaxy    GalaxyConfig    `yaml:"galaxy"             json:"galaxy"`
+	FTLW      FTLWConfig      `yaml:"ftlw"               json:"ftlw"`
+	Sensors   SensorsConfig   `yaml:"sensors"            json:"sensors"`
+	Time      TimeConfig      `yaml:"time"               json:"time"`
+	Economy   EconomyConfig   `yaml:"economy"            json:"economy"`
+	PlanetGen PlanetGenConfig `yaml:"planet_generation"  json:"planet_generation"`
+	Research  ResearchConfig  `yaml:"research"           json:"research"`
+	Combat    CombatConfig    `yaml:"combat"             json:"combat"`
+	Server    ServerConfig    `yaml:"server"             json:"server"`
 
 	// Runtime fields (not from YAML, set via env/flags)
-	DatabaseURL string `yaml:"-"`
-	RedisURL    string `yaml:"-"`
+	DatabaseURL string `yaml:"-" json:"-"`
+	RedisURL    string `yaml:"-" json:"-"`
 }
 
 type GalaxyConfig struct {
-	Seed          int64   `yaml:"seed"`
-	NumStars      int     `yaml:"num_stars"`
-	RadiusLY      float64 `yaml:"radius_ly"`
-	Type          string  `yaml:"type"`
-	Arms          int     `yaml:"arms"`
-	ArmWinding    float64 `yaml:"arm_winding"`
-	ArmSpread     float64 `yaml:"arm_spread"`
-	SMBHMassSolar float64 `yaml:"smbh_mass_solar"`
+	Seed          int64   `yaml:"seed"            json:"seed"`
+	NumStars      int     `yaml:"num_stars"       json:"num_stars"`
+	RadiusLY      float64 `yaml:"radius_ly"       json:"radius_ly"`
+	Type          string  `yaml:"type"            json:"type"`
+	Arms          int     `yaml:"arms"            json:"arms"`
+	ArmWinding    float64 `yaml:"arm_winding"     json:"arm_winding"`
+	ArmSpread     float64 `yaml:"arm_spread"      json:"arm_spread"`
+	SMBHMassSolar float64 `yaml:"smbh_mass_solar" json:"smbh_mass_solar"`
 }
 
 type FTLWConfig struct {
-	VacuumBase        float64 `yaml:"vacuum_base"`
-	KFactor           float64 `yaml:"k_factor"`
-	CutoffPercent     float64 `yaml:"cutoff_percent"`
-	VoxelSizeLY       float64 `yaml:"voxel_size_ly"`
-	CoarseVoxelSizeLY float64 `yaml:"coarse_voxel_size_ly"`
-	PulsarMultiplier  float64 `yaml:"pulsar_multiplier"`
-	BlackHoleMultiplier float64 `yaml:"black_hole_multiplier"`
+	VacuumBase          float64 `yaml:"vacuum_base"           json:"vacuum_base"`
+	KFactor             float64 `yaml:"k_factor"              json:"k_factor"`
+	CutoffPercent       float64 `yaml:"cutoff_percent"        json:"cutoff_percent"`
+	VoxelSizeLY         float64 `yaml:"voxel_size_ly"         json:"voxel_size_ly"`
+	CoarseVoxelSizeLY   float64 `yaml:"coarse_voxel_size_ly"  json:"coarse_voxel_size_ly"`
+	PulsarMultiplier    float64 `yaml:"pulsar_multiplier"     json:"pulsar_multiplier"`
+	BlackHoleMultiplier float64 `yaml:"black_hole_multiplier" json:"black_hole_multiplier"`
 }
 
 type SensorsConfig struct {
-	OpticalK         float64            `yaml:"optical_k"`
-	FTLK             float64            `yaml:"ftl_k"`
-	ShipThermalK     float64            `yaml:"ship_thermal_k"`
-	SensorRatings    map[string]float64 `yaml:"sensor_ratings"`
-	ShipThermalSigs  map[string]float64 `yaml:"ship_thermal_signatures"`
-	InfoQuality      InfoQualityConfig  `yaml:"info_quality"`
-	SurveyDurationTicks          int    `yaml:"survey_duration_ticks"`
-	LastKnownPositionDecayTicks  int    `yaml:"last_known_position_decay_ticks"`
+	OpticalK                    float64            `yaml:"optical_k"                      json:"optical_k"`
+	FTLK                        float64            `yaml:"ftl_k"                          json:"ftl_k"`
+	ShipThermalK                float64            `yaml:"ship_thermal_k"                 json:"ship_thermal_k"`
+	SensorRatings               map[string]float64 `yaml:"sensor_ratings"                 json:"sensor_ratings"`
+	ShipThermalSigs             map[string]float64 `yaml:"ship_thermal_signatures"        json:"ship_thermal_signatures"`
+	InfoQuality                 InfoQualityConfig  `yaml:"info_quality"                   json:"info_quality"`
+	SurveyDurationTicks         int                `yaml:"survey_duration_ticks"          json:"survey_duration_ticks"`
+	LastKnownPositionDecayTicks int                `yaml:"last_known_position_decay_ticks" json:"last_known_position_decay_ticks"`
 }
 
 type InfoQualityConfig struct {
-	FullDetailThreshold   float64 `yaml:"full_detail_threshold"`
-	MediumDetailThreshold float64 `yaml:"medium_detail_threshold"`
-	LowDetailThreshold    float64 `yaml:"low_detail_threshold"`
+	FullDetailThreshold   float64 `yaml:"full_detail_threshold"   json:"full_detail_threshold"`
+	MediumDetailThreshold float64 `yaml:"medium_detail_threshold" json:"medium_detail_threshold"`
+	LowDetailThreshold    float64 `yaml:"low_detail_threshold"    json:"low_detail_threshold"`
 }
 
 type TimeConfig struct {
-	StrategyTickMinutes    int `yaml:"strategy_tick_minutes"`
-	CombatTickSeconds      int `yaml:"combat_tick_seconds"`
-	CombatOptInWindowHours int `yaml:"combat_opt_in_window_hours"`
-	MaxActionQueueDepth    int `yaml:"max_action_queue_depth"`
+	StrategyTickMinutes    int `yaml:"strategy_tick_minutes"     json:"strategy_tick_minutes"`
+	CombatTickSeconds      int `yaml:"combat_tick_seconds"       json:"combat_tick_seconds"`
+	CombatOptInWindowHours int `yaml:"combat_opt_in_window_hours" json:"combat_opt_in_window_hours"`
+	MaxActionQueueDepth    int `yaml:"max_action_queue_depth"    json:"max_action_queue_depth"`
 }
 
 type EconomyConfig struct {
-	DetailModeEfficiencyBonus      float64 `yaml:"detail_mode_efficiency_bonus"`
-	DetailModeUpgradeDowntimeTicks int     `yaml:"detail_mode_upgrade_downtime_ticks"`
-	DetailModeBreakEvenTicks       int     `yaml:"detail_mode_break_even_ticks"`
-	BasePopulationGrowthRate       float64 `yaml:"base_population_growth_rate"`
-	TaxRateBase                    float64 `yaml:"tax_rate_base"`
-	PlanetSurfaceCostExponent      float64 `yaml:"planet_surface_cost_exponent"`
-	AsteroidYieldMultiplier        float64 `yaml:"asteroid_yield_multiplier"`
+	DetailModeEfficiencyBonus      float64 `yaml:"detail_mode_efficiency_bonus"       json:"detail_mode_efficiency_bonus"`
+	DetailModeUpgradeDowntimeTicks int     `yaml:"detail_mode_upgrade_downtime_ticks" json:"detail_mode_upgrade_downtime_ticks"`
+	DetailModeBreakEvenTicks       int     `yaml:"detail_mode_break_even_ticks"       json:"detail_mode_break_even_ticks"`
+	BasePopulationGrowthRate       float64 `yaml:"base_population_growth_rate"        json:"base_population_growth_rate"`
+	TaxRateBase                    float64 `yaml:"tax_rate_base"                      json:"tax_rate_base"`
+	PlanetSurfaceCostExponent      float64 `yaml:"planet_surface_cost_exponent"       json:"planet_surface_cost_exponent"`
+	AsteroidYieldMultiplier        float64 `yaml:"asteroid_yield_multiplier"          json:"asteroid_yield_multiplier"`
 }
 
 type PlanetGenConfig struct {
-	FrostLineConstantAU       float64            `yaml:"frost_line_constant_au"`
-	AtmosphereTypeWeights     map[string]float64 `yaml:"atmosphere_type_weights"`
-	MoonCollisionProbability  float64            `yaml:"moon_collision_probability"`
-	GasGiantMoonCountMin      int                `yaml:"gas_giant_moon_count_min"`
-	GasGiantMoonCountMax      int                `yaml:"gas_giant_moon_count_max"`
-	MaxPlanetsPerSystem       int                `yaml:"max_planets_per_system"`
-	UsableSurfaceTerranBase   float64            `yaml:"usable_surface_terran_base"`
-	UsableSurfaceHostileBase  float64            `yaml:"usable_surface_hostile_base"`
+	FrostLineConstantAU      float64            `yaml:"frost_line_constant_au"      json:"frost_line_constant_au"`
+	AtmosphereTypeWeights    map[string]float64 `yaml:"atmosphere_type_weights"     json:"atmosphere_type_weights"`
+	MoonCollisionProbability float64            `yaml:"moon_collision_probability"  json:"moon_collision_probability"`
+	GasGiantMoonCountMin     int                `yaml:"gas_giant_moon_count_min"    json:"gas_giant_moon_count_min"`
+	GasGiantMoonCountMax     int                `yaml:"gas_giant_moon_count_max"    json:"gas_giant_moon_count_max"`
+	MaxPlanetsPerSystem      int                `yaml:"max_planets_per_system"      json:"max_planets_per_system"`
+	UsableSurfaceTerranBase  float64            `yaml:"usable_surface_terran_base"  json:"usable_surface_terran_base"`
+	UsableSurfaceHostileBase float64            `yaml:"usable_surface_hostile_base" json:"usable_surface_hostile_base"`
 }
 
 type ResearchConfig struct {
-	BaseResearchSpeed       float64 `yaml:"base_research_speed"`
-	ScientistResearchBonus  float64 `yaml:"scientist_research_bonus"`
-	ScientistRiskReduction  float64 `yaml:"scientist_risk_reduction"`
-	LabBonusFactor          float64 `yaml:"lab_bonus_factor"`
-	ParallelResearchSlots   int     `yaml:"parallel_research_slots"`
+	BaseResearchSpeed      float64 `yaml:"base_research_speed"       json:"base_research_speed"`
+	ScientistResearchBonus float64 `yaml:"scientist_research_bonus"  json:"scientist_research_bonus"`
+	ScientistRiskReduction float64 `yaml:"scientist_risk_reduction"  json:"scientist_risk_reduction"`
+	LabBonusFactor         float64 `yaml:"lab_bonus_factor"          json:"lab_bonus_factor"`
+	ParallelResearchSlots  int     `yaml:"parallel_research_slots"   json:"parallel_research_slots"`
 }
 
 type CombatConfig struct {
-	RailgunBaseVelocityKmS       float64 `yaml:"railgun_base_velocity_km_s"`
-	GraserAntimateriePerShot     float64 `yaml:"graser_antimaterie_cost_per_shot"`
-	SandcasterInterceptRadiusKm  float64 `yaml:"sandcaster_intercept_radius_km"`
-	CombatArenaRadiusKm          float64 `yaml:"combat_arena_radius_km"`
+	RailgunBaseVelocityKmS      float64 `yaml:"railgun_base_velocity_km_s"      json:"railgun_base_velocity_km_s"`
+	GraserAntimateriePerShot    float64 `yaml:"graser_antimaterie_cost_per_shot" json:"graser_antimaterie_cost_per_shot"`
+	SandcasterInterceptRadiusKm float64 `yaml:"sandcaster_intercept_radius_km"  json:"sandcaster_intercept_radius_km"`
+	CombatArenaRadiusKm         float64 `yaml:"combat_arena_radius_km"          json:"combat_arena_radius_km"`
 }
 
 type ServerConfig struct {
-	MaxPlayers    int    `yaml:"max_players"`
-	MaxAIFactions int    `yaml:"max_ai_factions"`
-	InstanceName  string `yaml:"instance_name"`
+	MaxPlayers    int    `yaml:"max_players"    json:"max_players"`
+	MaxAIFactions int    `yaml:"max_ai_factions" json:"max_ai_factions"`
+	InstanceName  string `yaml:"instance_name"  json:"instance_name"`
 }
 
 // Load reads the YAML file at path and returns a validated Config.
@@ -124,7 +124,7 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("config: parse %s: %w", path, err)
 	}
 
-	if err := cfg.validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("config: validation: %w", err)
 	}
 
@@ -139,7 +139,8 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
-func (c *Config) validate() error {
+// Validate checks that all required config fields are within acceptable ranges.
+func (c *Config) Validate() error {
 	if c.Galaxy.NumStars <= 0 {
 		return fmt.Errorf("galaxy.num_stars must be > 0")
 	}

@@ -24,6 +24,8 @@
 | 2026-03-14 | AP2 vollständig spezifiziert: physikalisches Atmosphärenmodell, 5 Biochemie-Archetypen, 24 Ressourcengruppen, Spektraltyp-Matrix, Statistik-Output |
 | 2026-03-14 | biochemistry_archetypes_v1.0.yaml erstellt mit 17 Primärquellen (HITRAN, Pierrehumbert, Pavlov u.a.) |
 | 2026-03-14 | US-001 aufgenommen: Biochemie-Wahl für Alien-Spezies auf wissenschaftlicher Grundlage |
+| 2026-03-14 | game-params v1.1: arm_winding 2.0 → 0.35 (BL-01), alle Referenzen aktualisiert |
+| 2026-03-14 | BL-08 implementiert: Generator-Admin-Tool (Morphologie-Picker, Param-Editor, Job-Polling) |
 
 ---
 
@@ -108,7 +110,8 @@
 | BL-02 | Hierarchisches Sampling | Region-first statt globales Rejection-Sampling → 50k Sterne in Sekunden statt Minuten | 1 Tag |
 | BL-03 | Foto-Template Morphologie | Reales Galaxienfoto als 2D-Dichtekarte; benötigt BL-02. Katalog in `galaxy_morphology_catalog_v1.0.yaml` (8 Typen Sa–Irr). 7 Bilder noch herunterzuladen (Prioritätsliste im Katalog). | 1 Tag |
 | BL-04 | Morphologie-Vorschau-Run | Status `preview_ready` → Frontend rendert sofort; benötigt BL-02 | 0,5 Tag |
-| BL-08 | Generator-Frontend | Route `/generate`: Morphologie-Auswahl aus Katalog, Parameter, Start-Button → POST `/api/generate` | 1 Tag |
+| BL-08 | Generator-Frontend | Route `/generate`: Morphologie-Auswahl aus Katalog, Parameter, Start-Button → POST `/api/generate` | 1 Tag | ✅ |
+| BL-09 | Morphologie-Dichte-Integration | Gewählte Morphologie-ID (aus Admin-Tool) als 2D-Dichtekarte in galaxy.Generator einbinden; ersetzt analytische Basis-Dichte. Benötigt BL-02 (hierarchisches Sampling) + BL-03 (Foto-Template). Vorerst: morphology_id wird nur in DB gespeichert. | 2 Tage |
 | BL-05 | 500k Sterne | Binary-Transfer (Float32Array statt JSON) + BL-02 | 1,5 Tage |
 | BL-06 | Irreguläre Nebel (visuell) | Three.js-Shader mit Simplex-Noise; Hitbox bleibt Sphere | 2 h |
 | BL-07 | Mehrfachsternsysteme | Generator: Begleitsterne zuweisen; Inspektor: Begleiter anzeigen | 3 h |

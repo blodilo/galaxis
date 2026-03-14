@@ -1,6 +1,6 @@
 # Dokumentenregister – Galaxis
 
-**Projektstatus:** Konzept- und Spezifikationsphase abgeschlossen · AP1 + AP3-Skeleton implementiert · AP2 spezifiziert, Implementierung ausstehend
+**Projektstatus:** AP1 + AP3-Skeleton + God-Mode-Viewer + Generator-Admin-Tool implementiert · AP2 spezifiziert, Implementierung ausstehend
 **GDD-Version:** v1.24
 **Datum:** 2026-03-14
 
@@ -19,7 +19,7 @@
 | `performance-estimate_v1.0.md` | Größen- und Performance-Abschätzung FTLW-Grid, Maximalkartengröße | ✅ aktuell |
 | `spielanleitung_v1.0.md` | Spielanleitung (spielerorientiert) – Sichtbarkeit, Sensoren, Exploration, Biochemie & Spezies-Wahl | ✅ aktuell |
 | `tech-tree_v1.0.jsonld` | Technologiebaum als JSON-LD (kompatibel mit graph-Projekt-Ontologie) | ✅ v1 (erweiterbar) |
-| `game-params_v1.0.yaml` | Zentrale Spielparameter (Kalibrierung, Balancing, Performance-Limits) | ✅ aktuell |
+| `game-params_v1.1.yaml` | Zentrale Spielparameter (Kalibrierung, Balancing, Performance-Limits) | ✅ aktuell (arm_winding 0.35) |
 | `biochemistry_archetypes_v1.0.yaml` | Biochemie-Archetypen für Alien-Spezies (physikalische Parameter, Treibhauswerte, Quellenangaben) | ✅ aktuell |
 | `galaxy_morphology_catalog_v1.0.yaml` | Katalog realer Galaxienfotos als Morphologie-Templates (8 Einträge, Sa–Irr, Quellen + Lizenzen) | ✅ aktuell |
 | `research-mechanics_v1.0.md` | Forschungsmechanik (stochastisches Modell, Inputs, Bauplan-Output) | ✅ aktuell |
@@ -34,7 +34,7 @@
 | AP | Bezeichnung | Phase | Status |
 |---|---|---|---|
 | AP0 | Game Design Document | Konzept | ✅ abgeschlossen (GDD v1.24) |
-| AP1 | Galaxiengenerator (Makro) | Weltgenerator | ✅ implementiert (50k Sterne, FTLW-Grid) |
+| AP1 | Galaxiengenerator (Makro) + Admin-Tool | Weltgenerator | ✅ implementiert (50k Sterne, FTLW-Grid, Generator-Frontend BL-08) |
 | AP2 | Planetensystem-Generator (Mikro) | Weltgenerator | 📋 vollständig spezifiziert (Eager + Biochemie-Archetypen) |
 | AP3 | Server-Core & Tick-Engine | Backend | 🔄 Skeleton ✅ · Remainder ausstehend |
 | AP4 | Wirtschaftssystem & Ressourcen | Backend | 🔲 ausstehend |

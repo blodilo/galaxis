@@ -1,0 +1,286 @@
+# Galaxis – Spielparameter
+# Version: 1.1 · Datum: 2026-03-14
+# Änderungen gegenüber v1.0:
+#   - galaxy.arm_winding: 2.0 → 0.35 (Kalibrierung; 2.0 erzeugte zu eng gewundene Arme)
+#
+# Zweck: Zentrale Konfigurationsdatei für alle balancierbaren Spielparameter.
+# Vor Beginn einer neuen Partie editierbar.
+#
+# Konvention:
+#   - Jeder Parameter hat einen Kommentar mit Beschreibung und Auswirkung
+#   - Einheiten immer explizit angeben (ly, m², L☉, Ticks, Credits, ...)
+#   - Kalibrierungskonstanten sind mit [KALIBRIERUNG] markiert
+#   - Balancing-Parameter mit [BALANCING]
+#   - Technische Limits mit [PERFORMANCE]
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 1. GALAXIE-GENERIERUNG
+# ═══════════════════════════════════════════════════════════════════
+galaxy:
+  seed: 42
+  # Deterministischer Startwert. Gleicher Seed → gleiche Galaxie.
+
+  num_stars: 50000
+  # Anzahl der Sternensysteme. Empfohlener Bereich: 10.000–500.000
+  # [PERFORMANCE] Höhere Werte → längere Generierungszeit und mehr DB-Speicher.
+
+  radius_ly: 50000
+  # Radius der Galaxie in Lichtjahren.
+
+  type: SBb
+  # Galaxie-Morphologie. Optionen: Sa, Sb, Sc, SBa, SBb, SBc, Irr.
+  # Entspricht der Morphologie-ID aus galaxy_morphology_catalog_v1.0.yaml.
+
+  arms: 2
+  # Anzahl der Spiralarme.
+
+  arm_winding: 0.35
+  # [KALIBRIERUNG] Wie stark sich die Spiralarme drehen (höher = engere Windung).
+  # Kalibriert auf 0.35 (war 2.0 – erzeugte unrealistisch enge Arme; BL-01).
+
+  arm_spread: 0.5
+  # Auffransung der Spiralarme (höher = diffuser, natürlicher).
+
+  smbh_mass_solar: 4_300_000
+  # Masse des zentralen Supermassiven Schwarzen Lochs in Sonnenmassen.
+  # Referenz: Sagittarius A* = 4,3 Mio. M☉.
+  # Beeinflusst direkt die Größe der FTL-Bremszone im Zentrum.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 2. FTL-WIDERSTANDSFELD (FTLW)
+# ═══════════════════════════════════════════════════════════════════
+ftlw:
+  vacuum_base: 1.0
+  # [KALIBRIERUNG] Basis-FTLW im leeren Raum (Vakuum).
+  # Alle anderen FTLW-Werte sind relativ zu diesem Wert.
+
+  k_factor: 1.0
+  # [KALIBRIERUNG] Skalierungsfaktor der Formel FTLW = k * M / r².
+  # Höher → Sterne bremsen stärker → Kern schwerer durchquerbar.
+  # Beeinflusst strategische Bedeutung des galaktischen Kerns.
+
+  cutoff_percent: 1.0
+  # [PERFORMANCE] Unter diesem Prozentsatz von vacuum_base wird der
+  # FTLW-Beitrag eines Sterns für entfernte Voxel ignoriert (Culling).
+  # Niedriger → genaueres Feld, aber höhere Rechenzeit.
+
+  voxel_size_ly: 500
+  # [PERFORMANCE] Räumliche Auflösung des FTLW-Voxelgrids in Lichtjahren.
+  # Kleiner → genauer, aber mehr Speicher und langsameres A*.
+  # Empfehlung: 500 ly Standard, 250 ly für Feinauflösung.
+
+  coarse_voxel_size_ly: 2500
+  # [PERFORMANCE] Voxelgröße für den ersten A*-Durchlauf (hierarchisch).
+  # Sollte ein Vielfaches von voxel_size_ly sein.
+
+  pulsar_multiplier: 3.0
+  # [BALANCING] FTLW-Multiplikator für Pulsare über ihre reine Masse hinaus.
+  # Simuliert Magnetfeld-Interferenz mit dem FTL-Feld.
+
+  black_hole_multiplier: 10.0
+  # [BALANCING] FTLW-Multiplikator für Schwarze Löcher (stellar + SMBH).
+  # Erzeugt die gewünschten "No-Go-Zonen" um BHs ohne künstliche Grenzen.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 3. SENSOREN & FOG OF WAR
+# ═══════════════════════════════════════════════════════════════════
+sensors:
+  optical_k: 1500.0
+  # [KALIBRIERUNG] Detektionsreichweite: d [ly] = optical_k * sqrt(SR [m²] * L [L☉])
+  # Referenzpunkt: Observatorium (SR=177) sieht M-Zwerg (L=0,01) bis 2.000 ly.
+  # Höher → größere Reichweiten für alle optischen Sensoren.
+
+  ftl_k: 800.0
+  # [KALIBRIERUNG] Detektionsreichweite FTL-Sensor: d [ly] = ftl_k * sqrt(SR_ftl * M [M☉])
+  # Analog zu optical_k, aber für Gravitationslinsen-Detektion.
+
+  ship_thermal_k: 1500.0
+  # [KALIBRIERUNG] Wie optical_k, aber für thermische Schiffssignaturen.
+  # Normalerweise identisch mit optical_k (gleiche Physik).
+
+  # Sensor Ratings (SR) der Standardtypen in m²:
+  sensor_ratings:
+    scout_array: 0.07          # Kleines Schiff / Sonde
+    tactical_array: 0.79       # Fregatte / Zerstörer
+    survey_array: 2.00         # Aufklärungsschiff
+    planetary_outpost: 19.6    # Frühe Kolonie
+    planetary_observatory: 177 # Ausgebauter Planet
+    deep_space_array: 707      # Megastruktur
+    ftl_sensor_basic: 50       # FTL-Basisstation
+    ftl_sensor_advanced: 300   # Fortgeschrittener FTL-Sensor
+
+  # Thermische Signaturen der Schiffszustände (effektive Leuchtkraft in L☉):
+  ship_thermal_signatures:
+    shutdown: 1.0e-17          # Abgeschaltet / Drift
+    standby: 1.0e-15           # Standby
+    normal_operation: 1.0e-13  # Normalbetrieb
+    full_thrust_combat: 1.0e-11 # Vollschub / Kampf
+    ftl_warp_initiation: 1.0e-9 # FTL-Warp-Start (kurzzeitig)
+
+  # Detektions-Qualitätsschwellen (Anteil der max. Detektionsreichweite):
+  info_quality:
+    full_detail_threshold: 0.10   # < 10% → volle Informationen
+    medium_detail_threshold: 0.50 # < 50% → Typ und Leuchtkraftklasse
+    low_detail_threshold: 0.90    # < 90% → nur Lichtsignal
+    # > 90% → Typ unbekannt; > 100% → unsichtbar
+
+  survey_duration_ticks: 5
+  # [BALANCING] Ticks für einen vollständigen Orbital-Survey (Ressourcen + Nutzfläche).
+
+  last_known_position_decay_ticks: 10
+  # [BALANCING] Nach wie vielen Ticks ohne Bestätigung wird eine feindliche
+  # Flotte als "letzte bekannte Position" markiert (gestrichelt).
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 4. ZEITVERLAUF & TICKS
+# ═══════════════════════════════════════════════════════════════════
+time:
+  strategy_tick_minutes: 60
+  # Länge eines Strategie-Ticks in Echtzeit-Minuten.
+  # Richtwerte: 15 = Wochenendpartie, 60 = Standard, 360 = Langzeitkampagne.
+
+  combat_tick_seconds: 10
+  # [BALANCING] Länge eines Kampf-Ticks in Sekunden (im Combat Pod).
+
+  combat_opt_in_window_hours: 24
+  # [BALANCING] Zeit in Echtzeit-Stunden, in der Spieler einer Live-Gefechtsinstanz
+  # beitreten können. Nach Ablauf: automatische Auflösung.
+
+  max_action_queue_depth: 50
+  # [BALANCING] Maximale Anzahl von Befehlen, die ein Spieler gleichzeitig
+  # in der Warteschlange haben kann.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 5. WIRTSCHAFT & PRODUKTION
+# ═══════════════════════════════════════════════════════════════════
+economy:
+  detail_mode_efficiency_bonus: 0.50
+  # [BALANCING] Effizienzsteigerung durch Wechsel in den Detail-Modus.
+
+  detail_mode_upgrade_downtime_ticks: 20
+  # [BALANCING] Ticks, die eine Anlage beim Upgrade in den Detail-Modus stillsteht.
+
+  detail_mode_break_even_ticks: 200
+  # [BALANCING] Richtwert Break-even Detail-Modus (dokumentarisch).
+
+  base_population_growth_rate: 0.02
+  # [BALANCING] Monatliche Bevölkerungswachstumsrate auf kompatiblen Welten (2%).
+
+  tax_rate_base: 0.15
+  # [BALANCING] Basis-Steuerrate auf das BIP einer Kolonie (15%).
+
+  planet_surface_cost_exponent: 2.0
+  # [BALANCING] Exponent der exponentiell steigenden Baukosten bei
+  # abnehmender freier Nutzfläche.
+
+  asteroid_yield_multiplier: 1.0
+  # [BALANCING] Relativer Ressourcenertrag von Asteroiden vs. Planetenminen.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 6. PLANETENSYSTEM-GENERIERUNG
+# ═══════════════════════════════════════════════════════════════════
+planet_generation:
+
+  biochemistry_archetypes_file: "biochemistry_archetypes_v1.0.yaml"
+  # Biochemie-Archetypen: Konfiguration in separater YAML-Datei.
+
+  frost_line_constant_au: 2.7
+  # [KALIBRIERUNG] Frostgrenze: d_frost = sqrt(L / L☉) * frost_line_constant_au
+  # Quelle: Hayashi, C. (1981). Prog. Theor. Phys. Suppl. 70, 35–53.
+
+  greenhouse_overlap_correction: 0.75
+  # [KALIBRIERUNG] Korrekturfaktor für Spektralüberlappungen bei additiver
+  # Treibhausgasberechnung.
+  # Quelle: Pierrehumbert (2010), Principles of Planetary Climate, Kap. 4.
+
+  so2_aerosol_threshold_water_activity: 0.01
+  # [KALIBRIERUNG] Schwellenwert H2O-Aktivität für SO2 → H2SO4-Aerosol-Bildung.
+  # Quelle: Bullock & Grinspoon (2001), Icarus 150(1). doi:10.1006/icar.2000.6570
+
+  planet_count_lambda:
+    O: 1.2
+    B: 1.2
+    A: 2.5
+    F: 3.5
+    G: 4.0
+    K: 3.8
+    M: 3.5
+    WR: 1.5
+    RStar: 1.5
+    SStar: 1.5
+    Pulsar: 0.8
+    StellarBH: 0.5
+    SMBH: 0.2
+  # [KALIBRIERUNG] Poisson-λ für Planetenanzahl pro Spektraltyp.
+  # Quelle: Borucki et al. (2011), Science 327(5968) (Kepler).
+
+  moon_collision_probability: 0.10
+  # [BALANCING] Wahrscheinlichkeit Kollisionsmond (Giant Impact) bei Gesteinsplaneten.
+  # Quelle: Canup & Asphaug (2001), Nature 412, 708–712.
+
+  gas_giant_moon_count_min: 2
+  gas_giant_moon_count_max: 5
+  # [BALANCING] Anzahl großer Monde um Gasriesen.
+
+  usable_surface_base: 0.85
+  # [BALANCING] Basis-Nutzfläche auf kompatiblen Welten (85%).
+
+  usable_surface_hostile_base: 0.10
+  # [BALANCING] Basis-Nutzfläche auf inkompatiblen Welten ohne Habitate (10%).
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 7. FORSCHUNG & TECHNOLOGIEBAUM
+# ═══════════════════════════════════════════════════════════════════
+research:
+  base_research_speed: 1.0
+  # [BALANCING] Multiplikator auf alle Forschungszeiten.
+
+  scientist_research_bonus: 0.10
+  # [BALANCING] Forschungsbonus pro Wissenschaftler.
+
+  scientist_risk_reduction: 0.05
+  # [BALANCING] Risikoreduktion pro zusätzlichem Wissenschaftler über Minimum.
+
+  lab_bonus_factor: 0.25
+  # [BALANCING] Zusätzlicher Fortschritt pro Extra-Labor über Minimum.
+
+  parallel_research_slots: 1
+  # [BALANCING] Wie viele Technologien gleichzeitig erforscht werden können.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 8. KAMPF
+# ═══════════════════════════════════════════════════════════════════
+combat:
+  railgun_base_velocity_km_s: 50.0
+  # [BALANCING] Mündungsgeschwindigkeit der Basis-Railgun in km/s.
+
+  graser_antimaterie_cost_per_shot: 10.0
+  # [BALANCING] Antimaterie-Kosten pro Graser-Schuss.
+
+  sandcaster_intercept_radius_km: 500.0
+  # [BALANCING] Effektiver Abfangradius einer Sandcaster-Wolke.
+
+  combat_arena_radius_km: 300_000
+  # [BALANCING] Gefechtsdistanz (Gravitationsbrunnnen-Arena) in km.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 9. SERVER
+# ═══════════════════════════════════════════════════════════════════
+server:
+  max_players: 100
+  # Maximale Spieleranzahl pro Instanz.
+
+  max_ai_factions: 10
+  # Maximale Anzahl KI-Fraktionen pro Instanz.
+
+  instance_name: "Galaxis Alpha"
+  # Anzeigename dieser Instanz.

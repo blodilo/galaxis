@@ -15,13 +15,16 @@ import (
 	"galaxis/internal/api"
 	"galaxis/internal/config"
 	"galaxis/internal/db"
+	"galaxis/internal/jobs"
 	"galaxis/internal/tick"
 )
 
 func main() {
-	configPath := flag.String("config", "game-params_v1.0.yaml", "Path to game-params YAML")
-	migrateOnly := flag.Bool("migrate-only", false, "Run migrations and exit")
-	addr := flag.String("addr", ":8080", "HTTP listen address")
+	configPath  := flag.String("config",      "game-params_v1.1.yaml",                 "Path to game-params YAML")
+	migrateOnly := flag.Bool("migrate-only",  false,                                    "Run migrations and exit")
+	addr        := flag.String("addr",         ":8080",                                 "HTTP listen address")
+	assetsDir   := flag.String("assets-dir",   "assets",                                "Directory to serve under /assets/")
+	catalogPath := flag.String("catalog",      "galaxy_morphology_catalog_v1.0.yaml",   "Path to morphology catalog YAML")
 	flag.Parse()
 
 	cfg, err := config.Load(*configPath)
@@ -61,8 +64,11 @@ func main() {
 	defer engine.Stop()
 	log.Printf("tick engine: started (tick = %v)", tickDuration)
 
+	// ── Job Store ─────────────────────────────────────────────────────────────
+	jobStore := jobs.NewStore()
+
 	// ── HTTP Server ───────────────────────────────────────────────────────────
-	router := api.NewRouter(pool)
+	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath)
 	srv := &http.Server{
 		Addr:         *addr,
 		Handler:      router,
