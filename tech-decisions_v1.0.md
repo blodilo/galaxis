@@ -200,3 +200,79 @@ Daten überprüft werden.
 **Entscheidung:** KI-Fraktionen sind Go-Prozesse, die dieselbe Server-API nutzen wie menschliche Spieler. Kein Cheating, keine versteckten Ressourcen.
 
 **Implementierungsstrategie:** Erst nach Fertigstellung des vollständigen API-Contracts (AP3) implementieren.
+
+---
+
+## ADR-010: FTLW-Grid – Adaptiver Octree statt Flat-Voxelgrid
+
+**Status:** Entschieden
+
+**Kontext:** Das aktuelle Flat-Voxelgrid mit 500 ly / 2.500 ly Kantenlänge ist für das TDD-Ziel (feine Auflösung im Kern, H-II-Nebelstruktur) zu grob. Ein uniformes 10-ly-Grid hätte ~60 Milliarden Voxel und ist nicht realisierbar.
+
+**Entscheidung:** Adaptiver Octree mit dualem Subdivisions-Kriterium, gespeichert als Knotentabelle mit materialisierter Adjazenzliste.
+
+**Subdivisions-Kriterien (ODER-Verknüpfung):**
+1. **Stellares Kriterium:** Voxel enthält mehr als `N_max` Sternobjekte → Subdivision
+2. **Dichte-Gradient-Kriterium:** log₁₀(ρ_max) − log₁₀(ρ_min) > 1,0 an den 8 Eckpunkten (Simplex Noise + FBM) → Subdivision
+
+**Kein hartes d_min:** Die natürliche Untergrenze ergibt sich aus dem minimalen Sternabstand (~160 ly im Kern bei 50k Sternen). Kein künstlicher Stopp nötig.
+
+**Dichtestufen (6 logarithmische Bins, 0,1–10.000 /m³):**
+
+| Stufe | Bereich | Beschreibung |
+|---|---|---|
+| 0 | < 0,1 /m³ | Vakuum / diffuses ISM |
+| 1 | 0,1 – 1 | Warmes neutrales Medium |
+| 2 | 1 – 10 | Diffuser H-II-Rand |
+| 3 | 10 – 100 | Mittleres H-II-Gebiet |
+| 4 | 100 – 1.000 | Dichtes H-II / Sternentstehung |
+| 5 | > 1.000 | Kompakter Knoten / protostellare Wolke |
+
+**FTLW-Wert:** Kumulativ (Option B) — jeder Blattknoten enthält die Summe aller Sternbeiträge inkl. Fernfeld. Wird einmalig zur Generierungszeit berechnet, nie zur Laufzeit neu berechnet.
+
+**Adjazenzliste:** Wird einmalig beim Octree-Aufbau materialisiert. A* operiert direkt auf der Adjazenzliste ohne Grid-Arithmetik.
+
+**DB-Schema (ersetzt `ftlw_chunks`):**
+```sql
+ftlw_octree (
+  id        uuid PRIMARY KEY,
+  galaxy_id uuid,
+  parent_id uuid REFERENCES ftlw_octree(id),
+  min_x, min_y, min_z,
+  max_x, max_y, max_z   float8,  -- in Lichtjahren
+  ftlw_value            float4,  -- kumulativer FTLW-Wert
+  log_density           float4,  -- 0.0–5.0 (Dichtestufe)
+  is_leaf               bool,
+  depth                 int
+)
+
+ftlw_octree_adjacency (
+  node_a  uuid,
+  node_b  uuid,
+  face    smallint   -- 0=+x 1=-x 2=+y 3=-y 4=+z 5=-z
+)
+```
+
+**Plausible Voxelzahl (50k Sterne):**
+
+| Quelle | Blattknoten |
+|---|---|
+| Stellares Kriterium (N_max=1) | ~50.000 |
+| Dichte-Gradient H-II (30 Nebel) | ~20.000–40.000 |
+| Dichte-Gradient SNR + Globular | ~5.000 |
+| **Gesamt (obere Grenze)** | **~100.000** |
+
+Zum Vergleich: aktuelles Flat-Grid bei 500 ly → ~2 Mio. Voxel (größtenteils leer, Chunk-Kompression nötig). Der Octree ist bei höherer Auflösung kompakter.
+
+**Begründung gegenüber Flat-Grid:**
+- Feine Auflösung (~160 ly) im Kern ohne Speicherexplosion
+- H-II-Nebelgrenzen werden durch Dichte-Kriterium logarithmisch fein aufgelöst
+- Physikalisch korrekt: hohe FTLW-Gradienten dort, wo Sterndichte hoch
+- Adjazenzliste macht A* auf nicht-uniformem Gitter handhabbar
+
+**Alternativen verworfen:**
+- Flat-Grid 10 ly: ~60 Mrd. Voxel, nicht realisierbar
+- Flat-Grid 500 ly (aktuell): zu grob für Kern und Nebelstruktur
+- Zwei feste Auflösungen (500/2.500 ly): kein organischer Übergang, kein Dichte-Kriterium
+
+**Abhängigkeiten:** BL-10 (Implementierung), BL-02 (hierarchisches Sampling für Sterngenerierung), BL-03 (Simplex Noise Nebeldichte).

@@ -112,6 +112,7 @@
 | BL-04 | Morphologie-Vorschau-Run | Status `preview_ready` → Frontend rendert sofort; benötigt BL-02 | 0,5 Tag |
 | BL-08 | Generator-Frontend | Route `/generate`: Morphologie-Auswahl aus Katalog, Parameter, Start-Button → POST `/api/generate` | 1 Tag | ✅ |
 | BL-09 | Morphologie-Dichte-Integration | Gewählte Morphologie-ID (aus Admin-Tool) als 2D-Dichtekarte in galaxy.Generator einbinden; ersetzt analytische Basis-Dichte. Benötigt BL-02 (hierarchisches Sampling) + BL-03 (Foto-Template). Vorerst: morphology_id wird nur in DB gespeichert. | 2 Tage |
+| BL-10 | Adaptiver Octree (FTLW-Grid) | Ersetzt Flat-Voxelgrid (500 ly) durch sternzahlbegrenzten Octree mit dualem Subdivisions-Kriterium (stellar + Dichte-Gradient). DB-Schema: `ftlw_octree` + `ftlw_octree_adjacency`. FTLW kumulativ (inkl. Fernbeiträge). A* auf Adjazenzliste. Benötigt BL-02 + BL-03 (Simplex Noise). ~100k Blattknoten bei 50k Sternen. ADR-010. | 3 Tage |
 | BL-05 | 500k Sterne | Binary-Transfer (Float32Array statt JSON) + BL-02 | 1,5 Tage |
 | BL-06 | Irreguläre Nebel (visuell) | Three.js-Shader mit Simplex-Noise; Hitbox bleibt Sphere | 2 h |
 | BL-07 | Mehrfachsternsysteme | Generator: Begleitsterne zuweisen; Inspektor: Begleiter anzeigen | 3 h |
