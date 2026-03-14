@@ -31,8 +31,8 @@ templates:
 
   # ─────────────────────────────────────────────────────────────────
   - id: m101_sc
-    enabled: true
-    status: available           # Datei bereits vorhanden
+    enabled: false              # Auflösung zu niedrig (700×547 px) – hochauflösendes Bild nachladen
+    status: low_resolution
     name: "M101 – Pinwheel Galaxy"
     designation: "NGC 5457"
     hubble_type: Sc
@@ -44,12 +44,14 @@ templates:
     source_url: "https://esahubble.org/images/heic0602a/"
     license: "ESA/Hubble – freie Nutzung, Credit erforderlich"
     credit: "ESA/Hubble & NASA"
-    resolution_px: [4000, 4000]   # Schätzwert; beim Download verifizieren
+    resolution_px: [700, 547]   # Gemessen 2026-03-14 – zu niedrig für Dichtetemplate; mind. 2000 px nötig
     orientation: "face-on"
     quality_notes: >
       Kanonisches Sc-Beispiel. Sehr klare, lose Spiralarme mit sichtbaren
       H-II-Regionen (blaue Knoten). Kein Balken. Starke Asymmetrie der Arme
       ist charakteristisch für Sc – gut für natürlich wirkende Galaxien.
+      ACHTUNG: Vorliegendes Bild nur 700×547 px – nicht nutzbar als Dichtetemplate.
+      Hochauflösendes Original von esahubble.org/images/heic0602a/ nachladen (→ heic0602a_large.jpg).
 
   # ═══════════════════════════════════════════════════════════════════
   # ZU BESCHAFFENDE BILDER
@@ -58,8 +60,8 @@ templates:
 
   # ─────────────────────────────────────────────────────────────────
   - id: ngc2841_sa
-    enabled: false              # Datei fehlt noch
-    status: pending_download
+    enabled: true
+    status: available
     name: "NGC 2841"
     designation: "NGC 2841"
     hubble_type: Sa
@@ -71,6 +73,7 @@ templates:
     source_url: "https://esahubble.org/images/heic1104a/"
     license: "ESA/Hubble – freie Nutzung, Credit erforderlich"
     credit: "ESA/Hubble & NASA, D. Calzetti (UMass) and the LEGUS team"
+    resolution_px: [3897, 3044]   # Gemessen 2026-03-14
     orientation: "face-on"
     quality_notes: >
       Textbook-Beispiel für enge Spirale mit dominantem Bulge. Wenig
@@ -79,30 +82,33 @@ templates:
 
   # ─────────────────────────────────────────────────────────────────
   - id: m81_sb
-    enabled: false
-    status: pending_download
+    enabled: true
+    status: available           # Heruntergeladen als heic0710a (ESA/Hubble), auf 4096 px herunterskaliert
     name: "M81 – Bode's Galaxy"
     designation: "NGC 3031"
     hubble_type: Sb
     hubble_description: "Intermediäre Spiralgalaxie, mittlerer Bulge, grand-design Zweiarmsystem"
     file: "hst_m81.jpg"
     asset_path: "assets/morphology/hst_m81.jpg"
-    source_id: "2007-09"       # STScI Hubble Heritage release 2007/09
-    source_archive: "STScI / Hubble Heritage"
-    source_url: "https://hubblesite.org/contents/media/images/2007/09/2081-Image.html"
-    license: "Public domain (STScI/NASA)"
+    source_id: "heic0710a"     # ESA/Hubble-ID; Original war 22620×15200 px, auf 4096 skaliert
+    source_archive: "ESA/Hubble"
+    source_url: "https://esahubble.org/images/heic0710a/"
+    license: "ESA/Hubble – freie Nutzung, Credit erforderlich"
     credit: "NASA, ESA, and The Hubble Heritage Team (STScI/AURA)"
-    resolution_px: [12000, 10000]   # Sehr hohe Auflösung verfügbar
+    resolution_px: [4096, 2752]   # Gemessen 2026-03-14 (skaliert von 22620×15200)
     orientation: "face-on"
     quality_notes: >
       Eines der bestaufgelösten Hubble-Bilder einer Spiralgalaxie überhaupt.
       Perfekte face-on-Orientierung, klassisches grand-design Zweiarmsystem
       mit mittlerem Bulge. Kanonisches Sb-Template.
+      Original 22620×15200 px (346 MB); für Dichtemap auf 4096×2752 px
+      herunterskaliert (Pillow LANCZOS, 2026-03-14).
+    preprocessing_note: "Auf 4096 px Breite skaliert (LANCZOS); Original-Aspektverhältnis erhalten"
 
   # ─────────────────────────────────────────────────────────────────
   - id: m74_sc_alt
-    enabled: false
-    status: pending_download
+    enabled: true
+    status: available
     name: "M74 – Phantom Galaxy"
     designation: "NGC 628"
     hubble_type: Sc
@@ -114,6 +120,7 @@ templates:
     source_url: "https://noirlab.edu/public/images/noirlab2204a/"
     license: "CC-BY-4.0 (NSF/NOIRLab/AURA)"
     credit: "NASA, ESA, CSA, STScI, Janice Lee (STScI), Thomas Williams (Oxford), and the PHANGS-JWST team"
+    resolution_px: [4854, 4140]   # Gemessen 2026-03-14
     orientation: "face-on"
     quality_notes: >
       Gilt als das kanonischste Sc-Beispiel – symmetrischer als M101, perfekte
@@ -122,8 +129,8 @@ templates:
 
   # ─────────────────────────────────────────────────────────────────
   - id: ngc1398_sba
-    enabled: false
-    status: pending_download
+    enabled: true
+    status: available
     name: "NGC 1398"
     designation: "NGC 1398"
     hubble_type: SBa
@@ -136,15 +143,17 @@ templates:
     download_url: "https://www.eso.org/public/archives/images/original/eso9903a.tif"
     license: "CC-BY-4.0 (ESO)"
     credit: "ESO"
+    resolution_px: [4000, 3917]   # Gemessen 2026-03-14 (Screen-Auflösung – Original-TIFF ggf. größer)
     orientation: "face-on"
     quality_notes: >
       Klare Balken-Tight-Spiral-Morphologie: starker Balken, prominenter Ring,
       enge äußere Arme, großer Bulge. Bestes verfügbares SBa-Template aus ESO-Archiv.
+      Vorliegendes Bild möglicherweise ESO-Screen-Auflösung; Original-TIFF via download_url verfügbar.
 
   # ─────────────────────────────────────────────────────────────────
   - id: ngc1300_sbb
-    enabled: false
-    status: pending_download
+    enabled: true
+    status: available
     name: "NGC 1300"
     designation: "NGC 1300"
     hubble_type: SBb
@@ -156,7 +165,7 @@ templates:
     source_url: "https://esahubble.org/images/heic0503a/"
     license: "ESA/Hubble – freie Nutzung, Credit erforderlich"
     credit: "NASA, ESA, The Hubble Heritage Team (STScI/AURA) and A. Riess (STScI)"
-    resolution_px: [6000, 5200]
+    resolution_px: [3400, 3382]   # Gemessen 2026-03-14 (möglicherweise Screen-Auflösung; Original 6000px)
     orientation: "face-on"
     quality_notes: >
       DAS Lehrbuch-Beispiel einer Balkenspirale. Taucht in praktisch jedem
@@ -166,8 +175,8 @@ templates:
 
   # ─────────────────────────────────────────────────────────────────
   - id: ngc1365_sbc
-    enabled: false
-    status: pending_download
+    enabled: true
+    status: available
     name: "NGC 1365 – Great Barred Spiral"
     designation: "NGC 1365"
     hubble_type: SBc
@@ -180,6 +189,7 @@ templates:
     download_url: "https://www.eso.org/public/archives/images/original/eso0525a.tif"
     license: "CC-BY-4.0 (ESO)"
     credit: "ESO"
+    resolution_px: [2048, 2046]   # Gemessen 2026-03-14 (Screen-Auflösung; Original-TIFF via download_url verfügbar)
     orientation: "face-on (leicht geneigt)"
     quality_notes: >
       Eine der größten und spektakulärsten Balkenspiralaxien des Lokalen Universums.
@@ -190,8 +200,8 @@ templates:
 
   # ─────────────────────────────────────────────────────────────────
   - id: ngc4449_irr
-    enabled: false
-    status: pending_download
+    enabled: true
+    status: available
     name: "NGC 4449"
     designation: "NGC 4449"
     hubble_type: Irr
@@ -203,6 +213,7 @@ templates:
     source_url: "https://esahubble.org/images/heic1210a/"
     license: "ESA/Hubble – freie Nutzung, Credit erforderlich"
     credit: "NASA, ESA, A. Aloisi (STScI/ESA)"
+    resolution_px: [3883, 3052]   # Gemessen 2026-03-14
     orientation: "face-on"
     quality_notes: >
       Kompakte irreguläre Galaxie, gut gerahmt für Dichtekartenkonvertierung.
@@ -213,7 +224,7 @@ templates:
   # ─────────────────────────────────────────────────────────────────
   - id: m33_sc_mosaic
     enabled: false
-    status: pending_download
+    status: pending_download    # Nicht heruntergeladen (25k px Mosaik, nur bei Bedarf)
     name: "M33 – Triangulum Galaxy"
     designation: "NGC 598"
     hubble_type: Sc
@@ -259,20 +270,23 @@ download_instructions: |
 # PRIORITÄTSLISTE FÜR DOWNLOAD
 # ═══════════════════════════════════════════════════════════════════
 
+download_status_overview:
+  # Stand: 2026-03-14
+  available:
+    - id: ngc1300_sbb    # 3400×3382 px ✅
+    - id: m81_sb         # 4096×2752 px ✅ (skaliert von 22620×15200)
+    - id: m74_sc_alt     # 4854×4140 px ✅
+    - id: ngc1365_sbc    # 2048×2046 px ✅ (Screen-Res; TIFF verfügbar)
+    - id: ngc1398_sba    # 4000×3917 px ✅ (Screen-Res; TIFF verfügbar)
+    - id: ngc2841_sa     # 3897×3044 px ✅
+    - id: ngc4449_irr    # 3883×3052 px ✅
+  low_resolution:
+    - id: m101_sc        # 700×547 px ❌ – hochauflösendes Bild von esahubble.org nachladen
+  pending_download:
+    - id: m33_sc_mosaic  # 25k×22k px – nur bei Bedarf
+
 download_priority:
-  - id: ngc1300_sbb
-    reason: "Kanonischstes Beispiel Balkenspirale; höchste Gameplay-Relevanz für Standard-SBb"
-  - id: m81_sb
-    reason: "Bestes Sb-Template; höchste Auflösung verfügbar (12k px)"
-  - id: m74_sc_alt
-    reason: "Symmetrischeres Sc-Template als M101; gut als Alternative"
-  - id: ngc1365_sbc
-    reason: "Einziges SBc-Template; Neigungskorrektur beachten"
-  - id: ngc1398_sba
-    reason: "Einziges SBa-Template"
-  - id: ngc2841_sa
-    reason: "Sa-Template für alte, ruhige Galaxien"
-  - id: ngc4449_irr
-    reason: "Bonus: Irreguläre Morphologie"
+  - id: m101_sc
+    reason: "Hochauflösendes Original nachladen (min. 2000 px); aktuell nur 700×547 px"
   - id: m33_sc_mosaic
     reason: "Bonus: Sehr großes Mosaik; nur wenn extreme Auflösung gewünscht"
