@@ -1,0 +1,278 @@
+# Galaxis – Morphologie-Vorlagen-Katalog
+# Version: 1.0 · Datum: 2026-03-14
+#
+# Zweck: Katalog realer Galaxienfotos als 2D-Dichtevorlagen für den Galaxiengenerator.
+#        Der Generator liest das Bild als Graustufenbild, normalisiert die Pixelwerte
+#        auf eine Dichtefunktion und überlagert sie mit der analytischen Basisverteilung.
+#
+# Erweiterbarkeit:
+#   - Neue Einträge unter `templates:` ergänzen; `enabled: true` schaltet sie frei.
+#   - Bilder liegen unter `assets/morphology/<file>`.
+#   - Morphologie-ID wird in game-params und galaxy-gen als `--morphology <id>` genutzt.
+#
+# Lizenzhinweis:
+#   ESA/Hubble:  Freie Nutzung für Bildung und nicht-kommerzielle Zwecke.
+#                Credit-Pflicht: "ESA/Hubble & NASA" (+ ggf. spezifische Autoren)
+#   STScI/NASA:  Public domain (alle NASA-Bilder)
+#   ESO:         CC-BY-4.0 (kommerzielle Nutzung erlaubt, mit Credit)
+#   NOIRLab:     CC-BY-4.0 (NSF/NOIRLab/AURA, kommerzielle Nutzung erlaubt)
+#
+# URL-Hinweis:
+#   Alle URLs basieren auf Archivkenntnissen (Stand Aug. 2025).
+#   ESA/Hubble und STScI restrukturieren ihr Archiv gelegentlich.
+#   Falls eine URL nicht funktioniert: Bildkennung (z.B. heic0503a) direkt auf
+#   esahubble.org oder hubblesite.org suchen – Kennungen sind stabil.
+
+# ═══════════════════════════════════════════════════════════════════
+# VORHANDENE BILDER (bereits im Verzeichnis)
+# ═══════════════════════════════════════════════════════════════════
+
+templates:
+
+  # ─────────────────────────────────────────────────────────────────
+  - id: m101_sc
+    enabled: true
+    status: available           # Datei bereits vorhanden
+    name: "M101 – Pinwheel Galaxy"
+    designation: "NGC 5457"
+    hubble_type: Sc
+    hubble_description: "Lose Spiralgalaxie, kleiner Bulge, stark ausgeprägte offene Arme"
+    file: "heic0602a.jpg"
+    asset_path: "assets/morphology/heic0602a.jpg"
+    source_id: "heic0602a"
+    source_archive: "ESA/Hubble"
+    source_url: "https://esahubble.org/images/heic0602a/"
+    license: "ESA/Hubble – freie Nutzung, Credit erforderlich"
+    credit: "ESA/Hubble & NASA"
+    resolution_px: [4000, 4000]   # Schätzwert; beim Download verifizieren
+    orientation: "face-on"
+    quality_notes: >
+      Kanonisches Sc-Beispiel. Sehr klare, lose Spiralarme mit sichtbaren
+      H-II-Regionen (blaue Knoten). Kein Balken. Starke Asymmetrie der Arme
+      ist charakteristisch für Sc – gut für natürlich wirkende Galaxien.
+
+  # ═══════════════════════════════════════════════════════════════════
+  # ZU BESCHAFFENDE BILDER
+  # Alle URLs und Kennungen bitte vor dem Download verifizieren.
+  # ═══════════════════════════════════════════════════════════════════
+
+  # ─────────────────────────────────────────────────────────────────
+  - id: ngc2841_sa
+    enabled: false              # Datei fehlt noch
+    status: pending_download
+    name: "NGC 2841"
+    designation: "NGC 2841"
+    hubble_type: Sa
+    hubble_description: "Enge Spiralgalaxie, großer Bulge, kein Balken, wenig Sternentstehung"
+    file: "heic1104a.jpg"
+    asset_path: "assets/morphology/heic1104a.jpg"
+    source_id: "heic1104a"
+    source_archive: "ESA/Hubble"
+    source_url: "https://esahubble.org/images/heic1104a/"
+    license: "ESA/Hubble – freie Nutzung, Credit erforderlich"
+    credit: "ESA/Hubble & NASA, D. Calzetti (UMass) and the LEGUS team"
+    orientation: "face-on"
+    quality_notes: >
+      Textbook-Beispiel für enge Spirale mit dominantem Bulge. Wenig
+      Sternentstehung in den Armen – ruhige, klassische Sa-Morphologie.
+      Gut geeignet als Template für alte, wenig aktive Galaxien.
+
+  # ─────────────────────────────────────────────────────────────────
+  - id: m81_sb
+    enabled: false
+    status: pending_download
+    name: "M81 – Bode's Galaxy"
+    designation: "NGC 3031"
+    hubble_type: Sb
+    hubble_description: "Intermediäre Spiralgalaxie, mittlerer Bulge, grand-design Zweiarmsystem"
+    file: "hst_m81.jpg"
+    asset_path: "assets/morphology/hst_m81.jpg"
+    source_id: "2007-09"       # STScI Hubble Heritage release 2007/09
+    source_archive: "STScI / Hubble Heritage"
+    source_url: "https://hubblesite.org/contents/media/images/2007/09/2081-Image.html"
+    license: "Public domain (STScI/NASA)"
+    credit: "NASA, ESA, and The Hubble Heritage Team (STScI/AURA)"
+    resolution_px: [12000, 10000]   # Sehr hohe Auflösung verfügbar
+    orientation: "face-on"
+    quality_notes: >
+      Eines der bestaufgelösten Hubble-Bilder einer Spiralgalaxie überhaupt.
+      Perfekte face-on-Orientierung, klassisches grand-design Zweiarmsystem
+      mit mittlerem Bulge. Kanonisches Sb-Template.
+
+  # ─────────────────────────────────────────────────────────────────
+  - id: m74_sc_alt
+    enabled: false
+    status: pending_download
+    name: "M74 – Phantom Galaxy"
+    designation: "NGC 628"
+    hubble_type: Sc
+    hubble_description: "Lose Spiralgalaxie, sehr kleiner Bulge, symmetrische Arme – Paradebeispiel Sc"
+    file: "noirlab2204a.jpg"
+    asset_path: "assets/morphology/noirlab2204a.jpg"
+    source_id: "noirlab2204a"
+    source_archive: "NOIRLab / Hubble + JWST"
+    source_url: "https://noirlab.edu/public/images/noirlab2204a/"
+    license: "CC-BY-4.0 (NSF/NOIRLab/AURA)"
+    credit: "NASA, ESA, CSA, STScI, Janice Lee (STScI), Thomas Williams (Oxford), and the PHANGS-JWST team"
+    orientation: "face-on"
+    quality_notes: >
+      Gilt als das kanonischste Sc-Beispiel – symmetrischer als M101, perfekte
+      face-on-Orientierung. Sehr kleiner Bulge, deutliche Abgrenzung der Arme.
+      Alternativbild zu M101 für Sc-Morphologie.
+
+  # ─────────────────────────────────────────────────────────────────
+  - id: ngc1398_sba
+    enabled: false
+    status: pending_download
+    name: "NGC 1398"
+    designation: "NGC 1398"
+    hubble_type: SBa
+    hubble_description: "Balken-Spiralgalaxie, enge Arme, prominenter Ring, großer Bulge"
+    file: "eso9903a.jpg"
+    asset_path: "assets/morphology/eso9903a.jpg"
+    source_id: "eso9903a"
+    source_archive: "ESO"
+    source_url: "https://www.eso.org/public/images/eso9903a/"
+    download_url: "https://www.eso.org/public/archives/images/original/eso9903a.tif"
+    license: "CC-BY-4.0 (ESO)"
+    credit: "ESO"
+    orientation: "face-on"
+    quality_notes: >
+      Klare Balken-Tight-Spiral-Morphologie: starker Balken, prominenter Ring,
+      enge äußere Arme, großer Bulge. Bestes verfügbares SBa-Template aus ESO-Archiv.
+
+  # ─────────────────────────────────────────────────────────────────
+  - id: ngc1300_sbb
+    enabled: false
+    status: pending_download
+    name: "NGC 1300"
+    designation: "NGC 1300"
+    hubble_type: SBb
+    hubble_description: "Kanonische Balken-Spiralgalaxie, spektakulärer Balken, intermediäre Arme"
+    file: "heic0503a.jpg"
+    asset_path: "assets/morphology/heic0503a.jpg"
+    source_id: "heic0503a"
+    source_archive: "ESA/Hubble"
+    source_url: "https://esahubble.org/images/heic0503a/"
+    license: "ESA/Hubble – freie Nutzung, Credit erforderlich"
+    credit: "NASA, ESA, The Hubble Heritage Team (STScI/AURA) and A. Riess (STScI)"
+    resolution_px: [6000, 5200]
+    orientation: "face-on"
+    quality_notes: >
+      DAS Lehrbuch-Beispiel einer Balkenspirale. Taucht in praktisch jedem
+      Astronomie-Buch auf. Perfekte face-on-Orientierung, spektakulärer
+      durchgehender Balken der direkt in zwei Arme übergeht.
+      Höchste Priorität zum Download.
+
+  # ─────────────────────────────────────────────────────────────────
+  - id: ngc1365_sbc
+    enabled: false
+    status: pending_download
+    name: "NGC 1365 – Great Barred Spiral"
+    designation: "NGC 1365"
+    hubble_type: SBc
+    hubble_description: "Lose Balken-Spiralgalaxie, langer Balken, weit ausgezogene offene Arme"
+    file: "eso0525a.jpg"
+    asset_path: "assets/morphology/eso0525a.jpg"
+    source_id: "eso0525a"
+    source_archive: "ESO VLT"
+    source_url: "https://www.eso.org/public/images/eso0525a/"
+    download_url: "https://www.eso.org/public/archives/images/original/eso0525a.tif"
+    license: "CC-BY-4.0 (ESO)"
+    credit: "ESO"
+    orientation: "face-on (leicht geneigt)"
+    quality_notes: >
+      Eine der größten und spektakulärsten Balkenspiralaxien des Lokalen Universums.
+      Sehr langer Balken, extrem lose, weit ausgezogene Arme mit aktiver Sternentstehung.
+      Leicht geneigt (nicht perfekt face-on) – muss bei der Dichtekartenkonvertierung
+      berücksichtigt werden (Entzerrung nötig). ESO-Alternativbild: potw1911a (Hubble).
+    preprocessing_note: "Neigungskorrektur erforderlich (Inklinationswinkel ~40°)"
+
+  # ─────────────────────────────────────────────────────────────────
+  - id: ngc4449_irr
+    enabled: false
+    status: pending_download
+    name: "NGC 4449"
+    designation: "NGC 4449"
+    hubble_type: Irr
+    hubble_description: "Irreguläre Galaxie (IBm), kompakt, asymmetrisch, starke Sternentstehung"
+    file: "heic1210a.jpg"
+    asset_path: "assets/morphology/heic1210a.jpg"
+    source_id: "heic1210a"
+    source_archive: "ESA/Hubble"
+    source_url: "https://esahubble.org/images/heic1210a/"
+    license: "ESA/Hubble – freie Nutzung, Credit erforderlich"
+    credit: "NASA, ESA, A. Aloisi (STScI/ESA)"
+    orientation: "face-on"
+    quality_notes: >
+      Kompakte irreguläre Galaxie, gut gerahmt für Dichtekartenkonvertierung.
+      Deutlich besser nutzbar als die LMC (zu groß, schwer zu rahmen).
+      Erzeugt asymmetrische, chaotische Morphologie – interessant für
+      instabile Spielwelten oder besondere Szenarien.
+
+  # ─────────────────────────────────────────────────────────────────
+  - id: m33_sc_mosaic
+    enabled: false
+    status: pending_download
+    name: "M33 – Triangulum Galaxy"
+    designation: "NGC 598"
+    hubble_type: Sc
+    hubble_description: "Sehr lose Spiralgalaxie, praktisch kein Bulge, massive H-II-Regionen"
+    file: "heic1901a.jpg"
+    asset_path: "assets/morphology/heic1901a.jpg"
+    source_id: "heic1901a"
+    source_archive: "ESA/Hubble"
+    source_url: "https://esahubble.org/images/heic1901a/"
+    license: "ESA/Hubble – freie Nutzung, Credit erforderlich"
+    credit: "ESA/Hubble & NASA, Harvard-Smithsonian CfA"
+    resolution_px: [25000, 22000]   # Riesiges Mosaik
+    orientation: "face-on"
+    quality_notes: >
+      Enormes Hubble-Mosaik (25k × 22k px). Extrem lose Morphologie, fast
+      kein Bulge sichtbar – dritte große Galaxie der Lokalen Gruppe.
+      Für Szenarien mit sehr jungen, aktiv sternbildenden Galaxien.
+      Wegen Dateigröße: ggf. herunterskalieren auf 4k vor Verwendung.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# DOWNLOAD-ANLEITUNG
+# ═══════════════════════════════════════════════════════════════════
+
+download_instructions: |
+  1. ESA/Hubble (esahubble.org):
+     - Seite aufrufen, unter "Formats" → "Original" oder "Large" TIFF/JPEG herunterladen
+     - Bildkennung (z.B. heic0503a) ist stabil auch wenn URL sich ändert
+
+  2. ESO (eso.org):
+     - download_url (wenn angegeben) direkt nutzen für TIFF
+     - Alternativ: Seite aufrufen → "Full Resolution" klicken
+
+  3. STScI / HubbleSite:
+     - Neue Archiv-URL: https://hubblesite.org/image-gallery
+     - source_id als Suchbegriff verwenden
+
+  4. Dateien ablegen unter: assets/morphology/<file>
+  5. enabled: true setzen nach erfolgreichem Download und Sichtprüfung
+
+
+# ═══════════════════════════════════════════════════════════════════
+# PRIORITÄTSLISTE FÜR DOWNLOAD
+# ═══════════════════════════════════════════════════════════════════
+
+download_priority:
+  - id: ngc1300_sbb
+    reason: "Kanonischstes Beispiel Balkenspirale; höchste Gameplay-Relevanz für Standard-SBb"
+  - id: m81_sb
+    reason: "Bestes Sb-Template; höchste Auflösung verfügbar (12k px)"
+  - id: m74_sc_alt
+    reason: "Symmetrischeres Sc-Template als M101; gut als Alternative"
+  - id: ngc1365_sbc
+    reason: "Einziges SBc-Template; Neigungskorrektur beachten"
+  - id: ngc1398_sba
+    reason: "Einziges SBa-Template"
+  - id: ngc2841_sa
+    reason: "Sa-Template für alte, ruhige Galaxien"
+  - id: ngc4449_irr
+    reason: "Bonus: Irreguläre Morphologie"
+  - id: m33_sc_mosaic
+    reason: "Bonus: Sehr großes Mosaik; nur wenn extreme Auflösung gewünscht"

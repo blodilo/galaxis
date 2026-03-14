@@ -106,8 +106,9 @@
 |---|---|---|---|
 | BL-01 | arm_winding + scaleLength Fix | `arm_winding: 2.0 → 0.35`, `scaleLength: 7% → 18%`, Arm-Envelope erweitern | 30 Min |
 | BL-02 | Hierarchisches Sampling | Region-first statt globales Rejection-Sampling → 50k Sterne in Sekunden statt Minuten | 1 Tag |
-| BL-03 | Foto-Template Morphologie | Reales Galaxienfoto als 2D-Dichtekarte; benötigt BL-02 | 1 Tag |
+| BL-03 | Foto-Template Morphologie | Reales Galaxienfoto als 2D-Dichtekarte; benötigt BL-02. Katalog in `galaxy_morphology_catalog_v1.0.yaml` (8 Typen Sa–Irr). 7 Bilder noch herunterzuladen (Prioritätsliste im Katalog). | 1 Tag |
 | BL-04 | Morphologie-Vorschau-Run | Status `preview_ready` → Frontend rendert sofort; benötigt BL-02 | 0,5 Tag |
+| BL-08 | Generator-Frontend | Route `/generate`: Morphologie-Auswahl aus Katalog, Parameter, Start-Button → POST `/api/generate` | 1 Tag |
 | BL-05 | 500k Sterne | Binary-Transfer (Float32Array statt JSON) + BL-02 | 1,5 Tage |
 | BL-06 | Irreguläre Nebel (visuell) | Three.js-Shader mit Simplex-Noise; Hitbox bleibt Sphere | 2 h |
 | BL-07 | Mehrfachsternsysteme | Generator: Begleitsterne zuweisen; Inspektor: Begleiter anzeigen | 3 h |

@@ -21,6 +21,7 @@
 | `tech-tree_v1.0.jsonld` | Technologiebaum als JSON-LD (kompatibel mit graph-Projekt-Ontologie) | ✅ v1 (erweiterbar) |
 | `game-params_v1.0.yaml` | Zentrale Spielparameter (Kalibrierung, Balancing, Performance-Limits) | ✅ aktuell |
 | `biochemistry_archetypes_v1.0.yaml` | Biochemie-Archetypen für Alien-Spezies (physikalische Parameter, Treibhauswerte, Quellenangaben) | ✅ aktuell |
+| `galaxy_morphology_catalog_v1.0.yaml` | Katalog realer Galaxienfotos als Morphologie-Templates (8 Einträge, Sa–Irr, Quellen + Lizenzen) | ✅ aktuell |
 | `research-mechanics_v1.0.md` | Forschungsmechanik (stochastisches Modell, Inputs, Bauplan-Output) | ✅ aktuell |
 | `graph-project-prompt_v1.0.md` | Prompt: 4 minimale Änderungen am graph-Projekt für extra_data-Import/Export | ✅ aktuell |
 | `concept.md` | Python-Prototyp GalaxyGenerator (Referenz) | ✅ Referenz |
