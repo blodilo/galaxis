@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-	configPath  := flag.String("config",      "game-params_v1.1.yaml",                 "Path to game-params YAML")
+	configPath  := flag.String("config",      "game-params_v1.2.yaml",                 "Path to game-params YAML")
 	migrateOnly := flag.Bool("migrate-only",  false,                                    "Run migrations and exit")
 	addr        := flag.String("addr",         ":8080",                                 "HTTP listen address")
 	assetsDir   := flag.String("assets-dir",   "assets",                                "Directory to serve under /assets/")

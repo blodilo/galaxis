@@ -1,4 +1,8 @@
-.PHONY: build run-server run-gen db-up db-down migrate lint test
+.PHONY: build run-server run-gen db-up db-down migrate lint test dev
+
+# .env automatisch laden (falls vorhanden)
+-include .env
+export
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 build:
@@ -7,10 +11,10 @@ build:
 
 # ── Run ────────────────────────────────────────────────────────────────────────
 run-server:
-	go run ./cmd/server --config game-params_v1.1.yaml
+	go run ./cmd/server --config game-params_v1.2.yaml
 
 run-gen:
-	go run ./cmd/galaxy-gen --config game-params_v1.1.yaml
+	go run ./cmd/galaxy-gen --config game-params_v1.2.yaml
 
 # ── Database ───────────────────────────────────────────────────────────────────
 db-up:
@@ -20,7 +24,7 @@ db-down:
 	docker compose down
 
 migrate:
-	go run ./cmd/server --config game-params_v1.1.yaml --migrate-only
+	go run ./cmd/server --config game-params_v1.2.yaml --migrate-only
 
 # ── Dev ────────────────────────────────────────────────────────────────────────
 lint:

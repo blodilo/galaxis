@@ -284,3 +284,23 @@ server:
 
   instance_name: "Galaxis Alpha"
   # Anzeigename dieser Instanz.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 10. RENDERING (Client-Parameter, vom Frontend gelesen)
+# ═══════════════════════════════════════════════════════════════════
+rendering:
+  nebula_lod_viewport_threshold: 0.20
+  # [PERFORMANCE] Ab welchem Viewport-Füllgrad (0–1) ein Nebel von Billboard-Sprites
+  # auf volumetrisches Raymarching umschaltet.
+  # 0.20 = Nebel füllt ≥ 20% des Viewports → Sektor-Rendering aktiviert.
+
+  nebula_raymarch_steps: 64
+  # [PERFORMANCE] Anzahl der Raymarching-Schritte pro Fragment beim volumetrischen
+  # Nebel-Rendering (BL-06b). Höhere Werte = mehr Qualität, mehr GPU-Last.
+  # Empfohlene Werte: 32 (schnell), 64 (Standard), 128 (hochwertig, WebGPU).
+
+  nebula_fbm_octaves: 6
+  # [KALIBRIERUNG] Anzahl FBM-Oktaven für die Nebeldichte-Funktion.
+  # Muss identisch mit dem Wert im Server-Octree (ADR-010, ADR-011) sein.
+  # 6 Oktaven entsprechen den 6 Dichtestufen (0.1–10.000 /m³).

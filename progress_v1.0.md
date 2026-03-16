@@ -1,6 +1,6 @@
 # Progress – Galaxis v1.0
 
-**Datum:** 2026-03-14
+**Datum:** 2026-03-16
 
 ---
 
@@ -26,6 +26,10 @@
 | 2026-03-14 | US-001 aufgenommen: Biochemie-Wahl für Alien-Spezies auf wissenschaftlicher Grundlage |
 | 2026-03-14 | game-params v1.1: arm_winding 2.0 → 0.35 (BL-01), alle Referenzen aktualisiert |
 | 2026-03-14 | BL-08 implementiert: Generator-Admin-Tool (Morphologie-Picker, Param-Editor, Job-Polling) |
+| 2026-03-14 | ADR-011 entschieden: WebGPU + TSL Volumetrisches Raymarching (BL-06a/b) |
+| 2026-03-14 | game-params v1.2: rendering-Sektion ergänzt (nebula_raymarch_steps u.a. für ADR-011) |
+| 2026-03-16 | Makefile: .env auto-load + `make dev` Target |
+| 2026-03-16 | dev.sh: One-Command Dev-Stack (DB → Backend → Frontend → Browser) |
 
 ---
 
@@ -114,7 +118,8 @@
 | BL-09 | Morphologie-Dichte-Integration | Gewählte Morphologie-ID (aus Admin-Tool) als 2D-Dichtekarte in galaxy.Generator einbinden; ersetzt analytische Basis-Dichte. Benötigt BL-02 (hierarchisches Sampling) + BL-03 (Foto-Template). Vorerst: morphology_id wird nur in DB gespeichert. | 2 Tage |
 | BL-10 | Adaptiver Octree (FTLW-Grid) | Ersetzt Flat-Voxelgrid (500 ly) durch sternzahlbegrenzten Octree mit dualem Subdivisions-Kriterium (stellar + Dichte-Gradient). DB-Schema: `ftlw_octree` + `ftlw_octree_adjacency`. FTLW kumulativ (inkl. Fernbeiträge). A* auf Adjazenzliste. Benötigt BL-02 + BL-03 (Simplex Noise). ~100k Blattknoten bei 50k Sternen. ADR-010. | 3 Tage |
 | BL-05 | 500k Sterne | Binary-Transfer (Float32Array statt JSON) + BL-02 | 1,5 Tage |
-| BL-06 | Irreguläre Nebel (visuell) | Three.js-Shader mit Simplex-Noise; Hitbox bleibt Sphere | 2 h |
+| BL-06a | WebGPURenderer-Migration | God-Mode-Viewer auf `WebGPURenderer` + TSL umstellen. Akzeptanz: Sterne/Filter/Inspektor/Bloom visuell identisch, WebGL-Fallback verifiziert. Baseline für BL-06b. ADR-011. | 1 Tag |
+| BL-06b | Volumetrisches TSL Raymarching | FBM-Funktion in TSL (6 Oktaven, Seed = Nebel-Seed), Raymarching-Pass, LOD-Übergang Sprites→Volumetric (≥20% Viewport), Nebeltyp-Visualisierung (H-II/SNR/Globular), `nebula_raymarch_steps` aus game-params (Default 64). Benötigt BL-06a + BL-03. ADR-011. | 2,5 Tage |
 | BL-07 | Mehrfachsternsysteme | Generator: Begleitsterne zuweisen; Inspektor: Begleiter anzeigen | 3 h |
 
 ## Empfohlene Implementierungsreihenfolge

@@ -276,3 +276,81 @@ Zum Vergleich: aktuelles Flat-Grid bei 500 ly → ~2 Mio. Voxel (größtenteils 
 - Zwei feste Auflösungen (500/2.500 ly): kein organischer Übergang, kein Dichte-Kriterium
 
 **Abhängigkeiten:** BL-10 (Implementierung), BL-02 (hierarchisches Sampling für Sterngenerierung), BL-03 (Simplex Noise Nebeldichte).
+
+---
+
+## ADR-011: Nebel-Rendering – WebGPU + TSL Volumetrisches Raymarching
+
+**Status:** Entschieden
+
+**Kontext:** Nebulae werden aktuell als halbtransparente `SphereGeometry` gerendert (harte Kugelgrenzen, keine interne Struktur). Das TDD fordert organische, physikalisch korrekte Gaswolken mit fraktaler Binnenstruktur. Three.js stellt 2025/2026 massiv auf WebGPU + TSL um; Referenzprojekte (u.a. "Raytracing a Black Hole with WebGPU") zeigen, dass volumetrisches FBM-Raymarching im Browser echtzeitfähig ist.
+
+**Entscheidung:** Zwei-Ebenen-Rendering mit Migration auf `WebGPURenderer` + TSL.
+
+### Rendering-Ebenen
+
+**Makro (Galaxy-View, Kamera-Distanz > Nebel füllt < 20% Viewport):**
+Instanced Billboard Sprites — O(N_nebulae), minimal teuer, overview-tauglich.
+
+**Sektor (Zoom, Nebel füllt ≥ 20% Viewport):**
+TSL Volumetrisches Raymarching. Pro Fragment wird ein Strahl durch das Volumen integriert:
+```
+∫ ρ(pos) · emission_color · ds    (Strahlungsakkumulation)
+∫ ρ(pos) · absorption · ds        (Opazität)
+```
+`ρ(pos)` = Simplex Noise FBM mit demselben Seed wie der Server-Octree (ADR-010) → Determinismus garantiert.
+
+### LOD-Schwelle
+
+**Option A2 (entschieden):** Übergang wenn der Nebel ≥ 20% des Viewport füllt (pixel-basiert, unabhängig von absoluter Distanz).
+
+### Raymarching Step-Count
+
+Konfigurierbar via `game-params` (`rendering.nebula_raymarch_steps`), Default: **64 Steps**.
+
+| Steps | Qualität | Typische GPU-Last |
+|---|---|---|
+| 32 | schnell, leicht körnig | niedrig |
+| **64** | **Standard (Default)** | **mittel** |
+| 128 | hochwertig | hoch (WebGPU empfohlen) |
+
+### Nebeltyp-Visualisierung
+
+| Typ | Emission | Absorption | Charakteristik |
+|---|---|---|---|
+| H-II | rot-pink `#ff4466` + cyan `#44ffcc` | niedrig | leuchtend, ionisiert, Filamente |
+| SNR | blau-weiß `#44aaff` | mittel | Stoßwellenring, innen hohl |
+| Globular | gold `#ffcc44` | hoch | dicht, körnig |
+
+### Mathematische Basis (FBM)
+
+```
+fbm(p, seed) = Σ_{i=0}^{5} amplitude^i · simplex(frequency^i · p + seed_offset_i)
+```
+- 6 Oktaven (entspricht den 6 Dichtestufen aus ADR-010)
+- Amplitude pro Oktave: 0,5 (klassisches FBM)
+- Frequenz-Multiplikator: 2,0
+
+Identische Funktion auf Server (Go, für Octree-Dichte) und Client (TSL, für visuelle Darstellung).
+
+### Browser-Kompatibilität
+
+- WebGPU (Chrome 113+, Edge): volle Qualität, WGSL-Kompilierung via TSL
+- WebGL-Fallback (Firefox, Safari): TSL kompiliert automatisch nach GLSL — kein separater Code-Pfad
+
+### Implementierungsaufteilung (Testbarkeit)
+
+**BL-06a – WebGPURenderer-Migration:**
+God-Mode-Viewer auf `WebGPURenderer` umstellen. Akzeptanzkriterium: Sterne, Filter, Inspektor, Bloom/CA visuell identisch. WebGL-Fallback verifiziert. Baseline für BL-06b.
+
+**BL-06b – Volumetrisches TSL Raymarching:**
+FBM-Funktion in TSL, Raymarching-Pass, LOD-Übergang Sprites → Volumetric, Nebeltyp-Visualisierung, `nebula_raymarch_steps` aus game-params.
+
+**Begründung der Aufteilung:** BL-06a schafft eine isolierte Regressionstest-Grenze. Visuelle Fehler in BL-06b sind eindeutig dem Shader zuzuordnen, nicht der Renderer-Migration.
+
+**Alternativen verworfen:**
+- SphereGeometry (aktuell): harte Grenzen, keine Binnenstruktur, nicht TDD-konform
+- WebGL GLSL-Shader direkt: kein automatischer WebGPU-Upgrade-Pfad; TSL ist die strategische Richtung von Three.js
+- Voxel-Textur (3D texture sampling): hoher Speicherbedarf, kein Determinismus via Seed
+
+**Abhängigkeiten:** BL-06a → BL-06b; BL-06b benötigt BL-03 (Simplex Noise Nebeldichte) für Seed-Konsistenz mit Server.

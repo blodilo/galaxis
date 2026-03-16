@@ -1,8 +1,8 @@
 # Dokumentenregister – Galaxis
 
-**Projektstatus:** AP1 + AP3-Skeleton + God-Mode-Viewer + Generator-Admin-Tool implementiert · AP2 spezifiziert, Implementierung ausstehend
+**Projektstatus:** AP1 + AP3-Skeleton + God-Mode-Viewer + Generator-Admin-Tool implementiert · AP2 spezifiziert, Implementierung ausstehend · ADR-011 entschieden
 **GDD-Version:** v1.24
-**Datum:** 2026-03-14
+**Datum:** 2026-03-16
 
 ---
 
