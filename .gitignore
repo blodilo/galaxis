@@ -1,3 +1,4 @@
 .env
+tools/.env
 bin/
 *.test

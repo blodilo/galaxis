@@ -1,0 +1,15 @@
+# galaxy_scraper.py — Python-Abhängigkeiten
+# Alle Lizenzen grün (MIT/BSD-3/Apache-2.0)
+#
+# Installation:
+#   python -m venv .venv && source .venv/bin/activate
+#   pip install -r tools/requirements.txt
+
+astroquery>=0.4.7        # BSD-3-Clause — SIMBAD/SkyView Abfragen
+astropy>=5.3             # BSD-3-Clause — FITS, Koordinaten, Einheiten
+Pillow>=10.0             # HPND (MIT-kompatibel) — Bildverarbeitung
+requests>=2.31           # Apache-2.0 — HTTP-Downloads
+numpy>=1.24              # BSD-3-Clause — Pixel-Arrays / ZScale
+google-generativeai>=0.8 # Apache-2.0 — Gemini Vision API
+python-dotenv>=1.0       # BSD-3-Clause — .env laden
+PyYAML>=6.0              # MIT — YAML lesen/schreiben
