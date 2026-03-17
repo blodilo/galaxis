@@ -41,7 +41,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config, store *jobs.Store, assetsDi
 	r.Get("/health", healthHandler(db))
 
 	r.Route("/api/v1", func(r chi.Router) {
-		registerGalaxyRoutes(r, db)
+		registerGalaxyRoutes(r, db, cfg, store)
 		registerCatalogRoutes(r, cfg, catalogPath)
 		registerGenerateRoutes(r, db, cfg, store)
 	})
@@ -56,7 +56,11 @@ func registerCatalogRoutes(r chi.Router, cfg *config.Config, catalogPath string)
 
 func registerGenerateRoutes(r chi.Router, pool *pgxpool.Pool, cfg *config.Config, store *jobs.Store) {
 	r.Post("/generate", triggerGenerate(pool, cfg, store))
+	r.Post("/generate/step1", triggerStep1(pool, cfg, store))
 	r.Get("/generate/{jobID}/status", getGenerateStatus(store))
+	// SSE endpoint: the handler itself bypasses the global 60s timeout via a
+	// deadline-free context that still tracks client disconnects.
+	r.Get("/generate/{jobID}/progress", getGenerateProgress(store))
 }
 
 func healthHandler(db *pgxpool.Pool) http.HandlerFunc {

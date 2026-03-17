@@ -200,6 +200,131 @@ func QueryStarByID(ctx context.Context, pool *pgxpool.Pool, starID uuid.UUID) (*
 	return r, nil
 }
 
+// StarSpectralRecord holds minimal star data for spectral type assignment.
+type StarSpectralRecord struct {
+	ID         uuid.UUID
+	NebulaID   *uuid.UUID
+	Type       model.StarType
+	PlanetSeed int64
+}
+
+// StarTypeUpdate holds the new spectral data for a single star.
+type StarTypeUpdate struct {
+	ID              uuid.UUID
+	Type            model.StarType
+	SpectralClass   string
+	MassSolar       float64
+	LuminositySolar float64
+	RadiusSolar     float64
+	TemperatureK    float64
+	ColorHex        string
+}
+
+// QueryStarsForSpectral returns minimal star data needed for spectral type assignment.
+func QueryStarsForSpectral(ctx context.Context, pool *pgxpool.Pool, galaxyID uuid.UUID) ([]StarSpectralRecord, error) {
+	rows, err := pool.Query(ctx,
+		`SELECT id, nebula_id::text, star_type, planet_seed FROM stars WHERE galaxy_id = $1`,
+		galaxyID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("db: query stars for spectral: %w", err)
+	}
+	defer rows.Close()
+
+	var result []StarSpectralRecord
+	for rows.Next() {
+		var r StarSpectralRecord
+		var nebulaIDStr *string
+		if err := rows.Scan(&r.ID, &nebulaIDStr, &r.Type, &r.PlanetSeed); err != nil {
+			return nil, fmt.Errorf("db: scan star spectral: %w", err)
+		}
+		if nebulaIDStr != nil {
+			if id, err := uuid.Parse(*nebulaIDStr); err == nil {
+				r.NebulaID = &id
+			}
+		}
+		result = append(result, r)
+	}
+	return result, rows.Err()
+}
+
+// QueryStarsFull returns all stars for a galaxy as domain Stars (including planet_seed).
+func QueryStarsFull(ctx context.Context, pool *pgxpool.Pool, galaxyID uuid.UUID) ([]model.Star, error) {
+	rows, err := pool.Query(ctx,
+		`SELECT id, galaxy_id, nebula_id, x, y, z, star_type, spectral_class,
+		        mass_solar, luminosity_solar, radius_solar, temperature_k,
+		        color_hex, planet_seed
+		 FROM stars WHERE galaxy_id = $1`,
+		galaxyID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("db: query stars full: %w", err)
+	}
+	defer rows.Close()
+
+	var result []model.Star
+	for rows.Next() {
+		var s model.Star
+		if err := rows.Scan(
+			&s.ID, &s.GalaxyID, &s.NebulaID,
+			&s.X, &s.Y, &s.Z,
+			&s.Type, &s.SpectralClass,
+			&s.MassSolar, &s.LuminositySolar, &s.RadiusSolar, &s.TemperatureK,
+			&s.ColorHex, &s.PlanetSeed,
+		); err != nil {
+			return nil, fmt.Errorf("db: scan star full: %w", err)
+		}
+		result = append(result, s)
+	}
+	return result, rows.Err()
+}
+
+// BulkUpdateStarTypes updates spectral properties for many stars in a batch.
+func BulkUpdateStarTypes(ctx context.Context, pool *pgxpool.Pool, updates []StarTypeUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+	const batchSize = 1000
+	for i := 0; i < len(updates); i += batchSize {
+		end := i + batchSize
+		if end > len(updates) {
+			end = len(updates)
+		}
+		chunk := updates[i:end]
+		batch := &pgx.Batch{}
+		for _, u := range chunk {
+			batch.Queue(
+				`UPDATE stars SET
+				 star_type=$2, spectral_class=$3,
+				 mass_solar=$4, luminosity_solar=$5,
+				 radius_solar=$6, temperature_k=$7, color_hex=$8
+				 WHERE id=$1`,
+				u.ID, string(u.Type), u.SpectralClass,
+				u.MassSolar, u.LuminositySolar, u.RadiusSolar, u.TemperatureK,
+				u.ColorHex,
+			)
+		}
+		results := pool.SendBatch(ctx, batch)
+		for range chunk {
+			if _, err := results.Exec(); err != nil {
+				results.Close()
+				return fmt.Errorf("db: update star type: %w", err)
+			}
+		}
+		results.Close()
+	}
+	return nil
+}
+
+// DeleteGalaxy removes a galaxy and all associated data (CASCADE).
+func DeleteGalaxy(ctx context.Context, pool *pgxpool.Pool, galaxyID uuid.UUID) error {
+	_, err := pool.Exec(ctx, `DELETE FROM galaxies WHERE id=$1`, galaxyID)
+	if err != nil {
+		return fmt.Errorf("db: delete galaxy: %w", err)
+	}
+	return nil
+}
+
 // QueryNebulae returns all nebulae for a galaxy.
 func QueryNebulae(ctx context.Context, pool *pgxpool.Pool, galaxyID uuid.UUID) ([]model.NebulaRow, error) {
 	rows, err := pool.Query(ctx,

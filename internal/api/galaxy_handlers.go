@@ -4,7 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"galaxis/internal/config"
 	"galaxis/internal/db"
+	"galaxis/internal/jobs"
 	"galaxis/internal/model"
 
 	"github.com/go-chi/chi/v5"
@@ -12,11 +14,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func registerGalaxyRoutes(r chi.Router, pool *pgxpool.Pool) {
+func registerGalaxyRoutes(r chi.Router, pool *pgxpool.Pool, runningCfg *config.Config, store *jobs.Store) {
 	r.Get("/galaxies", listGalaxies(pool))
 	r.Get("/galaxy/{galaxyID}/stars", listStars(pool))
 	r.Get("/galaxy/{galaxyID}/stars/{starID}", getStar(pool))
+	r.Get("/galaxy/{galaxyID}/stars/{starID}/system", getSystem(pool))
 	r.Get("/galaxy/{galaxyID}/nebulae", listNebulae(pool))
+	r.Delete("/galaxy/{galaxyID}", handleDeleteGalaxy(pool))
+	r.Post("/galaxy/{galaxyID}/steps/{step}", triggerGalaxyStep(pool, runningCfg, store))
 }
 
 func listGalaxies(pool *pgxpool.Pool) http.HandlerFunc {
@@ -86,6 +91,35 @@ func getStar(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, star)
+	}
+}
+
+// getSystem returns all planets (with moons) for a star system.
+// GET /api/v1/galaxy/{galaxyID}/stars/{starID}/system
+func getSystem(pool *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		starID, err := uuid.Parse(chi.URLParam(r, "starID"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid star id")
+			return
+		}
+		star, err := db.QueryStarByID(r.Context(), pool, starID)
+		if err != nil {
+			writeError(w, http.StatusNotFound, "star not found")
+			return
+		}
+		planets, err := db.QueryPlanetsByStarID(r.Context(), pool, starID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if planets == nil {
+			planets = []model.PlanetRow{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"star":    star,
+			"planets": planets,
+		})
 	}
 }
 

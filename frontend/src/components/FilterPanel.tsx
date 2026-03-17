@@ -55,6 +55,24 @@ export function FilterPanel({ filter, onChange }: Props) {
         </button>
       </div>
 
+      {/* Planeten-Filter */}
+      <div>
+        <div className="text-xs text-slate-500 mb-1">Planeten</div>
+        <div className="flex flex-col gap-0.5">
+          <button
+            onClick={() => toggle('onlyWithPlanets')}
+            className={`flex items-center gap-2 px-2 py-1 rounded text-xs text-left transition-colors
+              ${filter.onlyWithPlanets ? 'bg-slate-800 text-slate-200' : 'text-slate-600 hover:text-slate-500'}`}
+          >
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ background: filter.onlyWithPlanets ? '#4ade80' : '#334155' }}
+            />
+            Nur mit Planeten
+          </button>
+        </div>
+      </div>
+
       {STAR_GROUPS.map(group => (
         <div key={group.label}>
           <div className="text-xs text-slate-500 mb-1">{group.label}</div>

@@ -25,7 +25,10 @@ export function StarField({ stars, filter, onSelect }: Props) {
   const pulsarPhase = useRef(0)
 
   const { geometry, starIndex } = useMemo(() => {
-    const visible = stars.filter(s => filter[s.star_type as keyof typeof filter] !== false)
+    const visible = stars.filter(s =>
+      filter[s.star_type as keyof typeof filter] !== false &&
+      (!filter.onlyWithPlanets || s.planets_generated)
+    )
 
     const positions = new Float32Array(visible.length * 3)
     const colors    = new Float32Array(visible.length * 3)

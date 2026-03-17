@@ -11,6 +11,7 @@ import (
 	"galaxis/internal/jobs"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -64,6 +65,7 @@ func triggerGenerate(pool *pgxpool.Pool, runningCfg *config.Config, store *jobs.
 			Server:      req.Server,
 			DatabaseURL: runningCfg.DatabaseURL,
 			RedisURL:    runningCfg.RedisURL,
+			ConfigDir:   runningCfg.ConfigDir,
 		}
 		if err := genCfg.Validate(); err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
@@ -120,5 +122,140 @@ func getGenerateStatus(store *jobs.Store) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, job)
+	}
+}
+
+// triggerStep1 handles POST /api/v1/generate/step1.
+// Creates a new galaxy record and runs Step1Morphology asynchronously.
+func triggerStep1(pool *pgxpool.Pool, runningCfg *config.Config, store *jobs.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := generateRequest{
+			Galaxy:    runningCfg.Galaxy,
+			FTLW:      runningCfg.FTLW,
+			Sensors:   runningCfg.Sensors,
+			Time:      runningCfg.Time,
+			Economy:   runningCfg.Economy,
+			PlanetGen: runningCfg.PlanetGen,
+			Research:  runningCfg.Research,
+			Combat:    runningCfg.Combat,
+			Server:    runningCfg.Server,
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+			return
+		}
+		genCfg := &config.Config{
+			Galaxy: req.Galaxy, FTLW: req.FTLW, Sensors: req.Sensors,
+			Time: req.Time, Economy: req.Economy, PlanetGen: req.PlanetGen,
+			Research: req.Research, Combat: req.Combat, Server: req.Server,
+			DatabaseURL: runningCfg.DatabaseURL, RedisURL: runningCfg.RedisURL,
+			ConfigDir: runningCfg.ConfigDir,
+		}
+		if err := genCfg.Validate(); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		name := req.Name
+		if name == "" {
+			name = req.Server.InstanceName
+		}
+		if name == "" {
+			name = "Unnamed Galaxy"
+		}
+
+		job := store.Create()
+		go func() {
+			ctx := context.Background()
+			store.SetRunning(job.ID)
+			cfgJSON, _ := json.Marshal(struct {
+				MorphologyID string              `json:"morphology_id"`
+				Galaxy       config.GalaxyConfig `json:"galaxy"`
+			}{req.MorphologyID, genCfg.Galaxy})
+			galaxyID, err := db.CreateGalaxy(ctx, pool, name, genCfg.Galaxy.Seed, cfgJSON)
+			if err != nil {
+				store.SetError(job.ID, "db: create galaxy: "+err.Error())
+				return
+			}
+			jobID := job.ID
+			emitFn := func(step string, done, total int, msg string) {
+				store.Emit(jobID, step, done, total, msg)
+			}
+			gen := galaxy.NewGenerator(genCfg, pool)
+			if err := gen.Step1Morphology(ctx, galaxyID, emitFn); err != nil {
+				_ = db.SetGalaxyStatus(ctx, pool, galaxyID, "error")
+				store.SetError(job.ID, err.Error())
+				return
+			}
+			store.SetDone(job.ID, galaxyID)
+		}()
+		writeJSON(w, http.StatusAccepted, job)
+	}
+}
+
+// triggerGalaxyStep handles POST /api/v1/galaxy/{galaxyID}/steps/{step}.
+// Runs the specified step (spectral|objects|planets) on an existing galaxy.
+func triggerGalaxyStep(pool *pgxpool.Pool, runningCfg *config.Config, store *jobs.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		galaxyID, err := uuid.Parse(chi.URLParam(r, "galaxyID"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid galaxy id")
+			return
+		}
+		step := chi.URLParam(r, "step")
+
+		// Load stored config for this galaxy
+		genCfg := &config.Config{
+			Galaxy: runningCfg.Galaxy, FTLW: runningCfg.FTLW, Sensors: runningCfg.Sensors,
+			Time: runningCfg.Time, Economy: runningCfg.Economy, PlanetGen: runningCfg.PlanetGen,
+			Research: runningCfg.Research, Combat: runningCfg.Combat, Server: runningCfg.Server,
+			DatabaseURL: runningCfg.DatabaseURL, RedisURL: runningCfg.RedisURL,
+			ConfigDir: runningCfg.ConfigDir,
+		}
+
+		job := store.Create()
+		go func() {
+			ctx := context.Background()
+			store.SetRunning(job.ID)
+			jobID := job.ID
+			emitFn := func(step string, done, total int, msg string) {
+				store.Emit(jobID, step, done, total, msg)
+			}
+			gen := galaxy.NewGenerator(genCfg, pool)
+			var stepErr error
+			switch step {
+			case "spectral":
+				stepErr = gen.Step2Spectral(ctx, galaxyID, emitFn)
+			case "objects":
+				stepErr = gen.Step3Objects(ctx, galaxyID, emitFn)
+			case "planets":
+				stepErr = gen.Step4Planets(ctx, galaxyID, emitFn)
+			default:
+				store.SetError(job.ID, "unknown step: "+step)
+				return
+			}
+			if stepErr != nil {
+				_ = db.SetGalaxyStatus(ctx, pool, galaxyID, "error")
+				store.SetError(job.ID, stepErr.Error())
+				return
+			}
+			store.SetDone(job.ID, galaxyID)
+		}()
+		writeJSON(w, http.StatusAccepted, job)
+	}
+}
+
+// handleDeleteGalaxy handles DELETE /api/v1/galaxy/{galaxyID}.
+func handleDeleteGalaxy(pool *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		galaxyID, err := uuid.Parse(chi.URLParam(r, "galaxyID"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid galaxy id")
+			return
+		}
+		if err := db.DeleteGalaxy(r.Context(), pool, galaxyID); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 	}
 }

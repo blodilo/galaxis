@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -20,9 +21,10 @@ type Config struct {
 	Combat    CombatConfig    `yaml:"combat"             json:"combat"`
 	Server    ServerConfig    `yaml:"server"             json:"server"`
 
-	// Runtime fields (not from YAML, set via env/flags)
+	// Runtime fields (not from YAML, set via env/flags or Load())
 	DatabaseURL string `yaml:"-" json:"-"`
 	RedisURL    string `yaml:"-" json:"-"`
+	ConfigDir   string `yaml:"-" json:"-"` // directory containing the config file
 }
 
 type GalaxyConfig struct {
@@ -81,14 +83,16 @@ type EconomyConfig struct {
 }
 
 type PlanetGenConfig struct {
-	FrostLineConstantAU      float64            `yaml:"frost_line_constant_au"      json:"frost_line_constant_au"`
-	AtmosphereTypeWeights    map[string]float64 `yaml:"atmosphere_type_weights"     json:"atmosphere_type_weights"`
-	MoonCollisionProbability float64            `yaml:"moon_collision_probability"  json:"moon_collision_probability"`
-	GasGiantMoonCountMin     int                `yaml:"gas_giant_moon_count_min"    json:"gas_giant_moon_count_min"`
-	GasGiantMoonCountMax     int                `yaml:"gas_giant_moon_count_max"    json:"gas_giant_moon_count_max"`
-	MaxPlanetsPerSystem      int                `yaml:"max_planets_per_system"      json:"max_planets_per_system"`
-	UsableSurfaceTerranBase  float64            `yaml:"usable_surface_terran_base"  json:"usable_surface_terran_base"`
-	UsableSurfaceHostileBase float64            `yaml:"usable_surface_hostile_base" json:"usable_surface_hostile_base"`
+	BiochemArchetypesFile        string             `yaml:"biochemistry_archetypes_file"          json:"biochemistry_archetypes_file"`
+	FrostLineConstantAU          float64            `yaml:"frost_line_constant_au"                json:"frost_line_constant_au"`
+	GreenhouseOverlapCorrection  float64            `yaml:"greenhouse_overlap_correction"         json:"greenhouse_overlap_correction"`
+	SO2AerosolThresholdWaterAct  float64            `yaml:"so2_aerosol_threshold_water_activity"  json:"so2_aerosol_threshold_water_activity"`
+	PlanetCountLambda            map[string]float64 `yaml:"planet_count_lambda"                   json:"planet_count_lambda"`
+	MoonCollisionProbability     float64            `yaml:"moon_collision_probability"            json:"moon_collision_probability"`
+	GasGiantMoonCountMin         int                `yaml:"gas_giant_moon_count_min"              json:"gas_giant_moon_count_min"`
+	GasGiantMoonCountMax         int                `yaml:"gas_giant_moon_count_max"              json:"gas_giant_moon_count_max"`
+	UsableSurfaceBase            float64            `yaml:"usable_surface_base"                   json:"usable_surface_base"`
+	UsableSurfaceHostileBase     float64            `yaml:"usable_surface_hostile_base"           json:"usable_surface_hostile_base"`
 }
 
 type ResearchConfig struct {
@@ -127,6 +131,8 @@ func Load(path string) (*Config, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("config: validation: %w", err)
 	}
+
+	cfg.ConfigDir = filepath.Dir(path)
 
 	// Override with environment variables if set
 	if v := os.Getenv("DATABASE_URL"); v != "" {

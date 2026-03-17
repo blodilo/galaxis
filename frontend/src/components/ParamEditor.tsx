@@ -94,19 +94,21 @@ function MapField({
 function Section({ title, tag, children }: { title: string; tag?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true)
   return (
-    <div className="border border-slate-800 rounded overflow-hidden">
+    <div className="border border-slate-800 rounded">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-3 py-2 bg-slate-900/60 hover:bg-slate-800/60 transition-colors"
+        className={`w-full flex items-center justify-between px-3 py-3 bg-slate-900/60
+                    hover:bg-slate-800/60 transition-colors
+                    ${open ? 'rounded-t' : 'rounded'}`}
       >
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-slate-300">{title}</span>
-          {tag && <span className="text-[9px] text-slate-600 font-mono">{tag}</span>}
+          {tag && <span className="text-xs text-slate-500 font-mono">{tag}</span>}
         </div>
-        <span className="text-slate-600 text-xs">{open ? '▲' : '▼'}</span>
+        <span className="text-slate-500 text-xs">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-2 bg-slate-950/40">
+        <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-2 bg-slate-950/40 rounded-b border-t border-slate-800">
           {children}
         </div>
       )}

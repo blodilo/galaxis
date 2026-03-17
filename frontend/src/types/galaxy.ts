@@ -5,12 +5,18 @@ export type StarType =
 
 export type NebulaType = 'HII' | 'SNR' | 'Globular'
 
+export type GalaxyStatus =
+  | 'generating'
+  | 'morphology' | 'spectral' | 'objects'
+  | 'ready' | 'active' | 'error'
+
 export interface Galaxy {
   id: string
   name: string
   seed: number
-  status: 'generating' | 'ready' | 'active' | 'error'
+  status: GalaxyStatus
   star_count: number
+  created_at?: string
 }
 
 export interface Star {
@@ -46,6 +52,47 @@ export interface StarFilter {
   Pulsar: boolean; StellarBH: boolean; SMBH: boolean
   HII: boolean; SNR: boolean; Globular: boolean
   showFTLW: boolean
+  onlyWithPlanets: boolean
+}
+
+export interface Moon {
+  id: string
+  orbit_index: number
+  mass_earth: number
+  radius_earth: number
+  composition_type: 'rocky' | 'icy' | 'mixed'
+  surface_temp_k: number
+  resource_deposits: Record<string, number>
+}
+
+export type PlanetType = 'rocky' | 'gas_giant' | 'ice_giant' | 'asteroid_belt'
+
+export interface Planet {
+  id: string
+  orbit_index: number
+  planet_type: PlanetType
+  orbit_distance_au: number
+  mass_earth: number
+  radius_earth: number
+  surface_gravity_g: number
+  atm_pressure_atm: number
+  atm_composition: Record<string, number>
+  greenhouse_delta_k: number
+  surface_temp_k: number
+  albedo: number
+  axial_tilt_deg: number
+  rotation_period_h: number
+  has_rings: boolean
+  biochem_archetype: string
+  biomass_potential: Record<string, number>
+  usable_surface_fraction: number
+  resource_deposits: Record<string, number>
+  moons: Moon[]
+}
+
+export interface SystemData {
+  star: Star
+  planets: Planet[]
 }
 
 export const DEFAULT_FILTER: StarFilter = {
@@ -55,4 +102,5 @@ export const DEFAULT_FILTER: StarFilter = {
   Pulsar: true, StellarBH: true, SMBH: true,
   HII: true, SNR: true, Globular: true,
   showFTLW: false,
+  onlyWithPlanets: false,
 }

@@ -1,4 +1,4 @@
-import type { Galaxy, Star, Nebula } from '../types/galaxy'
+import type { Galaxy, Star, Nebula, SystemData } from '../types/galaxy'
 
 const BASE = '/api/v1'
 
@@ -47,4 +47,8 @@ export async function fetchStar(galaxyID: string, starID: string): Promise<Star>
 export async function fetchNebulae(galaxyID: string): Promise<Nebula[]> {
   const data = await get<{ nebulae: Nebula[] }>(`${BASE}/galaxy/${galaxyID}/nebulae`)
   return data.nebulae ?? []
+}
+
+export async function fetchSystem(galaxyID: string, starID: string): Promise<SystemData> {
+  return get<SystemData>(`${BASE}/galaxy/${galaxyID}/stars/${starID}/system`)
 }

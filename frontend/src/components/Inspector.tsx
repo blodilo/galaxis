@@ -2,6 +2,7 @@ import type { Star } from '../types/galaxy'
 
 interface Props {
   star: Star | null
+  onViewSystem?: (star: Star) => void
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -26,7 +27,7 @@ function fmt(n: number | undefined | null, decimals = 3): string {
   return n.toLocaleString('de-DE', { maximumFractionDigits: decimals })
 }
 
-export function Inspector({ star }: Props) {
+export function Inspector({ star, onViewSystem }: Props) {
   if (!star) {
     return (
       <div className="flex flex-col gap-2">
@@ -66,6 +67,17 @@ export function Inspector({ star }: Props) {
           }
         />
       </div>
+
+      {star.planets_generated && onViewSystem && (
+        <button
+          onClick={() => onViewSystem(star)}
+          className="mt-2 w-full text-xs py-1.5 rounded border border-cyan-700 text-cyan-400
+                     hover:bg-cyan-900/30 transition-colors tracking-widest uppercase"
+        >
+          System anzeigen →
+        </button>
+      )}
+
     </div>
   )
 }

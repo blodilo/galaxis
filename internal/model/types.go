@@ -101,3 +101,76 @@ type GalaxyRow struct {
 	Status    string `json:"status"`
 	StarCount int    `json:"star_count"`
 }
+
+// ── Planet types ───────────────────────────────────────────────────────────────
+
+// Planet represents a generated planet in a star system.
+type Planet struct {
+	ID                    uuid.UUID
+	StarID                uuid.UUID
+	OrbitIndex            int
+	PlanetType            string // rocky | gas_giant | ice_giant | asteroid_belt
+	OrbitDistanceAU       float64
+	MassEarth             float64
+	RadiusEarth           float64
+	SurfaceGravityG       float64
+	AtmPressureAtm        float64
+	AtmComposition        map[string]float64 // gas → volume fraction
+	GreenhouseDeltaK      float64
+	SurfaceTempK          float64
+	Albedo                float64
+	AxialTiltDeg          float64
+	RotationPeriodH       float64
+	HasRings              bool
+	BiochemArchetype      string             // dominant archetype ID; "" = uninhabitable
+	BiomassPotential      map[string]float64 // archetype_id → 0.0–1.0
+	UsableSurfaceFraction float64
+	ResourceDeposits      map[string]float64 // resource_id → amount 0.0–1.0
+}
+
+// Moon represents a moon orbiting a planet.
+type Moon struct {
+	ID               uuid.UUID
+	PlanetID         uuid.UUID
+	OrbitIndex       int
+	MassEarth        float64
+	RadiusEarth      float64
+	CompositionType  string // rocky | icy | mixed
+	SurfaceTempK     float64
+	ResourceDeposits map[string]float64
+}
+
+// PlanetRow is a planet record for API responses.
+type PlanetRow struct {
+	ID                    string             `json:"id"`
+	OrbitIndex            int                `json:"orbit_index"`
+	PlanetType            string             `json:"planet_type"`
+	OrbitDistanceAU       float64            `json:"orbit_distance_au"`
+	MassEarth             float64            `json:"mass_earth"`
+	RadiusEarth           float64            `json:"radius_earth"`
+	SurfaceGravityG       float64            `json:"surface_gravity_g"`
+	AtmPressureAtm        float64            `json:"atm_pressure_atm"`
+	AtmComposition        map[string]float64 `json:"atm_composition"`
+	GreenhouseDeltaK      float64            `json:"greenhouse_delta_k"`
+	SurfaceTempK          float64            `json:"surface_temp_k"`
+	Albedo                float64            `json:"albedo"`
+	AxialTiltDeg          float64            `json:"axial_tilt_deg"`
+	RotationPeriodH       float64            `json:"rotation_period_h"`
+	HasRings              bool               `json:"has_rings"`
+	BiochemArchetype      string             `json:"biochem_archetype"`
+	BiomassPotential      map[string]float64 `json:"biomass_potential"`
+	UsableSurfaceFraction float64            `json:"usable_surface_fraction"`
+	ResourceDeposits      map[string]float64 `json:"resource_deposits"`
+	Moons                 []MoonRow          `json:"moons"`
+}
+
+// MoonRow is a moon record for API responses.
+type MoonRow struct {
+	ID               string             `json:"id"`
+	OrbitIndex       int                `json:"orbit_index"`
+	MassEarth        float64            `json:"mass_earth"`
+	RadiusEarth      float64            `json:"radius_earth"`
+	CompositionType  string             `json:"composition_type"`
+	SurfaceTempK     float64            `json:"surface_temp_k"`
+	ResourceDeposits map[string]float64 `json:"resource_deposits"`
+}
