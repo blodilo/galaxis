@@ -28,14 +28,26 @@ type Config struct {
 }
 
 type GalaxyConfig struct {
-	Seed          int64   `yaml:"seed"            json:"seed"`
-	NumStars      int     `yaml:"num_stars"       json:"num_stars"`
-	RadiusLY      float64 `yaml:"radius_ly"       json:"radius_ly"`
-	Type          string  `yaml:"type"            json:"type"`
-	Arms          int     `yaml:"arms"            json:"arms"`
-	ArmWinding    float64 `yaml:"arm_winding"     json:"arm_winding"`
-	ArmSpread     float64 `yaml:"arm_spread"      json:"arm_spread"`
-	SMBHMassSolar float64 `yaml:"smbh_mass_solar" json:"smbh_mass_solar"`
+	Seed            int64        `yaml:"seed"              json:"seed"`
+	NumStars        int          `yaml:"num_stars"         json:"num_stars"`
+	RadiusLY        float64      `yaml:"radius_ly"         json:"radius_ly"`
+	Type            string       `yaml:"type"              json:"type"`
+	Arms            int          `yaml:"arms"              json:"arms"`
+	ArmWinding      float64      `yaml:"arm_winding"       json:"arm_winding"`
+	ArmSpread       float64      `yaml:"arm_spread"        json:"arm_spread"`
+	SMBHMassSolar   float64      `yaml:"smbh_mass_solar"   json:"smbh_mass_solar"`
+	ExoticCounts    ExoticCounts `yaml:"exotic_counts"     json:"exotic_counts"`
+	ExoticPlacement string       `yaml:"exotic_placement"  json:"exotic_placement"`
+}
+
+// ExoticCounts configures how many of each exotic star type are placed per galaxy.
+// These are placed in addition to num_stars (they do not count against the cap).
+type ExoticCounts struct {
+	WR        int `yaml:"wr"         json:"wr"`
+	RStar     int `yaml:"rstar"      json:"rstar"`
+	SStar     int `yaml:"sstar"      json:"sstar"`
+	Pulsar    int `yaml:"pulsar"     json:"pulsar"`
+	StellarBH int `yaml:"stellar_bh" json:"stellar_bh"`
 }
 
 type FTLWConfig struct {

@@ -3,7 +3,10 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"galaxis/internal/config"
 	"galaxis/internal/db"
@@ -13,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"gopkg.in/yaml.v3"
 )
 
 // generateRequest is the POST /api/v1/generate body.
@@ -125,9 +129,33 @@ func getGenerateStatus(store *jobs.Store) http.HandlerFunc {
 	}
 }
 
+// lookupMorphologyImagePath resolves the filesystem path for a morphology template.
+// It reads the catalog YAML, finds the template by ID, verifies it is enabled,
+// and returns the absolute path to the image file.
+func lookupMorphologyImagePath(catalogPath, assetsDir, morphologyID string) (string, error) {
+	data, err := os.ReadFile(catalogPath)
+	if err != nil {
+		return "", fmt.Errorf("lookupMorphologyImagePath: read catalog %s: %w", catalogPath, err)
+	}
+	var cat morphologyCatalog
+	if err := yaml.Unmarshal(data, &cat); err != nil {
+		return "", fmt.Errorf("lookupMorphologyImagePath: parse catalog: %w", err)
+	}
+	for _, t := range cat.Templates {
+		if t.ID != morphologyID {
+			continue
+		}
+		if !t.Enabled {
+			return "", fmt.Errorf("lookupMorphologyImagePath: morphology %q is disabled", morphologyID)
+		}
+		return filepath.Join(assetsDir, "morphology", t.File), nil
+	}
+	return "", fmt.Errorf("lookupMorphologyImagePath: morphology %q not found in catalog", morphologyID)
+}
+
 // triggerStep1 handles POST /api/v1/generate/step1.
 // Creates a new galaxy record and runs Step1Morphology asynchronously.
-func triggerStep1(pool *pgxpool.Pool, runningCfg *config.Config, store *jobs.Store) http.HandlerFunc {
+func triggerStep1(pool *pgxpool.Pool, runningCfg *config.Config, store *jobs.Store, assetsDir, catalogPath string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := generateRequest{
 			Galaxy:    runningCfg.Galaxy,
@@ -180,8 +208,13 @@ func triggerStep1(pool *pgxpool.Pool, runningCfg *config.Config, store *jobs.Sto
 			emitFn := func(step string, done, total int, msg string) {
 				store.Emit(jobID, step, done, total, msg)
 			}
+			imagePath, err := lookupMorphologyImagePath(catalogPath, assetsDir, req.MorphologyID)
+			if err != nil {
+				store.SetError(job.ID, "morphology image: "+err.Error())
+				return
+			}
 			gen := galaxy.NewGenerator(genCfg, pool)
-			if err := gen.Step1Morphology(ctx, galaxyID, emitFn); err != nil {
+			if err := gen.Step1Morphology(ctx, galaxyID, imagePath, emitFn); err != nil {
 				_ = db.SetGalaxyStatus(ctx, pool, galaxyID, "error")
 				store.SetError(job.ID, err.Error())
 				return

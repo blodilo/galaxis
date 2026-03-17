@@ -202,10 +202,11 @@ func QueryStarByID(ctx context.Context, pool *pgxpool.Pool, starID uuid.UUID) (*
 
 // StarSpectralRecord holds minimal star data for spectral type assignment.
 type StarSpectralRecord struct {
-	ID         uuid.UUID
-	NebulaID   *uuid.UUID
-	Type       model.StarType
-	PlanetSeed int64
+	ID            uuid.UUID
+	NebulaID      *uuid.UUID
+	Type          model.StarType
+	PlanetSeed    int64
+	SpectralClass string
 }
 
 // StarTypeUpdate holds the new spectral data for a single star.
@@ -223,7 +224,7 @@ type StarTypeUpdate struct {
 // QueryStarsForSpectral returns minimal star data needed for spectral type assignment.
 func QueryStarsForSpectral(ctx context.Context, pool *pgxpool.Pool, galaxyID uuid.UUID) ([]StarSpectralRecord, error) {
 	rows, err := pool.Query(ctx,
-		`SELECT id, nebula_id::text, star_type, planet_seed FROM stars WHERE galaxy_id = $1`,
+		`SELECT id, nebula_id::text, star_type, planet_seed, spectral_class FROM stars WHERE galaxy_id = $1`,
 		galaxyID,
 	)
 	if err != nil {
@@ -235,7 +236,7 @@ func QueryStarsForSpectral(ctx context.Context, pool *pgxpool.Pool, galaxyID uui
 	for rows.Next() {
 		var r StarSpectralRecord
 		var nebulaIDStr *string
-		if err := rows.Scan(&r.ID, &nebulaIDStr, &r.Type, &r.PlanetSeed); err != nil {
+		if err := rows.Scan(&r.ID, &nebulaIDStr, &r.Type, &r.PlanetSeed, &r.SpectralClass); err != nil {
 			return nil, fmt.Errorf("db: scan star spectral: %w", err)
 		}
 		if nebulaIDStr != nil {

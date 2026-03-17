@@ -262,37 +262,14 @@ func planetSeed(galaxySeed int64, starID uuid.UUID) int64 {
 
 // ── Step-by-step generation pipeline ──────────────────────────────────────────
 
-// Step1Morphology places SMBH, nebulae, and all star positions with placeholder types.
-// Call Step2Spectral afterwards to assign real spectral classes.
+// Step1Morphology runs the image-based morphology pipeline.
+// imagePath must point to a JPEG or PNG galaxy image used as the density template.
 // emit is called with progress updates; pass nil for no-op.
-func (g *Generator) Step1Morphology(ctx context.Context, galaxyID uuid.UUID, emit func(string, int, int, string)) error {
+func (g *Generator) Step1Morphology(ctx context.Context, galaxyID uuid.UUID, imagePath string, emit func(string, int, int, string)) error {
 	if emit == nil {
 		emit = func(string, int, int, string) {}
 	}
-	start := time.Now()
-	cfg := g.cfg.Galaxy
-	rng := rand.New(rand.NewPCG(uint64(cfg.Seed), 0))
-	density := newDensityField(cfg.Arms, cfg.ArmWinding, cfg.ArmSpread, cfg.RadiusLY)
-
-	log.Printf("gen: step1 – SMBH")
-	if _, err := g.placeSMBH(ctx, rng, galaxyID); err != nil {
-		return fmt.Errorf("step1: SMBH: %w", err)
-	}
-	emit("morphology", 0, cfg.NumStars, "SMBH platziert")
-
-	log.Printf("gen: step1 – nebulae")
-	nebulae, err := g.generateNebulae(ctx, rng, galaxyID)
-	if err != nil {
-		return fmt.Errorf("step1: nebulae: %w", err)
-	}
-	emit("morphology", 0, cfg.NumStars, fmt.Sprintf("%d Nebel platziert", len(nebulae)))
-
-	log.Printf("gen: step1 – star positions (%d)", cfg.NumStars)
-	if err := g.placeStarsPlaceholder(ctx, rng, galaxyID, nebulae, density, emit); err != nil {
-		return fmt.Errorf("step1: stars: %w", err)
-	}
-	log.Printf("gen: step1 complete in %v", time.Since(start))
-	return db.SetGalaxyStatus(ctx, g.pool, galaxyID, "morphology")
+	return g.imageStep1Morphology(ctx, galaxyID, imagePath, emit)
 }
 
 // placeStarsPlaceholder places star positions with neutral placeholder properties.
@@ -397,6 +374,12 @@ func (g *Generator) Step2Spectral(ctx context.Context, galaxyID uuid.UUID, emit 
 	const emitEvery = 5000
 	for i, s := range stars {
 		if s.Type == StarTypeSMBH {
+			continue
+		}
+		// Stars assigned by the image spectral cascade already have a real
+		// SpectralClass ("—" is the placeholder from placeStarsPlaceholder;
+		// cascade-assigned stars have a concrete class like "G" or "cascade").
+		if s.SpectralClass != "—" {
 			continue
 		}
 		var nebulaType NebulaType

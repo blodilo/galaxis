@@ -43,7 +43,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config, store *jobs.Store, assetsDi
 	r.Route("/api/v1", func(r chi.Router) {
 		registerGalaxyRoutes(r, db, cfg, store)
 		registerCatalogRoutes(r, cfg, catalogPath)
-		registerGenerateRoutes(r, db, cfg, store)
+		registerGenerateRoutes(r, db, cfg, store, assetsDir, catalogPath)
 	})
 
 	return r
@@ -54,9 +54,9 @@ func registerCatalogRoutes(r chi.Router, cfg *config.Config, catalogPath string)
 	r.Get("/params/defaults", getDefaultParams(cfg))
 }
 
-func registerGenerateRoutes(r chi.Router, pool *pgxpool.Pool, cfg *config.Config, store *jobs.Store) {
+func registerGenerateRoutes(r chi.Router, pool *pgxpool.Pool, cfg *config.Config, store *jobs.Store, assetsDir, catalogPath string) {
 	r.Post("/generate", triggerGenerate(pool, cfg, store))
-	r.Post("/generate/step1", triggerStep1(pool, cfg, store))
+	r.Post("/generate/step1", triggerStep1(pool, cfg, store, assetsDir, catalogPath))
 	r.Get("/generate/{jobID}/status", getGenerateStatus(store))
 	// SSE endpoint: the handler itself bypasses the global 60s timeout via a
 	// deadline-free context that still tracks client disconnects.
