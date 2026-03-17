@@ -1,6 +1,6 @@
 # Progress – Galaxis v1.0
 
-**Datum:** 2026-03-16
+**Datum:** 2026-03-17
 
 ---
 
@@ -30,6 +30,7 @@
 | 2026-03-14 | game-params v1.2: rendering-Sektion ergänzt (nebula_raymarch_steps u.a. für ADR-011) |
 | 2026-03-16 | Makefile: .env auto-load + `make dev` Target |
 | 2026-03-16 | dev.sh: One-Command Dev-Stack (DB → Backend → Frontend → Browser) |
+| 2026-03-17 | BL-03/BL-09 implementiert: Image-Based Galaxy Generator (BL-11) – CDF+Inverse-Transform-Sampling, Spektral-Kaskade 2-Pass, Exotika-Platzierung (Farbaffinität), Schrittweise Pipeline Step1–Step4, SSE Progress-Streaming, Galaxy-Picker, game-params v1.3 (exotic_counts), TDD + Branch feat/image-generator |
 
 ---
 
@@ -112,10 +113,10 @@
 |---|---|---|---|
 | BL-01 | arm_winding + scaleLength Fix | `arm_winding: 2.0 → 0.35`, `scaleLength: 7% → 18%`, Arm-Envelope erweitern | 30 Min |
 | BL-02 | Hierarchisches Sampling | Region-first statt globales Rejection-Sampling → 50k Sterne in Sekunden statt Minuten | 1 Tag |
-| BL-03 | Foto-Template Morphologie | Reales Galaxienfoto als 2D-Dichtekarte; benötigt BL-02. Katalog in `galaxy_morphology_catalog_v1.0.yaml` (8 Typen Sa–Irr). 7 Bilder noch herunterzuladen (Prioritätsliste im Katalog). | 1 Tag |
+| BL-03 | Foto-Template Morphologie | Reales Galaxienfoto als 2D-Dichtekarte; benötigt BL-02. Katalog in `galaxy_morphology_catalog_v1.0.yaml` (8 Typen Sa–Irr). 7 Bilder noch herunterzuladen (Prioritätsliste im Katalog). | 1 Tag | ✅ (BL-11) |
 | BL-04 | Morphologie-Vorschau-Run | Status `preview_ready` → Frontend rendert sofort; benötigt BL-02 | 0,5 Tag |
 | BL-08 | Generator-Frontend | Route `/generate`: Morphologie-Auswahl aus Katalog, Parameter, Start-Button → POST `/api/generate` | 1 Tag | ✅ |
-| BL-09 | Morphologie-Dichte-Integration | Gewählte Morphologie-ID (aus Admin-Tool) als 2D-Dichtekarte in galaxy.Generator einbinden; ersetzt analytische Basis-Dichte. Benötigt BL-02 (hierarchisches Sampling) + BL-03 (Foto-Template). Vorerst: morphology_id wird nur in DB gespeichert. | 2 Tage |
+| BL-09 | Morphologie-Dichte-Integration | Gewählte Morphologie-ID (aus Admin-Tool) als 2D-Dichtekarte in galaxy.Generator einbinden; ersetzt analytische Basis-Dichte. Benötigt BL-02 (hierarchisches Sampling) + BL-03 (Foto-Template). Vorerst: morphology_id wird nur in DB gespeichert. | 2 Tage | ✅ (BL-11) |
 | BL-10 | Adaptiver Octree (FTLW-Grid) | Ersetzt Flat-Voxelgrid (500 ly) durch sternzahlbegrenzten Octree mit dualem Subdivisions-Kriterium (stellar + Dichte-Gradient). DB-Schema: `ftlw_octree` + `ftlw_octree_adjacency`. FTLW kumulativ (inkl. Fernbeiträge). A* auf Adjazenzliste. Benötigt BL-02 + BL-03 (Simplex Noise). ~100k Blattknoten bei 50k Sternen. ADR-010. | 3 Tage |
 | BL-05 | 500k Sterne | Binary-Transfer (Float32Array statt JSON) + BL-02 | 1,5 Tage |
 | BL-06a | WebGPURenderer-Migration | God-Mode-Viewer auf `WebGPURenderer` + TSL umstellen. Akzeptanz: Sterne/Filter/Inspektor/Bloom visuell identisch, WebGL-Fallback verifiziert. Baseline für BL-06b. ADR-011. | 1 Tag |
