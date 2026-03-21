@@ -19,11 +19,12 @@
 | `performance-estimate_v1.0.md` | Größen- und Performance-Abschätzung FTLW-Grid | ✅ aktuell |
 | `spielanleitung_v1.0.md` | Spielanleitung (spielerorientiert) | ✅ aktuell |
 | `tech-tree_v1.0.jsonld` | Technologiebaum als JSON-LD | ✅ v1 (erweiterbar) |
-| `game-params_v1.3.yaml` | Zentrale Spielparameter (Kalibrierung, Balancing, Performance-Limits) | ✅ aktuell |
+| `game-params_v1.4.yaml` | Zentrale Spielparameter (Kalibrierung, Balancing, Performance-Limits) | ✅ aktuell |
 | `tdd_image_galaxy_generator_v1.0.md` | TDD: Image-Based Galaxy Generator | ✅ aktuell |
 | `biochemistry_archetypes_v1.0.yaml` | Biochemie-Archetypen für Alien-Spezies | ✅ aktuell |
 | `galaxy_morphology_catalog_v1.0.yaml` | Katalog realer Galaxienfotos (75 Einträge, 21 Hubble-Typen) | ✅ aktuell |
 | `research-mechanics_v1.0.md` | Forschungsmechanik (stochastisches Modell) | ✅ aktuell |
+| `economy_v1.0.md` | Wirtschaftsmodell: Rohstoffe → Halbzeug → Komponenten → Schiffe, Markt, Logistik | ✅ Design finalisiert (alle 8 Entscheidungen getroffen) |
 
 ---
 
@@ -35,7 +36,7 @@
 | AP1 | Galaxiengenerator (Makro) + Admin-Tool | Weltgenerator | ✅ implementiert (50k Sterne, FTLW-Grid, Image-Based Generator BL-11) |
 | AP2 | Planetensystem-Generator (Mikro) | Weltgenerator | ✅ Basis + BL-12/15/18/20/21/24 fertig · BL-13/14/16/17/19/25 offen |
 | AP3 | Server-Core & Tick-Engine | Backend | 🔄 Skeleton ✅ · Remainder ausstehend (Auth, WebSocket, Redis) |
-| AP4 | Wirtschaftssystem & Ressourcen | Backend | 🔲 ausstehend |
+| AP4 | Wirtschaftssystem & Ressourcen | Backend | 🔄 Design finalisiert (economy_v1.0.md, alle Entscheidungen getroffen) · Implementation ausstehend |
 | AP5 | FTL-Navigation & Flottenlogistik | Backend | 🔲 ausstehend |
 | AP6 | Schiffsdesign, Kampf, Sensoren, UI | Frontend + Backend | 🔲 ausstehend |
 | AP7 | Technologie- & Forschungsbaum | Design + Backend | 📋 v1 spezifiziert (JSON-LD) |
