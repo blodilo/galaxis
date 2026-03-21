@@ -148,7 +148,7 @@ func lookupMorphologyImagePath(catalogPath, assetsDir, morphologyID string) (str
 		if !t.Enabled {
 			return "", fmt.Errorf("lookupMorphologyImagePath: morphology %q is disabled", morphologyID)
 		}
-		return filepath.Join(assetsDir, "morphology", t.File), nil
+		return filepath.Join(assetsDir, "morphology", t.HubbleType, t.File), nil
 	}
 	return "", fmt.Errorf("lookupMorphologyImagePath: morphology %q not found in catalog", morphologyID)
 }

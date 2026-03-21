@@ -144,7 +144,7 @@ export function GeneratorPage({ onViewGalaxy, onGalaxiesChanged, resumeGalaxy }:
   async function handleRunStep(stepIndex: number) {
     if (!galaxyId) return
     const stepNames = ['spectral', 'objects', 'planets'] as const
-    const stepName = stepNames[stepIndex - 1]
+    const stepName = stepNames[stepIndex - 2]
     setStepError('')
     setStepRunning(true)
     try {

@@ -111,6 +111,13 @@ type Planet struct {
 	OrbitIndex            int
 	PlanetType            string // rocky | gas_giant | ice_giant | asteroid_belt
 	OrbitDistanceAU       float64
+	Eccentricity          float64
+	ArgPeriapsisDeg       float64
+	InclinationDeg        float64
+	PerihelionAU          float64
+	AphelionAU            float64
+	TempEqMinK            float64 // equilibrium temp at aphelion
+	TempEqMaxK            float64 // equilibrium temp at perihelion
 	MassEarth             float64
 	RadiusEarth           float64
 	SurfaceGravityG       float64
@@ -133,6 +140,7 @@ type Moon struct {
 	ID               uuid.UUID
 	PlanetID         uuid.UUID
 	OrbitIndex       int
+	OrbitDistanceAU  float64
 	MassEarth        float64
 	RadiusEarth      float64
 	CompositionType  string // rocky | icy | mixed
@@ -146,6 +154,13 @@ type PlanetRow struct {
 	OrbitIndex            int                `json:"orbit_index"`
 	PlanetType            string             `json:"planet_type"`
 	OrbitDistanceAU       float64            `json:"orbit_distance_au"`
+	Eccentricity          float64            `json:"eccentricity"`
+	ArgPeriapsisDeg       float64            `json:"arg_periapsis_deg"`
+	InclinationDeg        float64            `json:"inclination_deg"`
+	PerihelionAU          float64            `json:"perihelion_au"`
+	AphelionAU            float64            `json:"aphelion_au"`
+	TempEqMinK            float64            `json:"temp_eq_min_k"`
+	TempEqMaxK            float64            `json:"temp_eq_max_k"`
 	MassEarth             float64            `json:"mass_earth"`
 	RadiusEarth           float64            `json:"radius_earth"`
 	SurfaceGravityG       float64            `json:"surface_gravity_g"`
@@ -168,6 +183,7 @@ type PlanetRow struct {
 type MoonRow struct {
 	ID               string             `json:"id"`
 	OrbitIndex       int                `json:"orbit_index"`
+	OrbitDistanceAU  float64            `json:"orbit_distance_au"`
 	MassEarth        float64            `json:"mass_earth"`
 	RadiusEarth      float64            `json:"radius_earth"`
 	CompositionType  string             `json:"composition_type"`

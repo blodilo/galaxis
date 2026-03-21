@@ -102,7 +102,21 @@ export function PlanetInspector({ planet }: Props) {
 
       {/* Physik */}
       <div className="flex flex-col gap-0 mt-1">
-        <Row label="Orbit"       value={`${fmt(planet.orbit_distance_au)} AU`} />
+        <Row label="Orbit (a)"   value={`${fmt(planet.orbit_distance_au)} AU`} />
+        {planet.eccentricity > 0.001 && (
+          <>
+            <Row label="Exzentrizität" value={fmt(planet.eccentricity, 3)} />
+            <Row label="Perihel"       value={`${fmt(planet.perihelion_au, 3)} AU`} />
+            <Row label="Aphel"         value={`${fmt(planet.aphelion_au, 3)} AU`} />
+            <Row
+              label="T-Spanne (eq)"
+              value={`${fmt(planet.temp_eq_min_k, 0)}–${fmt(planet.temp_eq_max_k, 0)} K`}
+            />
+          </>
+        )}
+        {planet.inclination_deg > 0.1 && (
+          <Row label="Inklination" value={`${fmt(planet.inclination_deg, 1)}°`} />
+        )}
         <Row label="Masse"       value={`${fmt(planet.mass_earth)} M⊕`} />
         <Row label="Radius"      value={`${fmt(planet.radius_earth)} R⊕`} />
         <Row label="Schwerkraft" value={`${fmt(planet.surface_gravity_g)} g`} />

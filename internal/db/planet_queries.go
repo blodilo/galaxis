@@ -31,6 +31,8 @@ func InsertPlanets(ctx context.Context, pool *pgxpool.Pool, planets []model.Plan
 		batch.Queue(`
 			INSERT INTO planets (
 				id, star_id, orbit_index, planet_type, orbit_distance_au,
+				eccentricity, arg_periapsis_deg, inclination_deg, perihelion_au, aphelion_au,
+				temp_eq_min_k, temp_eq_max_k,
 				mass_earth, radius_earth, surface_gravity_g,
 				atmosphere_pressure_atm, atmosphere_composition, greenhouse_delta_k,
 				surface_temp_k, albedo,
@@ -39,14 +41,18 @@ func InsertPlanets(ctx context.Context, pool *pgxpool.Pool, planets []model.Plan
 				usable_surface_fraction, resource_deposits
 			) VALUES (
 				$1,$2,$3,$4,$5,
-				$6,$7,$8,
-				$9,$10,$11,
-				$12,$13,
-				$14,$15,$16,
-				$17,$18,
-				$19,$20
+				$6,$7,$8,$9,$10,
+				$11,$12,
+				$13,$14,$15,
+				$16,$17,$18,
+				$19,$20,
+				$21,$22,$23,
+				$24,$25,
+				$26,$27
 			)`,
 			p.ID, p.StarID, p.OrbitIndex, p.PlanetType, p.OrbitDistanceAU,
+			p.Eccentricity, p.ArgPeriapsisDeg, p.InclinationDeg, p.PerihelionAU, p.AphelionAU,
+			p.TempEqMinK, p.TempEqMaxK,
 			p.MassEarth, p.RadiusEarth, p.SurfaceGravityG,
 			p.AtmPressureAtm, compJSON, p.GreenhouseDeltaK,
 			p.SurfaceTempK, p.Albedo,
@@ -75,11 +81,11 @@ func InsertMoons(ctx context.Context, pool *pgxpool.Pool, moons []model.Moon) er
 		resJSON, _ := json.Marshal(m.ResourceDeposits)
 		batch.Queue(`
 			INSERT INTO moons (
-				id, planet_id, orbit_index,
+				id, planet_id, orbit_index, orbit_distance_au,
 				mass_earth, radius_earth, composition_type,
 				surface_temp_k, resource_deposits
-			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-			m.ID, m.PlanetID, m.OrbitIndex,
+			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+			m.ID, m.PlanetID, m.OrbitIndex, m.OrbitDistanceAU,
 			m.MassEarth, m.RadiusEarth, m.CompositionType,
 			m.SurfaceTempK, resJSON,
 		)
@@ -164,6 +170,8 @@ func QueryPlanetsByStarID(ctx context.Context, pool *pgxpool.Pool, starID uuid.U
 	rows, err := pool.Query(ctx, `
 		SELECT
 			id, orbit_index, planet_type, orbit_distance_au,
+			eccentricity, arg_periapsis_deg, inclination_deg, perihelion_au, aphelion_au,
+			temp_eq_min_k, temp_eq_max_k,
 			mass_earth, radius_earth, surface_gravity_g,
 			atmosphere_pressure_atm, atmosphere_composition, greenhouse_delta_k,
 			surface_temp_k, albedo,
@@ -186,6 +194,8 @@ func QueryPlanetsByStarID(ctx context.Context, pool *pgxpool.Pool, starID uuid.U
 		var compJSON, bioJSON, resJSON []byte
 		if err := rows.Scan(
 			&p.ID, &p.OrbitIndex, &p.PlanetType, &p.OrbitDistanceAU,
+			&p.Eccentricity, &p.ArgPeriapsisDeg, &p.InclinationDeg, &p.PerihelionAU, &p.AphelionAU,
+			&p.TempEqMinK, &p.TempEqMaxK,
 			&p.MassEarth, &p.RadiusEarth, &p.SurfaceGravityG,
 			&p.AtmPressureAtm, &compJSON, &p.GreenhouseDeltaK,
 			&p.SurfaceTempK, &p.Albedo,
@@ -219,7 +229,7 @@ func QueryPlanetsByStarID(ctx context.Context, pool *pgxpool.Pool, starID uuid.U
 
 func queryMoonsByPlanetID(ctx context.Context, pool *pgxpool.Pool, planetID uuid.UUID) ([]model.MoonRow, error) {
 	rows, err := pool.Query(ctx, `
-		SELECT id, orbit_index, mass_earth, radius_earth,
+		SELECT id, orbit_index, orbit_distance_au, mass_earth, radius_earth,
 		       composition_type, surface_temp_k, resource_deposits
 		FROM moons WHERE planet_id = $1 ORDER BY orbit_index`,
 		planetID,
@@ -229,12 +239,12 @@ func queryMoonsByPlanetID(ctx context.Context, pool *pgxpool.Pool, planetID uuid
 	}
 	defer rows.Close()
 
-	var moons []model.MoonRow
+	moons := []model.MoonRow{}
 	for rows.Next() {
 		var m model.MoonRow
 		var resJSON []byte
 		if err := rows.Scan(
-			&m.ID, &m.OrbitIndex, &m.MassEarth, &m.RadiusEarth,
+			&m.ID, &m.OrbitIndex, &m.OrbitDistanceAU, &m.MassEarth, &m.RadiusEarth,
 			&m.CompositionType, &m.SurfaceTempK, &resJSON,
 		); err != nil {
 			return nil, fmt.Errorf("db: scan moon: %w", err)

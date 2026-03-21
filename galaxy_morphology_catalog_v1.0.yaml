@@ -1,4 +1,23 @@
 templates:
+- id: gemini_galaxy_sb
+  enabled: true
+  status: available
+  name: Gemini Galaxy (bereinigt)
+  designation: Gemini Galaxy
+  hubble_type: Sb
+  hubble_description: Bereinigte Sb-Spiralvorlage (Gemini-Quelle, keine CCD-Artefakte)
+  file: Gemini_galaxy.png
+  asset_path: assets/morphology/Sb/Gemini_galaxy.png
+  source_archive: Gemini Observatory
+  license: Public Domain
+  credit: Gemini Observatory
+  resolution_px:
+  - 2524
+  - 1696
+  orientation: face-on
+  morph_type_raw: Sb
+  simbad_verified: false
+  quality_notes: Manuell bereinigt, keine Hintergrundobjekte
 - id: m101_sc
   enabled: false
   status: superseded
@@ -223,6 +242,1538 @@ templates:
     auf 4k vor Verwendung.
 
     '
+- id: ngc__6941_sb
+  enabled: true
+  status: available
+  name: NGC  6941
+  designation: NGC  6941
+  hubble_type: Sb
+  hubble_description: 'De Vaucouleurs Sb — SIMBAD RC3 morph_type: Sb'
+  file: NGC__6941.jpg
+  asset_path: assets/morphology/Sb/NGC__6941.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: Sb
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, near face-on, displays distinguishable
+    spiral arms and a prominent bulge consistent with an Sb type, and is not dominated
+    by artifacts or foreground stars.'
+- id: z_427-10_e0
+  enabled: true
+  status: available
+  name: Z 427-10
+  designation: Z 427-10
+  hubble_type: E0
+  hubble_description: 'De Vaucouleurs E0 — SIMBAD RC3 morph_type: E0'
+  file: Z_427-10.jpg
+  asset_path: assets/morphology/E0/Z_427-10.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E0
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, and displays
+    the smooth, round morphology characteristic of an E0 elliptical galaxy, without
+    significant artifacts or obscuration.'
+- id: ic_2420_e0
+  enabled: true
+  status: available
+  name: IC 2420
+  designation: IC 2420
+  hubble_type: E0
+  hubble_description: 'De Vaucouleurs E0 — SIMBAD RC3 morph_type: E'
+  file: IC_2420.jpg
+  asset_path: assets/morphology/E0/IC_2420.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, smooth,
+    perfectly round, and centrally concentrated, consistent with an E0 elliptical
+    galaxy.'
+- id: z_380-35_e0
+  enabled: true
+  status: available
+  name: Z 380-35
+  designation: Z 380-35
+  hubble_type: E0
+  hubble_description: 'De Vaucouleurs E0 — SIMBAD RC3 morph_type: E1'
+  file: Z_380-35.jpg
+  asset_path: assets/morphology/E0/Z_380-35.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E1
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, centered, smooth, centrally
+    concentrated, and appears perfectly circular, matching the characteristics of
+    an E0 galaxy.'
+- id: z_192-42_e0
+  enabled: true
+  status: available
+  name: Z 192-42
+  designation: Z 192-42
+  hubble_type: E0
+  hubble_description: 'De Vaucouleurs E0 — SIMBAD RC3 morph_type: E'
+  file: Z_192-42.jpg
+  asset_path: assets/morphology/E0/Z_192-42.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, centered, and its smooth,
+    round, featureless morphology is highly consistent with an E0 classification.'
+- id: ngc__6508_e1
+  enabled: true
+  status: available
+  name: NGC  6508
+  designation: NGC  6508
+  hubble_type: E1
+  hubble_description: 'De Vaucouleurs E1 — SIMBAD RC3 morph_type: E'
+  file: NGC__6508.jpg
+  asset_path: assets/morphology/E1/NGC__6508.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, and displays
+    a smooth, slightly flattened elliptical morphology consistent with type E1, despite
+    some central saturation.'
+- id: ngc__2720_e1
+  enabled: true
+  status: available
+  name: NGC  2720
+  designation: NGC  2720
+  hubble_type: E1
+  hubble_description: 'De Vaucouleurs E1 — SIMBAD RC3 morph_type: E-SO'
+  file: NGC__2720.jpg
+  asset_path: assets/morphology/E1/NGC__2720.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-SO
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, centered, very round with
+    a smooth light profile, and free from significant artifacts, consistent with an
+    E1 type.'
+- id: z__11-93_e1
+  enabled: true
+  status: available
+  name: Z  11-93
+  designation: Z  11-93
+  hubble_type: E1
+  hubble_description: 'De Vaucouleurs E1 — SIMBAD RC3 morph_type: E'
+  file: Z__11-93.jpg
+  asset_path: assets/morphology/E1/Z__11-93.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, and displays
+    a smooth, nearly circular elliptical morphology consistent with an E1 type, without
+    significant artifacts or dominating foreground objects.'
+- id: ngc__3570_e1
+  enabled: true
+  status: available
+  name: NGC  3570
+  designation: NGC  3570
+  hubble_type: E1
+  hubble_description: 'De Vaucouleurs E1 — SIMBAD RC3 morph_type: E'
+  file: NGC__3570.jpg
+  asset_path: assets/morphology/E1/NGC__3570.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is a clearly visible, smooth, and nearly circular
+    elliptical, consistent with an E1 type, and is not significantly affected by artifacts.'
+- id: ngc__6363_e1
+  enabled: true
+  status: available
+  name: NGC  6363
+  designation: NGC  6363
+  hubble_type: E1
+  hubble_description: 'De Vaucouleurs E1 — SIMBAD RC3 morph_type: E'
+  file: NGC__6363.jpg
+  asset_path: assets/morphology/E1/NGC__6363.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is a clearly visible, smooth, and slightly elliptical
+    shape, consistent with the E1 de Vaucouleurs type.'
+- id: ngc__6515_e2
+  enabled: true
+  status: available
+  name: NGC  6515
+  designation: NGC  6515
+  hubble_type: E2
+  hubble_description: 'De Vaucouleurs E2 — SIMBAD RC3 morph_type: E3'
+  file: NGC__6515.jpg
+  asset_path: assets/morphology/E2/NGC__6515.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E3
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, centered, and displays the
+    smooth, slightly elliptical morphology consistent with an E2 type, without significant
+    artifacts or obscuration.'
+- id: ngc__6311_e2
+  enabled: true
+  status: available
+  name: NGC  6311
+  designation: NGC  6311
+  hubble_type: E2
+  hubble_description: 'De Vaucouleurs E2 — SIMBAD RC3 morph_type: E'
+  file: NGC__6311.jpg
+  asset_path: assets/morphology/E2/NGC__6311.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, centered, and displays a
+    smooth, elliptical morphology consistent with an E2 type.'
+- id: ngc__7487_e2
+  enabled: true
+  status: available
+  name: NGC  7487
+  designation: NGC  7487
+  hubble_type: E2
+  hubble_description: 'De Vaucouleurs E2 — SIMBAD RC3 morph_type: E-SO'
+  file: NGC__7487.jpg
+  asset_path: assets/morphology/E2/NGC__7487.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-SO
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, centered, and displays a
+    smooth, slightly elliptical morphology consistent with an E2 classification without
+    significant artifacts.'
+- id: ngc___794_e2
+  enabled: true
+  status: available
+  name: NGC   794
+  designation: NGC   794
+  hubble_type: E2
+  hubble_description: 'De Vaucouleurs E2 — SIMBAD RC3 morph_type: E-SO'
+  file: NGC___794.jpg
+  asset_path: assets/morphology/E2/NGC___794.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-SO
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, and displays
+    a smooth, elliptical morphology with an apparent flattening consistent with an
+    E2 type.'
+- id: ngc__6598_e2
+  enabled: true
+  status: available
+  name: NGC  6598
+  designation: NGC  6598
+  hubble_type: E2
+  hubble_description: 'De Vaucouleurs E2 — SIMBAD RC3 morph_type: E'
+  file: NGC__6598.jpg
+  asset_path: assets/morphology/E2/NGC__6598.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, and displays
+    a smooth, slightly flattened elliptical morphology consistent with an E2 type.'
+- id: ic_1371_e3
+  enabled: true
+  status: available
+  name: IC 1371
+  designation: IC 1371
+  hubble_type: E3
+  hubble_description: 'De Vaucouleurs E3 — SIMBAD RC3 morph_type: E-SO'
+  file: IC_1371.jpg
+  asset_path: assets/morphology/E3/IC_1371.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-SO
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, smooth, and its elliptical
+    shape and degree of flattening are consistent with an E3 classification.'
+- id: z_265-27_e3
+  enabled: true
+  status: available
+  name: Z 265-27
+  designation: Z 265-27
+  hubble_type: E3
+  hubble_description: 'De Vaucouleurs E3 — SIMBAD RC3 morph_type: E'
+  file: Z_265-27.jpg
+  asset_path: assets/morphology/E3/Z_265-27.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is a clearly visible, smooth elliptical galaxy
+    with a moderate elongation consistent with an E3 classification, and is suitable
+    as a density-map template.'
+- id: ic_1154_e3
+  enabled: true
+  status: available
+  name: IC 1154
+  designation: IC 1154
+  hubble_type: E3
+  hubble_description: 'De Vaucouleurs E3 — SIMBAD RC3 morph_type: E'
+  file: IC_1154.jpg
+  asset_path: assets/morphology/E3/IC_1154.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, well-centered, and displays
+    a smooth elliptical morphology with an apparent ellipticity consistent with an
+    E3 classification.'
+- id: z__19-63_e3
+  enabled: true
+  status: available
+  name: Z  19-63
+  designation: Z  19-63
+  hubble_type: E3
+  hubble_description: 'De Vaucouleurs E3 — SIMBAD RC3 morph_type: E'
+  file: Z__19-63.jpg
+  asset_path: assets/morphology/E3/Z__19-63.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, and displays
+    the smooth elliptical morphology consistent with an E3 classification, without
+    being dominated by artifacts or foreground objects.'
+- id: ic_5258_e3
+  enabled: true
+  status: available
+  name: IC 5258
+  designation: IC 5258
+  hubble_type: E3
+  hubble_description: 'De Vaucouleurs E3 — SIMBAD RC3 morph_type: E-SO'
+  file: IC_5258.jpg
+  asset_path: assets/morphology/E3/IC_5258.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-SO
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, centered, and displays a
+    smooth, moderately flattened elliptical morphology consistent with an E3 type,
+    without significant artifacts or obscuration.'
+- id: mcg-07-10-019_e4
+  enabled: true
+  status: available
+  name: MCG-07-10-019
+  designation: MCG-07-10-019
+  hubble_type: E4
+  hubble_description: 'De Vaucouleurs E4 — SIMBAD RC3 morph_type: E'
+  file: MCG-07-10-019.jpg
+  asset_path: assets/morphology/E4/MCG-07-10-019.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is a clearly visible, smooth ellipse with an
+    apparent elongation consistent with an E4 classification.'
+- id: ngc___333_e4
+  enabled: true
+  status: available
+  name: NGC   333
+  designation: NGC   333
+  hubble_type: E4
+  hubble_description: 'De Vaucouleurs E4 — SIMBAD RC3 morph_type: E-SO'
+  file: NGC___333.jpg
+  asset_path: assets/morphology/E4/NGC___333.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-SO
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The image clearly shows a smooth, elongated elliptical galaxy
+    consistent with an E4 classification, without significant obscuring artifacts.'
+- id: z_552-20_e4
+  enabled: true
+  status: available
+  name: Z 552-20
+  designation: Z 552-20
+  hubble_type: E4
+  hubble_description: 'De Vaucouleurs E4 — SIMBAD RC3 morph_type: E'
+  file: Z_552-20.jpg
+  asset_path: assets/morphology/E4/Z_552-20.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The image contains prominent, clearly visible galaxies that
+    are smooth and elliptical, with a flattening consistent with E4 morphology.'
+- id: z_311-29_e4
+  enabled: true
+  status: available
+  name: Z 311-29
+  designation: Z 311-29
+  hubble_type: E4
+  hubble_description: 'De Vaucouleurs E4 — SIMBAD RC3 morph_type: E-SO'
+  file: Z_311-29.jpg
+  asset_path: assets/morphology/E4/Z_311-29.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-SO
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, and exhibits
+    a smooth elliptical morphology visually consistent with an E4 galaxy, with no
+    dominating artifacts.'
+- id: z_459-70_e4
+  enabled: true
+  status: available
+  name: Z 459-70
+  designation: Z 459-70
+  hubble_type: E4
+  hubble_description: 'De Vaucouleurs E4 — SIMBAD RC3 morph_type: E-SO'
+  file: Z_459-70.jpg
+  asset_path: assets/morphology/E4/Z_459-70.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-SO
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, smoothly elliptical, and
+    its apparent flattening is consistent with an E4 type, without significant artifacts
+    or obstruction.'
+- id: mcg-01-01-020_e5
+  enabled: true
+  status: available
+  name: MCG-01-01-020
+  designation: MCG-01-01-020
+  hubble_type: E5
+  hubble_description: 'De Vaucouleurs E5 — SIMBAD RC3 morph_type: E-SO'
+  file: MCG-01-01-020.jpg
+  asset_path: assets/morphology/E5/MCG-01-01-020.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-SO
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, smoothly elliptical, and
+    its elongation is visually consistent with an E5 type without significant obscuring
+    artifacts.'
+- id: z_338-54_e5
+  enabled: true
+  status: available
+  name: Z 338-54
+  designation: Z 338-54
+  hubble_type: E5
+  hubble_description: 'De Vaucouleurs E5 — SIMBAD RC3 morph_type: E-SO'
+  file: Z_338-54.jpg
+  asset_path: assets/morphology/E5/Z_338-54.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-SO
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The image clearly shows a smooth, elongated elliptical galaxy
+    consistent with an E5 type, without significant artifacts or obscuring foreground
+    objects.'
+- id: z_197-21_e5
+  enabled: true
+  status: available
+  name: Z 197-21
+  designation: Z 197-21
+  hubble_type: E5
+  hubble_description: 'De Vaucouleurs E5 — SIMBAD RC3 morph_type: E4'
+  file: Z_197-21.jpg
+  asset_path: assets/morphology/E5/Z_197-21.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E4
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, and displays
+    a smooth, elongated elliptical morphology consistent with an E5 type.'
+- id: leda_2161383_e5
+  enabled: true
+  status: available
+  name: LEDA 2161383
+  designation: LEDA 2161383
+  hubble_type: E5
+  hubble_description: 'De Vaucouleurs E5 — SIMBAD RC3 morph_type: E'
+  file: LEDA_2161383.jpg
+  asset_path: assets/morphology/E5/LEDA_2161383.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, shows a
+    smooth elongated elliptical shape consistent with E5, and is not dominated by
+    artifacts.'
+- id: z_239-46_e5
+  enabled: true
+  status: available
+  name: Z 239-46
+  designation: Z 239-46
+  hubble_type: E5
+  hubble_description: 'De Vaucouleurs E5 — SIMBAD RC3 morph_type: E'
+  file: Z_239-46.jpg
+  asset_path: assets/morphology/E5/Z_239-46.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, centered, and displays a
+    smooth, elongated elliptical morphology consistent with an E5 classification.'
+- id: leda__678973_e6
+  enabled: true
+  status: available
+  name: LEDA  678973
+  designation: LEDA  678973
+  hubble_type: E6
+  hubble_description: 'De Vaucouleurs E6 — SIMBAD RC3 morph_type: Ep'
+  file: LEDA__678973.jpg
+  asset_path: assets/morphology/E6/LEDA__678973.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: Ep
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, smooth, and highly elongated,
+    consistent with the flattened elliptical morphology of a de Vaucouleurs E6 type.'
+- id: apmbgc_406-069_088_e6
+  enabled: true
+  status: available
+  name: APMBGC 406-069+088
+  designation: APMBGC 406-069+088
+  hubble_type: E6
+  hubble_description: 'De Vaucouleurs E6 — SIMBAD RC3 morph_type: E'
+  file: APMBGC_406-069_088.jpg
+  asset_path: assets/morphology/E6/APMBGC_406-069_088.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, shows a distinct and highly
+    elongated elliptical morphology consistent with an E6 type, and is not significantly
+    obscured by artifacts or foreground stars.'
+- id: leda__131928_e6
+  enabled: true
+  status: available
+  name: LEDA  131928
+  designation: LEDA  131928
+  hubble_type: E6
+  hubble_description: 'De Vaucouleurs E6 — SIMBAD RC3 morph_type: E'
+  file: LEDA__131928.jpg
+  asset_path: assets/morphology/E6/LEDA__131928.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, smooth, highly elongated,
+    and its morphology is consistent with an E6 elliptical type.'
+- id: z_501-39_e7
+  enabled: true
+  status: available
+  name: Z 501-39
+  designation: Z 501-39
+  hubble_type: E7
+  hubble_description: 'De Vaucouleurs E7 — SIMBAD RC3 morph_type: E-S0'
+  file: Z_501-39.jpg
+  asset_path: assets/morphology/E7/Z_501-39.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-S0
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is a clearly visible, smooth, and highly elongated
+    elliptical, consistent with a de Vaucouleurs type E7.'
+- id: mcg-02-09-038_e7
+  enabled: true
+  status: available
+  name: MCG-02-09-038
+  designation: MCG-02-09-038
+  hubble_type: E7
+  hubble_description: 'De Vaucouleurs E7 — SIMBAD RC3 morph_type: E-S0'
+  file: MCG-02-09-038.jpg
+  asset_path: assets/morphology/E7/MCG-02-09-038.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E-S0
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, highly elongated, smooth,
+    and featureless, which is visually consistent with an E7 elliptical galaxy, and
+    not dominated by artifacts.'
+- id: lcrs_b031147_5-382905_e7
+  enabled: true
+  status: available
+  name: LCRS B031147.5-382905
+  designation: LCRS B031147.5-382905
+  hubble_type: E7
+  hubble_description: 'De Vaucouleurs E7 — SIMBAD RC3 morph_type: E'
+  file: LCRS_B031147_5-382905.jpg
+  asset_path: assets/morphology/E7/LCRS_B031147_5-382905.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, centrally located, and its
+    highly elongated, smooth elliptical shape is visually consistent with an E7 classification.'
+- id: ugc__4728_e7
+  enabled: true
+  status: available
+  name: UGC  4728
+  designation: UGC  4728
+  hubble_type: E7
+  hubble_description: 'De Vaucouleurs E7 — SIMBAD RC3 morph_type: E'
+  file: UGC__4728.jpg
+  asset_path: assets/morphology/E7/UGC__4728.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, shows a highly elongated
+    and smooth elliptical shape consistent with an E7 de Vaucouleurs type, and is
+    not dominated by artifacts or foreground objects.'
+- id: z__60-7_e7
+  enabled: true
+  status: available
+  name: Z  60-7
+  designation: Z  60-7
+  hubble_type: E7
+  hubble_description: 'De Vaucouleurs E7 — SIMBAD RC3 morph_type: E'
+  file: Z__60-7.jpg
+  asset_path: assets/morphology/E7/Z__60-7.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: E
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, and its
+    smooth, highly elongated morphology is consistent with an E7 elliptical galaxy.'
+- id: ic_1054_s0
+  enabled: true
+  status: available
+  name: IC 1054
+  designation: IC 1054
+  hubble_type: S0
+  hubble_description: 'De Vaucouleurs S0 — SIMBAD RC3 morph_type: S0'
+  file: IC_1054.jpg
+  asset_path: assets/morphology/S0/IC_1054.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: S0
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, face-on, and exhibits the
+    smooth, disk-like morphology consistent with an S0 lenticular galaxy, with foreground
+    stars not obscuring its primary features.'
+- id: leda__130098_s0
+  enabled: true
+  status: available
+  name: LEDA  130098
+  designation: LEDA  130098
+  hubble_type: S0
+  hubble_description: 'De Vaucouleurs S0 — SIMBAD RC3 morph_type: S0...'
+  file: LEDA__130098.jpg
+  asset_path: assets/morphology/S0/LEDA__130098.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: S0...
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, near face-on, and exhibits
+    a smooth, centrally concentrated morphology consistent with an S0 lenticular type.'
+- id: leda__129355_s0
+  enabled: true
+  status: available
+  name: LEDA  129355
+  designation: LEDA  129355
+  hubble_type: S0
+  hubble_description: 'De Vaucouleurs S0 — SIMBAD RC3 morph_type: S0...'
+  file: LEDA__129355.jpg
+  asset_path: assets/morphology/S0/LEDA__129355.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: S0...
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, roughly centered, and displays
+    a smooth, extended morphology consistent with an S0 type, without being strongly
+    inclined or obscured by major artifacts.'
+- id: leda__127950_s0
+  enabled: true
+  status: available
+  name: LEDA  127950
+  designation: LEDA  127950
+  hubble_type: S0
+  hubble_description: 'De Vaucouleurs S0 — SIMBAD RC3 morph_type: S0...'
+  file: LEDA__127950.jpg
+  asset_path: assets/morphology/S0/LEDA__127950.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: S0...
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy displays a smooth, centrally concentrated light
+    distribution consistent with an S0 type, without visible spiral arms or strong
+    inclination.'
+- id: leda__129177_s0
+  enabled: true
+  status: available
+  name: LEDA  129177
+  designation: LEDA  129177
+  hubble_type: S0
+  hubble_description: 'De Vaucouleurs S0 — SIMBAD RC3 morph_type: S0...'
+  file: LEDA__129177.jpg
+  asset_path: assets/morphology/S0/LEDA__129177.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: S0...
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, near-face-on, exhibits a
+    smooth lenticular morphology consistent with S0, and despite central saturation,
+    its overall features are distinguishable and not dominated by other artifacts.'
+- id: z_312-10_s0p
+  enabled: true
+  status: available
+  name: Z 312-10
+  designation: Z 312-10
+  hubble_type: S0p
+  hubble_description: 'De Vaucouleurs S0p — SIMBAD RC3 morph_type: S0+'
+  file: Z_312-10.jpg
+  asset_path: assets/morphology/S0p/Z_312-10.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: S0+
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy clearly shows a central bulge and a disk without
+    spiral arms, consistent with an S0 classification, and exhibits a slightly irregular
+    or diffuse outer disk which can be interpreted as "peculiar."'
+- id: ngc__4963_s0p
+  enabled: true
+  status: available
+  name: NGC  4963
+  designation: NGC  4963
+  hubble_type: S0p
+  hubble_description: 'De Vaucouleurs S0p — SIMBAD RC3 morph_type: S0+'
+  file: NGC__4963.jpg
+  asset_path: assets/morphology/S0p/NGC__4963.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: S0+
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy shows a bright central bulge and a smooth disk
+    without clear spiral arms, consistent with S0, and faint, somewhat irregular outer
+    disk features justify the ''peculiar'' classification.'
+- id: ngc__6014_s0a
+  enabled: true
+  status: available
+  name: NGC  6014
+  designation: NGC  6014
+  hubble_type: S0a
+  hubble_description: 'De Vaucouleurs S0a — SIMBAD RC3 morph_type: SAB0/a'
+  file: NGC__6014.jpg
+  asset_path: assets/morphology/S0a/NGC__6014.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SAB0/a
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is face-on, clearly visible, and its morphology
+    with a prominent bulge and smooth, armless disk is consistent with an S0a lenticular
+    type.'
+- id: z_208-48_s0a
+  enabled: true
+  status: available
+  name: Z 208-48
+  designation: Z 208-48
+  hubble_type: S0a
+  hubble_description: 'De Vaucouleurs S0a — SIMBAD RC3 morph_type: S0/a'
+  file: Z_208-48.jpg
+  asset_path: assets/morphology/S0a/Z_208-48.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: S0/a
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy displays a clear bulge and a smooth, un-armed
+    disk, which is consistent with an S0a lenticular galaxy, and its morphology is
+    discernible despite a nearby foreground star and moderate inclination.'
+- id: z_475-18_sa
+  enabled: true
+  status: available
+  name: Z 475-18
+  designation: Z 475-18
+  hubble_type: Sa
+  hubble_description: 'De Vaucouleurs Sa — SIMBAD RC3 morph_type: Sa'
+  file: Z_475-18.jpg
+  asset_path: assets/morphology/Sa/Z_475-18.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: Sa
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy displays a prominent central bulge and a very
+    smooth, tightly wound disk, consistent with the morphology of an Sa type spiral
+    galaxy.'
+- id: z__17-63_sa
+  enabled: true
+  status: available
+  name: Z  17-63
+  designation: Z  17-63
+  hubble_type: Sa
+  hubble_description: 'De Vaucouleurs Sa — SIMBAD RC3 morph_type: Sa'
+  file: Z__17-63.jpg
+  asset_path: assets/morphology/Sa/Z__17-63.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: Sa
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, near face-on, and displays
+    a prominent central bulge with tightly wound, indistinct spiral arms, consistent
+    with an Sa type morphology.'
+- id: z_156-66_sa
+  enabled: true
+  status: available
+  name: Z 156-66
+  designation: Z 156-66
+  hubble_type: Sa
+  hubble_description: 'De Vaucouleurs Sa — SIMBAD RC3 morph_type: SA_B_a'
+  file: Z_156-66.jpg
+  asset_path: assets/morphology/Sa/Z_156-66.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SA_B_a
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is visible, near face-on, displays a prominent
+    bulge and faint, tightly wound spiral arms consistent with an Sa type, and lacks
+    significant artifacts.'
+- id: z__71-29_sa
+  enabled: true
+  status: available
+  name: Z  71-29
+  designation: Z  71-29
+  hubble_type: Sa
+  hubble_description: 'De Vaucouleurs Sa — SIMBAD RC3 morph_type: Sa'
+  file: Z__71-29.jpg
+  asset_path: assets/morphology/Sa/Z__71-29.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: Sa
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is face-on, centrally located, shows a prominent
+    bulge, and faint, tightly wound arms consistent with an Sa type, and despite a
+    bright nearby foreground star, the galaxy''s morphology is clearly distinguishable.'
+- id: z_457-7_sa
+  enabled: true
+  status: available
+  name: Z 457-7
+  designation: Z 457-7
+  hubble_type: Sa
+  hubble_description: 'De Vaucouleurs Sa — SIMBAD RC3 morph_type: Sa'
+  file: Z_457-7.jpg
+  asset_path: assets/morphology/Sa/Z_457-7.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: Sa
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The image shows a near face-on spiral galaxy with a dominant
+    central bulge and tightly wound, faint arms, consistent with an Sa morphology.'
+- id: m__74_sc
+  enabled: true
+  status: available
+  name: M  74
+  designation: M  74
+  hubble_type: Sc
+  hubble_description: 'De Vaucouleurs Sc — SIMBAD RC3 morph_type: Sc'
+  file: M__74.jpg
+  asset_path: assets/morphology/Sc/M__74.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: Sc
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is face-on, clearly displays loosely wound, clumpy
+    spiral arms with a small central bulge, and lacks a bar, making it a good representation
+    of an Sc type.'
+- id: ngc__7272_sba
+  enabled: true
+  status: available
+  name: NGC  7272
+  designation: NGC  7272
+  hubble_type: SBa
+  hubble_description: 'De Vaucouleurs SBa — SIMBAD RC3 morph_type: SBa'
+  file: NGC__7272.jpg
+  asset_path: assets/morphology/SBa/NGC__7272.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBa
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, near face-on, displays a
+    distinct central bar and tightly wound spiral arms, and is consistent with an
+    SBa morphology.'
+- id: z__82-4_sba
+  enabled: true
+  status: available
+  name: Z  82-4
+  designation: Z  82-4
+  hubble_type: SBa
+  hubble_description: 'De Vaucouleurs SBa — SIMBAD RC3 morph_type: SBa'
+  file: Z__82-4.jpg
+  asset_path: assets/morphology/SBa/Z__82-4.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBa
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible and near face-on, with a distinct
+    bar, prominent bulge, and a faint, tightly wound outer ring/arms, all consistent
+    with an SBa morphology.'
+- id: z_406-98_sbab
+  enabled: true
+  status: available
+  name: Z 406-98
+  designation: Z 406-98
+  hubble_type: SBab
+  hubble_description: 'De Vaucouleurs SBab — SIMBAD RC3 morph_type: SBab'
+  file: Z_406-98.jpg
+  asset_path: assets/morphology/SBab/Z_406-98.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBab
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The image clearly shows a face-on barred spiral galaxy with
+    discernible spiral arms and a central bar, which is visually consistent with the
+    SBab classification.'
+- id: z_495-30_sbab
+  enabled: true
+  status: available
+  name: Z 495-30
+  designation: Z 495-30
+  hubble_type: SBab
+  hubble_description: 'De Vaucouleurs SBab — SIMBAD RC3 morph_type: SBab'
+  file: Z_495-30.jpg
+  asset_path: assets/morphology/SBab/Z_495-30.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBab
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is a clearly visible, face-on barred spiral with
+    tightly wound arms, consistent with an SBab morphology.'
+- id: z_336-27_sbb
+  enabled: true
+  status: available
+  name: Z 336-27
+  designation: Z 336-27
+  hubble_type: SBb
+  hubble_description: 'De Vaucouleurs SBb — SIMBAD RC3 morph_type: SBb'
+  file: Z_336-27.jpg
+  asset_path: assets/morphology/SBb/Z_336-27.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBb
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is a clearly visible, near face-on barred spiral
+    with a prominent bulge and discernible moderately wound arms, consistent with
+    type SBb despite the image noise and low resolution.'
+- id: ngc__6536_sbb
+  enabled: true
+  status: available
+  name: NGC  6536
+  designation: NGC  6536
+  hubble_type: SBb
+  hubble_description: 'De Vaucouleurs SBb — SIMBAD RC3 morph_type: SBb'
+  file: NGC__6536.jpg
+  asset_path: assets/morphology/SBb/NGC__6536.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBb
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is a face-on barred spiral with moderately wound
+    arms and a visible central bar, consistent with type SBb, and is free from major
+    artifacts.'
+- id: z_474-4_sbb
+  enabled: true
+  status: available
+  name: Z 474-4
+  designation: Z 474-4
+  hubble_type: SBb
+  hubble_description: 'De Vaucouleurs SBb — SIMBAD RC3 morph_type: SBb'
+  file: Z_474-4.jpg
+  asset_path: assets/morphology/SBb/Z_474-4.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBb
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, near-face-on, exhibits a
+    distinct central bar and spiral arms, and its morphology is consistent with an
+    SBb type.'
+- id: z_474-9_sbb
+  enabled: true
+  status: available
+  name: Z 474-9
+  designation: Z 474-9
+  hubble_type: SBb
+  hubble_description: 'De Vaucouleurs SBb — SIMBAD RC3 morph_type: SBb'
+  file: Z_474-9.jpg
+  asset_path: assets/morphology/SBb/Z_474-9.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBb
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is face-on with a discernible bar and moderately
+    wound spiral arms, consistent with an SBb morphology, and is not significantly
+    obscured.'
+- id: ic_2423_sbb
+  enabled: true
+  status: available
+  name: IC 2423
+  designation: IC 2423
+  hubble_type: SBb
+  hubble_description: 'De Vaucouleurs SBb — SIMBAD RC3 morph_type: SBb'
+  file: IC_2423.jpg
+  asset_path: assets/morphology/SBb/IC_2423.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBb
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The image shows a clearly visible, face-on barred spiral
+    galaxy with a distinct bar and moderately wound arms, consistent with the SBb
+    classification, and is free of significant artifacts.'
+- id: ngc__7773_sbbc
+  enabled: true
+  status: available
+  name: NGC  7773
+  designation: NGC  7773
+  hubble_type: SBbc
+  hubble_description: 'De Vaucouleurs SBbc — SIMBAD RC3 morph_type: SBbc'
+  file: NGC__7773.jpg
+  asset_path: assets/morphology/SBbc/NGC__7773.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBbc
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is face-on, well-centered, shows clear barred
+    spiral structure, and the arm winding is consistent with the ''bc'' subtype.'
+- id: z_455-49_sbbc
+  enabled: true
+  status: available
+  name: Z 455-49
+  designation: Z 455-49
+  hubble_type: SBbc
+  hubble_description: 'De Vaucouleurs SBbc — SIMBAD RC3 morph_type: SBbc'
+  file: Z_455-49.jpg
+  asset_path: assets/morphology/SBbc/Z_455-49.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBbc
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is face-on, clearly shows moderately open spiral
+    arms, and features a distinguishable, though subtle, central bar from which the
+    arms emerge, consistent with an SBbc classification.'
+- id: ngc__5019_sbbc
+  enabled: true
+  status: available
+  name: NGC  5019
+  designation: NGC  5019
+  hubble_type: SBbc
+  hubble_description: 'De Vaucouleurs SBbc — SIMBAD RC3 morph_type: SBbc'
+  file: NGC__5019.jpg
+  asset_path: assets/morphology/SBbc/NGC__5019.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBbc
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is near-face-on, clearly shows a central bar-like
+    structure and moderately wound spiral arms with star-forming regions, consistent
+    with an SBbc classification.'
+- id: z_476-76_sbbc
+  enabled: true
+  status: available
+  name: Z 476-76
+  designation: Z 476-76
+  hubble_type: SBbc
+  hubble_description: 'De Vaucouleurs SBbc — SIMBAD RC3 morph_type: SBbc'
+  file: Z_476-76.jpg
+  asset_path: assets/morphology/SBbc/Z_476-76.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBbc
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, near face-on with a prominent
+    bar and moderately wound, somewhat clumpy spiral arms consistent with an SBbc
+    classification.'
+- id: z_208-63_sbbc
+  enabled: true
+  status: available
+  name: Z 208-63
+  designation: Z 208-63
+  hubble_type: SBbc
+  hubble_description: 'De Vaucouleurs SBbc — SIMBAD RC3 morph_type: SBbcr'
+  file: Z_208-63.jpg
+  asset_path: assets/morphology/SBbc/Z_208-63.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBbcr
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is a clearly visible, face-on barred spiral with
+    moderately open arms, consistent with the SBbc classification and free from dominating
+    artifacts.'
+- id: ngc___606_sbc
+  enabled: true
+  status: available
+  name: NGC   606
+  designation: NGC   606
+  hubble_type: SBc
+  hubble_description: 'De Vaucouleurs SBc — SIMBAD RC3 morph_type: SBc'
+  file: NGC___606.jpg
+  asset_path: assets/morphology/SBc/NGC___606.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: face-on
+  morph_type_raw: SBc
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, face-on, displays distinct
+    barred spiral arms, and its morphology is consistent with an SBc type.'
+- id: z__88-7_im
+  enabled: true
+  status: available
+  name: Z  88-7
+  designation: Z  88-7
+  hubble_type: Im
+  hubble_description: 'De Vaucouleurs Im — SIMBAD RC3 morph_type: Im/BCD'
+  file: Z__88-7.jpg
+  asset_path: assets/morphology/Im/Z__88-7.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: Im/BCD
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, shows distinct irregular
+    clumps with active star formation, is not dominated by artifacts, and its morphology
+    is highly consistent with an Im (Magellanic Irregular) type.'
+- id: leda____1625_im
+  enabled: true
+  status: available
+  name: LEDA    1625
+  designation: LEDA    1625
+  hubble_type: Im
+  hubble_description: 'De Vaucouleurs Im — SIMBAD RC3 morph_type: Im'
+  file: LEDA____1625.jpg
+  asset_path: assets/morphology/Im/LEDA____1625.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: Im
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy exhibits clear irregular morphology with multiple
+    clumps of star formation and no discernible spiral arms or central bulge, consistent
+    with type Im.'
+- id: mcg_06-22-016_im
+  enabled: true
+  status: available
+  name: MCG+06-22-016
+  designation: MCG+06-22-016
+  hubble_type: Im
+  hubble_description: 'De Vaucouleurs Im — SIMBAD RC3 morph_type: Im/BCD'
+  file: MCG_06-22-016.jpg
+  asset_path: assets/morphology/Im/MCG_06-22-016.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: Im/BCD
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is clearly visible, somewhat elongated and clumpy,
+    consistent with the irregular morphology of an Im type, despite the low resolution.'
+- id: leda___42848_im
+  enabled: true
+  status: available
+  name: LEDA   42848
+  designation: LEDA   42848
+  hubble_type: Im
+  hubble_description: 'De Vaucouleurs Im — SIMBAD RC3 morph_type: Im(Im/S)'
+  file: LEDA___42848.jpg
+  asset_path: assets/morphology/Im/LEDA___42848.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: Im(Im/S)
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is visible, roughly centered, and its faint,
+    irregular, clumpy morphology is consistent with a Magellanic Irregular (Im) type.'
+- id: ic_3471_im
+  enabled: true
+  status: available
+  name: IC 3471
+  designation: IC 3471
+  hubble_type: Im
+  hubble_description: 'De Vaucouleurs Im — SIMBAD RC3 morph_type: Im/BCD'
+  file: IC_3471.jpg
+  asset_path: assets/morphology/Im/IC_3471.jpg
+  source_archive: SDSS DR17
+  license: CC-BY-4.0 (SDSS DR17)
+  credit: SDSS Collaboration / sdss.org
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: Im/BCD
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy is a diffuse, irregular object with visible patchiness,
+    consistent with a Magellanic Irregular (Im) type, and does not exhibit clear rejection
+    criteria.'
+- id: ngc__6822_ibm
+  enabled: true
+  status: available
+  name: NGC  6822
+  designation: NGC  6822
+  hubble_type: IBm
+  hubble_description: 'De Vaucouleurs IBm — SIMBAD RC3 morph_type: IBm'
+  file: NGC__6822.jpg
+  asset_path: assets/morphology/IBm/NGC__6822.jpg
+  source_archive: DSS2/STScI
+  license: Public Domain (DSS2/STScI)
+  credit: Digitized Sky Survey, STScI
+  resolution_px:
+  - 2048
+  - 2048
+  orientation: varies
+  morph_type_raw: IBm
+  simbad_verified: true
+  quality_notes: 'ACCEPT: The galaxy exhibits a clear irregular, clumpy morphology
+    with a distinct elongated central region, consistent with the ''B'' (barred) and
+    ''m'' (Magellanic) characteristics of an IBm type irregular galaxy; the resolved
+    stars are integral to its structure.'
 download_instructions: "1. ESA/Hubble (esahubble.org):\n   - Seite aufrufen, unter\
   \ \"Formats\" → \"Original\" oder \"Large\" TIFF/JPEG herunterladen\n   - Bildkennung\
   \ (z.B. heic0503a) ist stabil auch wenn URL sich ändert\n\n2. ESO (eso.org):\n \

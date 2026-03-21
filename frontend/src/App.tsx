@@ -1,19 +1,23 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { GalaxyScene } from './three/GalaxyScene'
 import { SystemScene } from './three/SystemScene'
+import { MoonSystemScene } from './three/MoonSystemScene'
 import { FilterPanel } from './components/FilterPanel'
 import { Inspector } from './components/Inspector'
 import { PlanetInspector } from './components/PlanetInspector'
 import { StatsPanel } from './components/StatsPanel'
 import { GalaxyPicker } from './components/GalaxyPicker'
+import { SystemTree } from './components/SystemTree'
+import { VisualTuner } from './components/VisualTuner'
 import { GeneratorPage } from './pages/GeneratorPage'
 import { HudDevPage } from './pages/HudDevPage'
+import { VisualParamsProvider } from './context/VisualParamsContext'
 import { fetchGalaxies, fetchAllStars, fetchNebulae, fetchSystem } from './api/galaxy'
 import type { Galaxy, Star, Nebula, StarFilter, Planet } from './types/galaxy'
 import { DEFAULT_FILTER } from './types/galaxy'
 import './index.css'
 
-type View = 'viewer' | 'generator' | 'hud-dev' | 'system'
+type View = 'viewer' | 'generator' | 'hud-dev' | 'system' | 'moon'
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
 const STAR_TYPE_LABELS: Record<string, string> = {
@@ -22,7 +26,7 @@ const STAR_TYPE_LABELS: Record<string, string> = {
   Pulsar:'Pulsar', StellarBH:'Schwarzes Loch', SMBH:'SMBH',
 }
 
-export default function App() {
+function AppInner() {
   const [view, setView]           = useState<View>('viewer')
   const [galaxies, setGalaxies]   = useState<Galaxy[]>([])
   const [galaxy, setGalaxy]       = useState<Galaxy | null>(null)
@@ -42,6 +46,10 @@ export default function App() {
   const pickerAnchorRef = useRef<HTMLDivElement>(null)
   // Galaxy to resume in generator
   const [resumeGalaxy, setResumeGalaxy] = useState<Galaxy | null>(null)
+  // Moon system view (BL-24: Doppelklick Planet → Mondsystem)
+  const [moonPlanet, setMoonPlanet] = useState<Planet | null>(null)
+  // Visual tuner panel
+  const [tunerOpen, setTunerOpen] = useState(false)
 
   const loadGalaxy = useCallback(async (g: Galaxy) => {
     setGalaxy(g)
@@ -88,6 +96,7 @@ export default function App() {
     setSystemStar(star)
     setSystemPlanets([])
     setSelectedPlanet(null)
+    setMoonPlanet(null)
     setSystemLoading(true)
     setView('system')
     try {
@@ -97,6 +106,12 @@ export default function App() {
       setSystemLoading(false)
     }
   }, [galaxy])
+
+  const handleDoubleClickPlanet = useCallback((p: Planet) => {
+    if (p.planet_type === 'asteroid_belt') return
+    setMoonPlanet(p)
+    setView('moon')
+  }, [])
 
   // Called by GeneratorPage when user clicks "Im Viewer anzeigen" → switch to viewer
   const handleViewGalaxy = useCallback((galaxyId: string) => {
@@ -148,7 +163,7 @@ export default function App() {
         <button
           onClick={() => setView('viewer')}
           className={`text-xs font-bold tracking-widest px-2 py-0.5 rounded transition-colors
-            ${view === 'viewer' || view === 'system' ? 'text-red-500' : 'text-slate-600 hover:text-slate-400'}`}
+            ${view === 'viewer' || view === 'system' || view === 'moon' ? 'text-red-500' : 'text-slate-600 hover:text-slate-400'}`}
         >
           GOD MODE
         </button>
@@ -166,6 +181,16 @@ export default function App() {
         >
           HUD DEV
         </button>
+
+        {(view === 'viewer' || view === 'system' || view === 'moon') && (
+          <button
+            onClick={() => setTunerOpen(o => !o)}
+            className={`text-xs font-bold tracking-widest px-2 py-0.5 rounded transition-colors
+              ${tunerOpen ? 'text-yellow-400' : 'text-slate-600 hover:text-slate-400'}`}
+          >
+            TUNING
+          </button>
+        )}
 
         <span className="text-slate-700">|</span>
 
@@ -196,34 +221,58 @@ export default function App() {
           )}
         </div>
 
-        {/* Current context info */}
-        {(view === 'viewer' || view === 'system') && galaxy && (
-          <>
+        {/* Breadcrumbs: Galaxie › Stern › Planet */}
+        {(view === 'viewer' || view === 'system' || view === 'moon') && galaxy && (
+          <div className="flex items-center gap-1 text-xs">
+            <button
+              onClick={() => setView('viewer')}
+              className={`transition-colors ${
+                view === 'viewer'
+                  ? 'text-slate-300 cursor-default'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              {galaxy.name}
+            </button>
             {view === 'viewer' && (
-              <span className="text-xs text-slate-600">
-                {stars.length.toLocaleString('de-DE')} Sterne
+              <span className="text-slate-700 ml-1">
+                ({stars.length.toLocaleString('de-DE')} Sterne)
               </span>
             )}
-            {view === 'system' && systemStar && (
+            {(view === 'system' || view === 'moon') && systemStar && (
               <>
-                <span className="text-slate-700">/</span>
-                <span className="text-xs text-cyan-500">
-                  {STAR_TYPE_LABELS[systemStar.star_type] ?? systemStar.star_type}
-                </span>
+                <span className="text-slate-700">›</span>
                 <button
-                  onClick={() => setView('viewer')}
-                  className="text-xs text-slate-600 hover:text-slate-400 transition-colors ml-1"
+                  onClick={() => setView('system')}
+                  className={`transition-colors ${view === 'system' ? 'text-cyan-400 cursor-default' : 'text-slate-500 hover:text-cyan-400'}`}
                 >
-                  ← Galaxie
+                  {STAR_TYPE_LABELS[systemStar.star_type] ?? systemStar.star_type}
                 </button>
+                {view === 'system' && selectedPlanet && (
+                  <>
+                    <span className="text-slate-700">›</span>
+                    <span className="text-slate-300">
+                      Planet {selectedPlanet.orbit_index + 1}
+                    </span>
+                  </>
+                )}
+                {view === 'moon' && moonPlanet && (
+                  <>
+                    <span className="text-slate-700">›</span>
+                    <span className="text-teal-400">
+                      Planet {moonPlanet.orbit_index + 1} · Mondsystem
+                    </span>
+                  </>
+                )}
               </>
             )}
-          </>
+          </div>
         )}
 
         <div className="ml-auto text-xs text-slate-600">
           {view === 'viewer' && 'Drag: Orbit · Scroll: Zoom · Klick: Inspektor'}
-          {view === 'system' && 'Scroll: Zoom · Drag: Pan · Klick: Planet'}
+          {view === 'system' && 'Drag: Orbit · Rechtsklick: Pan · Scroll: Zoom · Klick: Planet · Doppelklick: Mondsystem'}
+          {view === 'moon'   && 'Drag: Orbit · Scroll: Zoom · ← Stern-Breadcrumb: zurück'}
         </div>
       </div>
 
@@ -268,12 +317,16 @@ export default function App() {
             <FilterPanel filter={filter} onChange={setFilter} />
           </div>
 
-          {/* Right sidebar: Inspector */}
-          <div className="absolute top-10 right-0 bottom-0 w-60 z-10
-                          bg-black/70 border-l border-slate-800 backdrop-blur-sm
-                          overflow-y-auto p-3">
-            <Inspector star={selected} onViewSystem={handleViewSystem} />
-          </div>
+          {/* Right sidebar: Inspector or Tuner */}
+          {tunerOpen ? (
+            <VisualTuner />
+          ) : (
+            <div className="absolute top-10 right-0 bottom-0 w-60 z-10
+                            bg-black/70 border-l border-slate-800 backdrop-blur-sm
+                            overflow-y-auto p-3">
+              <Inspector star={selected} onViewSystem={handleViewSystem} />
+            </div>
+          )}
         </>
       )}
 
@@ -291,62 +344,45 @@ export default function App() {
               planets={systemPlanets}
               selectedPlanet={selectedPlanet}
               onSelectPlanet={setSelectedPlanet}
+              onDoubleClickPlanet={handleDoubleClickPlanet}
             />
           )}
 
-          {/* Left: Sterndaten */}
+          {/* Left: Systembaum (BL-15) */}
           <div className="absolute top-10 left-0 bottom-0 w-52 z-10
                           bg-black/70 border-r border-slate-800 backdrop-blur-sm
-                          overflow-y-auto p-3 flex flex-col gap-3">
-            <span className="text-xs text-slate-400 uppercase tracking-widest">Sternsystem</span>
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ background: systemStar.color_hex }}
+                          overflow-y-auto p-3">
+            <SystemTree
+              star={systemStar}
+              planets={systemPlanets}
+              selectedPlanet={selectedPlanet}
+              onSelectPlanet={setSelectedPlanet}
             />
-            <div className="text-sm font-semibold text-white">
-              {STAR_TYPE_LABELS[systemStar.star_type] ?? systemStar.star_type}
-            </div>
-            <div className="text-xs flex flex-col gap-0">
-              {systemStar.spectral_class && (
-                <div className="flex justify-between py-0.5 border-b border-slate-800">
-                  <span className="text-slate-500">Spektral</span>
-                  <span className="text-slate-200">{systemStar.spectral_class}</span>
-                </div>
-              )}
-              {systemStar.mass_solar > 0 && (
-                <div className="flex justify-between py-0.5 border-b border-slate-800">
-                  <span className="text-slate-500">Masse</span>
-                  <span className="text-slate-200">
-                    {systemStar.mass_solar.toLocaleString('de-DE', { maximumFractionDigits: 2 })} M☉
-                  </span>
-                </div>
-              )}
-              {systemStar.temperature_k > 0 && (
-                <div className="flex justify-between py-0.5 border-b border-slate-800">
-                  <span className="text-slate-500">Temperatur</span>
-                  <span className="text-slate-200">
-                    {systemStar.temperature_k.toLocaleString('de-DE', { maximumFractionDigits: 0 })} K
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between py-0.5 border-b border-slate-800">
-                <span className="text-slate-500">Planeten</span>
-                <span className="text-slate-200">{systemPlanets.length}</span>
-              </div>
-              <div className="flex justify-between py-0.5 border-b border-slate-800">
-                <span className="text-slate-500">Monde</span>
-                <span className="text-slate-200">
-                  {systemPlanets.reduce((s, p) => s + p.moons.length, 0)}
-                </span>
-              </div>
-            </div>
           </div>
+
+          {/* Right: Planetinspektor or Tuner */}
+          {tunerOpen ? (
+            <VisualTuner />
+          ) : (
+            <div className="absolute top-10 right-0 bottom-0 w-60 z-10
+                            bg-black/70 border-l border-slate-800 backdrop-blur-sm
+                            overflow-y-auto p-3">
+              <PlanetInspector planet={selectedPlanet} />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── MOON SYSTEM VIEW (BL-24) ── */}
+      {view === 'moon' && moonPlanet && (
+        <>
+          <MoonSystemScene planet={moonPlanet} />
 
           {/* Right: Planetinspektor */}
           <div className="absolute top-10 right-0 bottom-0 w-60 z-10
                           bg-black/70 border-l border-slate-800 backdrop-blur-sm
                           overflow-y-auto p-3">
-            <PlanetInspector planet={selectedPlanet} />
+            <PlanetInspector planet={moonPlanet} />
           </div>
         </>
       )}
@@ -368,5 +404,13 @@ export default function App() {
       )}
 
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <VisualParamsProvider>
+      <AppInner />
+    </VisualParamsProvider>
   )
 }

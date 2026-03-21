@@ -56,6 +56,36 @@ var rgbRef = [7][3]float64{
 	{255, 189, 111}, // M
 }
 
+// zoneProbTable[pixelClass][spectralClass] = probability.
+// Converts a pixel's nearest-colour class (0=O … 6=M) into a soft probability
+// distribution over spectral classes instead of a hard mapping.
+// Each row sums to 1.0.  The peak lies at the matched class but with wide spread
+// so that spatially correlated pixel colours do not produce visible spectral bands.
+//
+//	        O      B      A      F      G      K      M
+var zoneProbTable = [7][7]float64{
+	{0.20, 0.30, 0.25, 0.15, 0.07, 0.02, 0.01}, // O pixel → hot-biased
+	{0.10, 0.25, 0.30, 0.20, 0.10, 0.03, 0.02}, // B pixel
+	{0.04, 0.12, 0.25, 0.28, 0.18, 0.09, 0.04}, // A pixel
+	{0.02, 0.06, 0.15, 0.25, 0.25, 0.18, 0.09}, // F pixel → neutral
+	{0.01, 0.03, 0.08, 0.18, 0.25, 0.27, 0.18}, // G pixel
+	{0.01, 0.02, 0.04, 0.10, 0.18, 0.28, 0.37}, // K pixel
+	{0.00, 0.01, 0.02, 0.06, 0.12, 0.25, 0.54}, // M pixel → cool-biased
+}
+
+// sampleSpectralZone samples a spectral class index from the zone probability table.
+// zone is the pixel's nearest-colour class (0–6); dart is a uniform [0,1) random value.
+func sampleSpectralZone(zone int, dart float64) int {
+	cumulative := 0.0
+	for ci, p := range zoneProbTable[zone] {
+		cumulative += p
+		if dart < cumulative {
+			return ci
+		}
+	}
+	return 6 // M as fallback
+}
+
 // exoticAffinityClass maps an exotic StarType name → spectral index in mainSequenceOrder.
 var exoticAffinityClass = map[string]int{
 	"WR":        2, // A
@@ -180,6 +210,13 @@ func generatePositionsFromImage(a *imageAnalysis, numStars int, radiusLY float64
 		zSpread := (float64(a.intensities[pixelIdx])*0.06 + 0.005) * radiusLY
 		Z := rng.NormFloat64() * zSpread
 
+		// Deep randomization: sample spectral class from a broad probability
+		// distribution conditioned on the pixel's temperature zone.
+		// This breaks the hard pixel-colour → spectral-class mapping that caused
+		// visible spectral bands following the image's colour gradient.
+		zone := int(a.initClass[pixelIdx])
+		sampledClass := sampleSpectralZone(zone, rng.Float64())
+
 		id := uuid.New()
 		stars = append(stars, Star{
 			ID:              id,
@@ -187,7 +224,7 @@ func generatePositionsFromImage(a *imageAnalysis, numStars int, radiusLY float64
 			X:               X,
 			Y:               Y,
 			Z:               Z,
-			Type:            StarType(mainSequenceOrder[a.initClass[pixelIdx]]),
+			Type:            StarType(mainSequenceOrder[sampledClass]),
 			SpectralClass:   "—", // sentinel: Step2Spectral will skip this star
 			MassSolar:       0.3,
 			LuminositySolar: 0.01,

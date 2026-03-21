@@ -353,4 +353,61 @@ FBM-Funktion in TSL, Raymarching-Pass, LOD-Übergang Sprites → Volumetric, Neb
 - WebGL GLSL-Shader direkt: kein automatischer WebGPU-Upgrade-Pfad; TSL ist die strategische Richtung von Three.js
 - Voxel-Textur (3D texture sampling): hoher Speicherbedarf, kein Determinismus via Seed
 
+---
+
+## ADR-012: Wiki + Graph-UI – Monorepo mit pnpm Workspaces
+
+**Status:** Entschieden
+**Datum:** 2026-03-20
+
+**Kontext:** Galaxis benötigt ein Spiel-Wiki (BL-26) mit interaktiver Tech-Tree-Visualisierung. Das Schwesterprojekt `creaminds/graph` enthält eine production-ready Graphvisualisierung (Cytoscape.js, MIT) inklusive JSON-LD-Import/Export — technisch direkt wiederverwendbar. Beide Projekte teilen denselben Stack (React 18 + Vite + TypeScript + Tailwind). Ziel: Erweiterungen in graph werden automatisch für Galaxis nutzbar; neue Anforderungen aus Galaxis fließen als generische Erweiterungen in graph zurück.
+
+**Entscheidung:** Monorepo mit pnpm Workspaces. Gemeinsame UI-Bibliothek `@creaminds/graph-ui` wird aus dem graph-Projekt extrahiert und in beiden Apps referenziert.
+
+**Struktur:**
+```
+creaminds/              ← neues Monorepo-Root
+  packages/
+    graph-ui/           ← @creaminds/graph-ui (MIT)
+      src/
+        components/
+          GraphCanvas.tsx       (aus graph extrahiert)
+          GraphMinimap.tsx
+        lib/
+          iconResolver.ts
+          jsonld.ts             (JSON-LD ↔ internes Node/Edge-Format)
+        types/index.ts
+  apps/
+    galaxis/            ← bisheriges galaxis/frontend
+    graph/              ← bisheriges graph/frontend
+    galaxis-wiki/       ← Docusaurus (BL-26), importiert @creaminds/graph-ui
+    graph-backend/      ← bisheriges graph/backend (Python/FastAPI)
+```
+
+**Extraktionsgrenze:**
+
+| In `@creaminds/graph-ui` | Bleibt app-spezifisch |
+|---|---|
+| GraphCanvas, GraphMinimap | API-Layer (unterschiedliche Backends) |
+| iconResolver | Auth (Keycloak in graph, TBD in galaxis) |
+| TypeScript-Typen (Node, Edge, NodeType, RelationType) | Zustand-Store |
+| JSON-LD Transformer | App-Chrome (Navigation, Layout) |
+| Cytoscape Stylesheet-Utilities | Edit-Workflows (nur in graph) |
+
+**Workflow:**
+- Neue Galaxis-Anforderung → generisch? → in `packages/graph-ui` → beide Apps profitieren
+- Neue graph-Erweiterung → generisch? → in `packages/graph-ui` → Galaxis bekommt es automatisch
+- App-spezifisches bleibt im jeweiligen `apps/`-Verzeichnis
+
+**Begründung:**
+- Kein Publish-Schritt nötig (pnpm workspace: `"@creaminds/graph-ui": "workspace:*"`)
+- Geteilte TypeScript-Typen — kein Drift zwischen Projekten
+- Einmaliger Migrations-Aufwand: ~0,5 Tage
+- Turborepo optional nachrüstbar für Build-Caching bei wachsender Codebasis
+
+**Alternativen verworfen:**
+- Privates npm-Paket (@creaminds/graph-ui in GitHub Packages): saubere Versionierung, aber Publish-Schritt bei jeder Änderung nötig; Lag zwischen Erweiterung und Nutzung
+- Git Subtree: keine geteilten TypeScript-Typen, Subtree-Verwaltung umständlich
+- Kein Sharing (Duplicate): sofort divergierende Codebasis, doppelter Wartungsaufwand
+
 **Abhängigkeiten:** BL-06a → BL-06b; BL-06b benötigt BL-03 (Simplex Noise Nebeldichte) für Seed-Konsistenz mit Server.

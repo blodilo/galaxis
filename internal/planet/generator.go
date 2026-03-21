@@ -171,6 +171,11 @@ func (g *Generator) generatePlanet(
 	albedo := drawAlbedo(rng, pType)
 	tEq := EquilibriumTempK(star.LuminositySolar, distAU, albedo)
 
+	// Orbital mechanics (BL-12): Kepler ellipse parameters.
+	ecc, argPeri, incl, periAU, aphAU := drawOrbitalMechanics(rng, distAU, frostLine)
+	tEqMin := EquilibriumTempK(star.LuminositySolar, aphAU, albedo)  // coldest: at aphelion
+	tEqMax := EquilibriumTempK(star.LuminositySolar, periAU, albedo) // hottest: at perihelion
+
 	// Atmosphere: rocky planets only.
 	var (
 		pressure    float64
@@ -221,6 +226,13 @@ func (g *Generator) generatePlanet(
 		OrbitIndex:            orbitIdx,
 		PlanetType:            pType,
 		OrbitDistanceAU:       distAU,
+		Eccentricity:          ecc,
+		ArgPeriapsisDeg:       argPeri,
+		InclinationDeg:        incl,
+		PerihelionAU:          periAU,
+		AphelionAU:            aphAU,
+		TempEqMinK:            tEqMin,
+		TempEqMaxK:            tEqMax,
 		MassEarth:             massEarth,
 		RadiusEarth:           radiusEarth,
 		SurfaceGravityG:       gravityG,
@@ -238,7 +250,7 @@ func (g *Generator) generatePlanet(
 		ResourceDeposits:      resources,
 	}
 
-	moons := g.generateMoons(rng, pID, pType, starType, distAU, tEq, frostLine)
+	moons := g.generateMoons(rng, pID, pType, starType, distAU, tEq, frostLine, massEarth, star.MassSolar)
 	return planet, moons
 }
 
@@ -338,40 +350,62 @@ func (g *Generator) computeBiomassPotential(pressure, tempK, gravityG float64) m
 	return result
 }
 
-// generateMoons generates moons for a planet.
+// generateMoons generates moons for a planet using Hill sphere orbital mechanics.
 func (g *Generator) generateMoons(
 	rng *rand.Rand,
 	planetID uuid.UUID,
 	pType, starType string,
 	distAU, tEq, frostLine float64,
+	massEarth, starMassSolar float64,
 ) []model.Moon {
 	cfg := g.cfg.PlanetGen
+	rH := hillSphereAU(distAU, massEarth, starMassSolar)
 
 	switch pType {
 	case "gas_giant":
 		n := cfg.GasGiantMoonCountMin +
 			rng.IntN(cfg.GasGiantMoonCountMax-cfg.GasGiantMoonCountMin+1)
+		// Inner moon: 0.003–0.02 × r_H (like Io ≈ 0.005 × r_H).
+		// Spacing: geometric series with factor 1.8–2.8 per step.
+		innerOrbit := logUniform(rng, math.Max(rH*0.003, 1e-5), rH*0.02)
+		spacing := 1.8 + rng.Float64()
 		moons := make([]model.Moon, n)
 		for i := range moons {
-			moons[i] = makeMoon(rng, planetID, i, pType, starType, distAU, tEq, frostLine, false)
+			orbitAU := innerOrbit * math.Pow(spacing, float64(i))
+			moons[i] = makeMoon(rng, planetID, i, pType, starType, distAU, tEq, frostLine, false, orbitAU)
 		}
 		return moons
 
 	case "rocky":
 		if rng.Float64() < cfg.MoonCollisionProbability {
-			return []model.Moon{makeMoon(rng, planetID, 0, pType, starType, distAU, tEq, frostLine, true)}
+			// Giant-impact moon (like Earth's Moon: 0.257 × r_H).
+			orbitAU := logUniform(rng, math.Max(rH*0.15, 1e-5), math.Max(rH*0.55, 2e-5))
+			return []model.Moon{makeMoon(rng, planetID, 0, pType, starType, distAU, tEq, frostLine, true, orbitAU)}
 		}
 
 	case "ice_giant":
 		n := rng.IntN(3) // 0–2 small moons
+		innerOrbit := logUniform(rng, math.Max(rH*0.01, 1e-5), rH*0.05)
+		spacing := 1.8 + rng.Float64()
 		moons := make([]model.Moon, n)
 		for i := range moons {
-			moons[i] = makeMoon(rng, planetID, i, pType, starType, distAU, tEq, frostLine, false)
+			orbitAU := innerOrbit * math.Pow(spacing, float64(i))
+			moons[i] = makeMoon(rng, planetID, i, pType, starType, distAU, tEq, frostLine, false, orbitAU)
 		}
 		return moons
 	}
 
 	return nil
+}
+
+// hillSphereAU computes the Hill sphere radius in AU.
+// r_H = d_AU × (m_planet_earth / (3 × M_star_solar × 333000))^(1/3)
+// 333000 is the Sun/Earth mass ratio.
+func hillSphereAU(distAU, massEarth, starMassSolar float64) float64 {
+	if distAU <= 0 || massEarth <= 0 || starMassSolar <= 0 {
+		return 0
+	}
+	return distAU * math.Pow(massEarth/(3.0*starMassSolar*333000.0), 1.0/3.0)
 }
 
 // makeMoon creates a single moon record.
@@ -382,6 +416,7 @@ func makeMoon(
 	parentType, starType string,
 	distAU, tEq, frostLine float64,
 	collision bool,
+	orbitDistanceAU float64,
 ) model.Moon {
 	var massEarth, radiusEarth float64
 	var comp string
@@ -424,6 +459,7 @@ func makeMoon(
 		ID:               uuid.New(),
 		PlanetID:         planetID,
 		OrbitIndex:       idx,
+		OrbitDistanceAU:  orbitDistanceAU,
 		MassEarth:        massEarth,
 		RadiusEarth:      radiusEarth,
 		CompositionType:  comp,
@@ -462,6 +498,40 @@ func (g *Generator) logStats(ctx context.Context, pool *pgxpool.Pool, galaxyID u
 }
 
 // ── Helper functions ──────────────────────────────────────────────────────────
+
+// drawOrbitalMechanics samples Kepler orbital elements for a planet.
+// Returns: eccentricity, argument of periapsis [deg], inclination [deg],
+// perihelion [AU], aphelion [AU].
+// Eccentricity: Rayleigh-distributed (σ=0.06 inner, 0.12 outer system).
+// Inclination:  Rayleigh-distributed (σ=6°), 2% high-inclination tail.
+func drawOrbitalMechanics(rng *rand.Rand, distAU, frostLine float64) (ecc, argPeri, incl, periAU, aphAU float64) {
+	// Eccentricity — Rayleigh distribution: e = σ·√(−2·ln U)
+	sigma := 0.06
+	if frostLine > 0 && distAU >= frostLine {
+		sigma = 0.12 // outer system orbits are more excited
+	}
+	ecc = sigma * math.Sqrt(-2*math.Log(math.Max(rng.Float64(), 1e-15)))
+	if ecc > 0.85 {
+		ecc = 0.85
+	}
+
+	// Argument of periapsis: uniform [0°, 360°)
+	argPeri = rng.Float64() * 360.0
+
+	// Inclination — Rayleigh σ=6°, 2% high-inclination
+	inclSigma := 6.0
+	incl = inclSigma * math.Sqrt(-2*math.Log(math.Max(rng.Float64(), 1e-15)))
+	if rng.Float64() < 0.02 {
+		incl = 20.0 + rng.Float64()*50.0
+	}
+	if incl > 90.0 {
+		incl = 90.0
+	}
+
+	periAU = math.Max(distAU*(1-ecc), 1e-4)
+	aphAU = distAU * (1 + ecc)
+	return
+}
 
 func drawPlanetType(rng *rand.Rand, d, frostLine float64) string {
 	beyondFrost := frostLine <= 0 || d >= frostLine

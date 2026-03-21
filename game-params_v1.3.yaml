@@ -22,7 +22,7 @@ galaxy:
   seed: 42
   # Deterministischer Startwert. Gleicher Seed → gleiche Galaxie.
 
-  num_stars: 50000
+  num_stars: 500000
   # Anzahl der Sternensysteme. Empfohlener Bereich: 10.000–500.000
   # [PERFORMANCE] Höhere Werte → längere Generierungszeit und mehr DB-Speicher.
 

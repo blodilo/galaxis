@@ -52,7 +52,7 @@ func listMorphologies(catalogPath string) http.HandlerFunc {
 			}
 			result = append(result, templateWithURL{
 				morphologyTemplate: t,
-				ThumbnailURL:       "/assets/morphology/" + t.File,
+				ThumbnailURL:       "/assets/morphology/" + t.HubbleType + "/" + t.File,
 			})
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"morphologies": result})

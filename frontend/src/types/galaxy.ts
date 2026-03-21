@@ -58,6 +58,7 @@ export interface StarFilter {
 export interface Moon {
   id: string
   orbit_index: number
+  orbit_distance_au: number
   mass_earth: number
   radius_earth: number
   composition_type: 'rocky' | 'icy' | 'mixed'
@@ -72,6 +73,13 @@ export interface Planet {
   orbit_index: number
   planet_type: PlanetType
   orbit_distance_au: number
+  eccentricity: number
+  arg_periapsis_deg: number
+  inclination_deg: number
+  perihelion_au: number
+  aphelion_au: number
+  temp_eq_min_k: number
+  temp_eq_max_k: number
   mass_earth: number
   radius_earth: number
   surface_gravity_g: number
