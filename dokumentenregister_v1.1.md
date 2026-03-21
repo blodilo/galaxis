@@ -1,6 +1,6 @@
 # Dokumentenregister – Galaxis
 
-**Projektstatus:** AP1 + AP2 implementiert und lauffähig · God-Mode-Viewer · Image-Based Generator · Systemansicht mit prozeduralen Shadern, Prominenzen, Layer-System, Mondsystem-Ansicht, InstancedMesh-Asteroiden · Vitest-Test-Infrastruktur eingerichtet
+**Projektstatus:** AP1 + AP2 implementiert und lauffähig · God-Mode-Viewer · Image-Based Generator · Systemansicht mit prozeduralen Shadern, Prominenzen, Layer-System, Mondsystem-Ansicht, InstancedMesh-Asteroiden · Vitest-Test-Infrastruktur eingerichtet · Wirtschaftsmodell v1.0 finalisiert
 **GDD-Version:** v1.24
 **Datum:** 2026-03-21
 
@@ -21,6 +21,8 @@
 | `tech-tree_v1.0.jsonld` | Technologiebaum als JSON-LD | ✅ v1 (erweiterbar) |
 | `game-params_v1.4.yaml` | Zentrale Spielparameter (Kalibrierung, Balancing, Performance-Limits) | ✅ aktuell |
 | `tdd_image_galaxy_generator_v1.0.md` | TDD: Image-Based Galaxy Generator | ✅ aktuell |
+| `security_v1.0.md` | Threat Model, Auth (AP3/Keycloak), Secrets, Rate Limiting, FoW | ✅ aktuell |
+| `git-commit-guide_v1.0.md` | Branch-Strategie, Conventional Commits, Scopes | ✅ aktuell |
 | `biochemistry_archetypes_v1.0.yaml` | Biochemie-Archetypen für Alien-Spezies | ✅ aktuell |
 | `galaxy_morphology_catalog_v1.0.yaml` | Katalog realer Galaxienfotos (75 Einträge, 21 Hubble-Typen) | ✅ aktuell |
 | `research-mechanics_v1.0.md` | Forschungsmechanik (stochastisches Modell) | ✅ aktuell |
