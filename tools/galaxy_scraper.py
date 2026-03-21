@@ -40,7 +40,8 @@ import numpy as np
 import requests
 from PIL import Image
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
+from google.genai import types as genai_types
 from astroquery.simbad import Simbad
 from astroquery.skyview import SkyView
 import astropy.units as u
@@ -80,20 +81,20 @@ HUBBLE_TYPES: dict[str, dict] = {
     "E6": {"query": "E%", "b_a_min": 0.33, "b_a_max": 0.43, "face_on": False},
     "E7": {"query": "E%", "b_a_min": 0.23, "b_a_max": 0.33, "face_on": False},
     # ── Lentikulär ─────────────────────────────────────────────────────────────
-    "S0m": {"query": "S0-%",   "face_on": True,  "b_a_min": 0.7},
-    "S0":  {"query": "SA0%",   "face_on": True,  "b_a_min": 0.7},
-    "S0p": {"query": "S0+%",   "face_on": True,  "b_a_min": 0.7},
-    "S0a": {"query": "S0/a%",  "face_on": True,  "b_a_min": 0.7},
+    "S0m": {"query": "S%0-%",  "face_on": True,  "b_a_min": 0.7},
+    "S0":  {"query": "S%0%",   "face_on": True,  "b_a_min": 0.7},
+    "S0p": {"query": "S%0+%",  "face_on": True,  "b_a_min": 0.7},
+    "S0a": {"query": "S%0/a%", "face_on": True,  "b_a_min": 0.7},
     # ── Spiralen (unbarred SA) ─────────────────────────────────────────────────
-    "Sa":  {"query": "SA%a%",  "face_on": True,  "b_a_min": 0.7},
-    "Sab": {"query": "SA%ab%", "face_on": True,  "b_a_min": 0.7},
-    "Sb":  {"query": "SA%b%",  "face_on": True,  "b_a_min": 0.7},
-    "Sbc": {"query": "SA%bc%", "face_on": True,  "b_a_min": 0.7},
-    "Sc":  {"query": "SA%c%",  "face_on": True,  "b_a_min": 0.7},
-    "Scd": {"query": "SA%cd%", "face_on": True,  "b_a_min": 0.7},
-    "Sd":  {"query": "SA%d%",  "face_on": True,  "b_a_min": 0.7},
-    "Sdm": {"query": "SA%dm%", "face_on": True,  "b_a_min": 0.7},
-    "Sm":  {"query": "SA%m%",  "face_on": True,  "b_a_min": 0.7},
+    "Sa":  {"query": "S%a%",   "face_on": True,  "b_a_min": 0.7},
+    "Sab": {"query": "S%ab%",  "face_on": True,  "b_a_min": 0.7},
+    "Sb":  {"query": "S%b%",   "face_on": True,  "b_a_min": 0.7},
+    "Sbc": {"query": "S%bc%",  "face_on": True,  "b_a_min": 0.7},
+    "Sc":  {"query": "S%c%",   "face_on": True,  "b_a_min": 0.7},
+    "Scd": {"query": "S%cd%",  "face_on": True,  "b_a_min": 0.7},
+    "Sd":  {"query": "S%d%",   "face_on": True,  "b_a_min": 0.7},
+    "Sdm": {"query": "S%dm%",  "face_on": True,  "b_a_min": 0.7},
+    "Sm":  {"query": "S%m%",   "face_on": True,  "b_a_min": 0.7},
     # ── Balken-Spiralen (SB + SAB → beide als SB gezählt) ─────────────────────
     "SBa":  {"query": "SB%a%",  "face_on": True, "b_a_min": 0.7},
     "SBab": {"query": "SB%ab%", "face_on": True, "b_a_min": 0.7},
@@ -274,7 +275,7 @@ def download_skyview(ra: float, dec: float, maj_arcmin: float) -> Optional[Image
 
 # ── Gemini Vision QA ──────────────────────────────────────────────────────────
 
-def gemini_quality_check(img: Image.Image, hubble_type: str) -> tuple[bool, str]:
+def gemini_quality_check(img: Image.Image, hubble_type: str, api_key: str = "") -> tuple[bool, str]:
     """
     Bewertet ein Galaxienbild mit Gemini Vision.
     Gibt (accept: bool, reason: str) zurück.
@@ -300,8 +301,18 @@ REJECT criteria (any one suffices):
 
 Format: ACCEPT: <reason>  or  REJECT: <reason>  or  UNCERTAIN: <reason>"""
 
-    model = genai.GenerativeModel("gemini-2.0-flash")
-    response = model.generate_content([prompt, img])
+    buf = BytesIO()
+    img.save(buf, format="JPEG", quality=85)
+    image_bytes = buf.getvalue()
+
+    client = genai.Client(api_key=api_key) if api_key else genai.Client()
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[
+            prompt,
+            genai_types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+        ],
+    )
     text = response.text.strip()
     accept = text.upper().startswith("ACCEPT")
     return accept, text
@@ -414,7 +425,7 @@ def query_simbad(morph_pattern: str) -> list[dict]:
 
 # ── Haupt-Scraping-Funktion ───────────────────────────────────────────────────
 
-def scrape_type(hubble_type: str, dry_run: bool = False) -> int:
+def scrape_type(hubble_type: str, dry_run: bool = False, api_key: str = "") -> int:
     """
     Scrapt Bilder für einen Hubble-Typ.
     Gibt Anzahl der erfolgreich heruntergeladenen Bilder zurück.
@@ -487,7 +498,7 @@ def scrape_type(hubble_type: str, dry_run: bool = False) -> int:
 
         # ── Gemini Vision QA ───────────────────────────────────────────────────
         try:
-            accept, notes = gemini_quality_check(img, hubble_type)
+            accept, notes = gemini_quality_check(img, hubble_type, api_key=api_key)
         except Exception as e:
             log.warning(f"    Gemini-Fehler: {e} — überspringe")
             continue
@@ -564,8 +575,6 @@ def main() -> None:
         print("  export GEMINI_API_KEY=... oder tools/.env befüllen.", file=sys.stderr)
         sys.exit(1)
 
-    if api_key:
-        genai.configure(api_key=api_key)
 
     logging.basicConfig(
         level=logging.INFO,
@@ -592,7 +601,7 @@ def main() -> None:
 
     total = 0
     for t in types_to_process:
-        count = scrape_type(t, dry_run=args.dry_run)
+        count = scrape_type(t, dry_run=args.dry_run, api_key=api_key or "")
         total += count
         time.sleep(1.0)  # höfliche Pause zwischen Typen
 

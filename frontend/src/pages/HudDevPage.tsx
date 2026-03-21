@@ -67,7 +67,7 @@ function TokenPalette() {
     >
       <p className="text-[10px] font-bold tracking-widest uppercase mb-1"
          style={{ color: 'var(--color-galaxis-muted)' }}>
-        @ds/tokens · galaxis
+        @creaminds/design · galaxis
       </p>
       {TOKENS.map(({ label, var: cssVar }) => (
         <div key={label} className="flex items-center gap-2">

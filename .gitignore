@@ -2,3 +2,6 @@
 tools/.env
 bin/
 *.test
+tools/.venv/
+.dev-logs/
+frontend/node_modules/
