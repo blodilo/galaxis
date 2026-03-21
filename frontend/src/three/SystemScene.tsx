@@ -306,7 +306,11 @@ function OrbitChevron({ position, tangent, orbitNormal, size }: {
 
 // ── Stern (mit Prominenz-Shell) ───────────────────────────────────────────────
 
-function StarBody({ star }: { star: Star }) {
+function StarBody({ star, shaderVariant }: { star: Star; shaderVariant: 0|1|2|3|4|5 }) {
+  const { params } = useVisualParams()
+  const colorOverride   = params.spectralColors[star.star_type]
+  const showProminences = params.layerProminences
+
   const r = useMemo(() => {
     const type = star.star_type
     if (type === 'SMBH')      return 0.6
@@ -316,30 +320,50 @@ function StarBody({ star }: { star: Star }) {
     return Math.min(Math.max(sr * 0.04, 0.12), 0.5)
   }, [star])
 
-  const mat        = useMemo(() => createStarMaterial(star), [star.id])
-  const promMat    = useMemo(() => createStarProminenceMaterial(star), [star.id])
+  const mat        = useMemo(() => createStarMaterial(star, shaderVariant as 0|1|2|3|4|5, colorOverride),        [star.id, shaderVariant, colorOverride])
+  const promMat    = useMemo(() => createStarProminenceMaterial(star, shaderVariant as 0|1|2|3|4|5, colorOverride), [star.id, shaderVariant, colorOverride])
   const matRef     = useRef(mat)
   const promMatRef = useRef(promMat)
   matRef.current     = mat
   promMatRef.current = promMat
 
+  const luminosityRef = useRef(params.starLuminosity)
+  const animSpeedRef  = useRef(params.starAnimSpeed)
+  const v5Ref = useRef({
+    scale: params.v5CellScale, lifetime: params.v5Lifetime,
+    rise: params.v5RiseTime, radius: params.v5MaxRadius, lane: params.v5LaneWidth,
+  })
+  luminosityRef.current = params.starLuminosity
+  animSpeedRef.current  = params.starAnimSpeed
+  v5Ref.current = {
+    scale: params.v5CellScale, lifetime: params.v5Lifetime,
+    rise: params.v5RiseTime, radius: params.v5MaxRadius, lane: params.v5LaneWidth,
+  }
+
   useFrame((_, delta) => {
+    const dt = delta * animSpeedRef.current
     const u = matRef.current.uniforms
-    if (u.uTime) u.uTime.value += delta
+    if (u.uTime)        u.uTime.value += dt
+    if (u.uLuminosity)  u.uLuminosity.value  = luminosityRef.current
+    if (u.uV5Scale)     u.uV5Scale.value     = v5Ref.current.scale
+    if (u.uV5Lifetime)  u.uV5Lifetime.value  = v5Ref.current.lifetime
+    if (u.uV5RiseTime)  u.uV5RiseTime.value  = v5Ref.current.rise
+    if (u.uV5MaxRadius) u.uV5MaxRadius.value = v5Ref.current.radius
+    if (u.uV5LaneWidth) u.uV5LaneWidth.value = v5Ref.current.lane
     const p = promMatRef.current.uniforms
-    if (p.uTime) p.uTime.value += delta
+    if (p.uTime) p.uTime.value += dt
   })
 
-  const showProminences = star.star_type !== 'StellarBH' && star.star_type !== 'SMBH' && star.star_type !== 'Pulsar'
+  const showProminencesLayer = showProminences && star.star_type !== 'StellarBH' && star.star_type !== 'SMBH' && star.star_type !== 'Pulsar'
 
   return (
     <>
       <mesh material={mat}>
-        <sphereGeometry args={[r, 32, 16]} />
+        <sphereGeometry args={[r, 128, 64]} />
       </mesh>
-      {showProminences && (
+      {showProminencesLayer && (
         <mesh material={promMat}>
-          <sphereGeometry args={[r * 1.30, 32, 16]} />
+          <sphereGeometry args={[r * 1.30, 96, 48]} />
         </mesh>
       )}
     </>
@@ -480,7 +504,7 @@ function SystemContent({
       <pointLight position={[0, 0, 0]} intensity={4.0} color="#fff8e8" decay={1.5} />
       <ambientLight intensity={0.06} />
 
-      <StarBody star={star} />
+      <StarBody star={star} shaderVariant={params.starShaderVariant as 0|1|2|3|4|5} />
 
       {planets.map(p => (
         <PlanetBody

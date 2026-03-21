@@ -27,9 +27,27 @@ export interface VisualParams {
   moonOrbitMax: number      // outer orbit = planetVisR * moonOrbitMax
 
   // ── Layer visibility ─────────────────────────────────────────────────────────
-  layerOrbits: boolean       // Orbitalbahnen einblenden
-  layerAxisInfo: boolean     // Rotationsachse + Drehrichtungsbogen
-  layerOrbitalChevron: boolean  // Richtungschevron auf Bahn
+  layerOrbits: boolean           // Orbitalbahnen einblenden
+  layerAxisInfo: boolean         // Rotationsachse + Drehrichtungsbogen
+  layerOrbitalChevron: boolean   // Richtungschevron auf Bahn
+  layerProminences: boolean      // Protuberanzen-Shell um den Stern
+
+  // ── Stern-Shader ─────────────────────────────────────────────────────────────
+  starShaderVariant: 0 | 1 | 2 | 3 | 4 | 5  // 0=Klassisch 1=Gradient+Warp 2=Plasma 3=2D-Proj 4=2D+Warp 5=Voronoi
+
+  // ── Stern-Beleuchtung ────────────────────────────────────────────────────────
+  starLuminosity: number     // Helligkeitsmultiplikator (uLuminosity uniform)
+  starAnimSpeed: number      // Animations-Geschwindigkeit (delta-Multiplikator)
+
+  // ── V5 Voronoi-Granulation ───────────────────────────────────────────────────
+  v5CellScale:   number      // Gitterauflösung (Zellenzahl ∝ scale³)
+  v5Lifetime:    number      // Zellzyklus in Sekunden
+  v5RiseTime:    number      // Wachstumsphase in Sekunden (< lifetime)
+  v5MaxRadius:   number      // Max-Zellradius in Gittereinheiten
+  v5LaneWidth:   number      // Breite der dunklen intergranularen Linie
+
+  // ── Spektralfarben ───────────────────────────────────────────────────────────
+  spectralColors: Record<string, string>  // Basisfarbe je Spektralklasse (Hex)
 }
 
 export const DEFAULT_VISUAL_PARAMS: VisualParams = {
@@ -69,6 +87,34 @@ export const DEFAULT_VISUAL_PARAMS: VisualParams = {
   layerOrbits: true,
   layerAxisInfo: true,
   layerOrbitalChevron: true,
+  layerProminences: true,
+
+  starShaderVariant: 0,
+
+  starLuminosity: 1.0,
+  starAnimSpeed:  1.0,
+
+  v5CellScale:   28.0,
+  v5Lifetime:    12.0,
+  v5RiseTime:     7.0,
+  v5MaxRadius:    0.72,
+  v5LaneWidth:    0.25,
+
+  spectralColors: {
+    O:        '#9090ff',  // blauweiß
+    B:        '#aabfff',  // hellblau
+    A:        '#d0dcff',  // weißblau
+    F:        '#fff0d0',  // warmweiß
+    G:        '#ffd27d',  // goldgelb (sonnenähnlich)
+    K:        '#ffb060',  // orange
+    M:        '#ff6040',  // rotorange
+    WR:       '#c0a0ff',  // violettblau
+    RStar:    '#ff4400',  // tiefrot
+    SStar:    '#ffaa00',  // orangegelb
+    Pulsar:   '#88ccff',  // hellblau
+    StellarBH:'#220044',  // dunkellila
+    SMBH:     '#ff6600',  // akkretionsorange
+  },
 }
 
 export const STORAGE_KEY = 'galaxis_visual_params'
@@ -93,6 +139,22 @@ export const PARAM_RANGES: Partial<Record<keyof Omit<VisualParams, 'typeSizes'>,
   moonSizeFactor:  { min: 0.05, max: 0.6,  step: 0.01, label: 'Mondgröße (× Planet)' },
   moonOrbitMin:    { min: 1.0,  max: 4.0,  step: 0.1,  label: 'Mondorbit innen (×)' },
   moonOrbitMax:    { min: 3.0,  max: 15.0, step: 0.5,  label: 'Mondorbit außen (×)' },
+
+  starLuminosity:  { min: 0.1,  max: 5.0,  step: 0.1,  label: 'Leuchtkraft' },
+  starAnimSpeed:   { min: 0.0,  max: 8.0,  step: 0.1,  label: 'Animations-Speed' },
+
+  v5CellScale:     { min: 5,    max: 80,   step: 1,    label: 'Zellenzahl (Skala)' },
+  v5Lifetime:      { min: 2.0,  max: 40.0, step: 0.5,  label: 'Lebensdauer (s)' },
+  v5RiseTime:      { min: 1.0,  max: 30.0, step: 0.5,  label: 'Wachstum (s)' },
+  v5MaxRadius:     { min: 0.20, max: 1.50, step: 0.02, label: 'Max-Radius' },
+  v5LaneWidth:     { min: 0.02, max: 0.80, step: 0.02, label: 'Lane-Breite' },
+}
+
+export const SPECTRAL_COLOR_LABELS: Record<string, string> = {
+  O: 'O', B: 'B', A: 'A', F: 'F',
+  G: 'G (Sonne)', K: 'K', M: 'M',
+  WR: 'Wolf-Rayet', RStar: 'Rot. Riese', SStar: 'S-Stern',
+  Pulsar: 'Pulsar', StellarBH: 'Schwarzes Loch', SMBH: 'SMBH',
 }
 
 export const TYPE_SIZE_RANGES: Record<string, ParamRange> = {
