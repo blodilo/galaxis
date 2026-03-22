@@ -6,8 +6,11 @@ import (
 	"net/http"
 	"time"
 
+	"galaxis/internal/auth"
 	"galaxis/internal/config"
+	"galaxis/internal/economy"
 	"galaxis/internal/jobs"
+	"galaxis/internal/tick"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -16,7 +19,22 @@ import (
 )
 
 // NewRouter creates and returns the chi router with all middleware and routes.
-func NewRouter(db *pgxpool.Pool, cfg *config.Config, store *jobs.Store, assetsDir, catalogPath string) http.Handler {
+func NewRouter(
+	db *pgxpool.Pool,
+	cfg *config.Config,
+	store *jobs.Store,
+	assetsDir, catalogPath string,
+	reg *economy.Registries,
+	bus *economy.Broadcaster,
+	eng *tick.Engine,
+) http.Handler {
+	// JWT validator — nil when KEYCLOAK_JWKS_URL is not set (dev without Keycloak)
+	var validate auth.ValidateFunc
+	if cfg.KeycloakJWKSURL != "" && cfg.KeycloakIssuer != "" {
+		validate = auth.NewJWKSValidator(cfg.KeycloakJWKSURL, cfg.KeycloakIssuer)
+	}
+	_ = auth.NewPermissionClient(cfg.PermissionServiceURL) // available for handlers via closure
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -41,9 +59,16 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config, store *jobs.Store, assetsDi
 	r.Get("/health", healthHandler(db))
 
 	r.Route("/api/v1", func(r chi.Router) {
-		registerGalaxyRoutes(r, db, cfg, store)
+		// Public endpoints — no auth required
 		registerCatalogRoutes(r, cfg, catalogPath)
-		registerGenerateRoutes(r, db, cfg, store, assetsDir, catalogPath)
+
+		// Authenticated endpoints — require valid Keycloak JWT
+		r.Group(func(r chi.Router) {
+			r.Use(auth.Authenticate(validate))
+			registerGalaxyRoutes(r, db, cfg, store)
+			registerGenerateRoutes(r, db, cfg, store, assetsDir, catalogPath)
+			registerEconomyRoutes(r, db, reg, bus, eng)
+		})
 	})
 
 	return r

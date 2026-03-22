@@ -9,22 +9,26 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config is the top-level structure mirroring game-params_v1.1.yaml.
+// Config is the top-level structure mirroring game-params_v1.6.yaml.
 type Config struct {
-	Galaxy    GalaxyConfig    `yaml:"galaxy"             json:"galaxy"`
-	FTLW      FTLWConfig      `yaml:"ftlw"               json:"ftlw"`
-	Sensors   SensorsConfig   `yaml:"sensors"            json:"sensors"`
-	Time      TimeConfig      `yaml:"time"               json:"time"`
-	Economy   EconomyConfig   `yaml:"economy"            json:"economy"`
-	PlanetGen PlanetGenConfig `yaml:"planet_generation"  json:"planet_generation"`
-	Research  ResearchConfig  `yaml:"research"           json:"research"`
-	Combat    CombatConfig    `yaml:"combat"             json:"combat"`
-	Server    ServerConfig    `yaml:"server"             json:"server"`
+	Galaxy     GalaxyConfig     `yaml:"galaxy"             json:"galaxy"`
+	FTLW       FTLWConfig       `yaml:"ftlw"               json:"ftlw"`
+	Sensors    SensorsConfig    `yaml:"sensors"            json:"sensors"`
+	Time       TimeConfig       `yaml:"time"               json:"time"`
+	Economy    EconomyConfig    `yaml:"economy"            json:"economy"`
+	PlanetGen  PlanetGenConfig  `yaml:"planet_generation"  json:"planet_generation"`
+	Research   ResearchConfig   `yaml:"research"           json:"research"`
+	Combat     CombatConfig     `yaml:"combat"             json:"combat"`
+	Server     ServerConfig     `yaml:"server"             json:"server"`
+	Production ProductionConfig `yaml:"production"         json:"production"`
 
 	// Runtime fields (not from YAML, set via env/flags or Load())
-	DatabaseURL string `yaml:"-" json:"-"`
-	RedisURL    string `yaml:"-" json:"-"`
-	ConfigDir   string `yaml:"-" json:"-"` // directory containing the config file
+	DatabaseURL         string `yaml:"-" json:"-"`
+	RedisURL            string `yaml:"-" json:"-"`
+	ConfigDir           string `yaml:"-" json:"-"` // directory containing the config file
+	KeycloakJWKSURL     string `yaml:"-" json:"-"` // e.g. http://keycloak:8080/realms/creaminds/protocol/openid-connect/certs
+	KeycloakIssuer      string `yaml:"-" json:"-"` // must match "iss" claim in JWT
+	PermissionServiceURL string `yaml:"-" json:"-"` // optional — object-level permission checks
 }
 
 type GalaxyConfig struct {
@@ -128,6 +132,93 @@ type ServerConfig struct {
 	InstanceName  string `yaml:"instance_name"  json:"instance_name"`
 }
 
+// ProductionConfig mirrors the game-params production: block (section 11).
+type ProductionConfig struct {
+	Efficiency              ProductionEfficiencyConfig      `yaml:"efficiency"               json:"efficiency"`
+	Sensitivity             SensitivityConfig               `yaml:"sensitivity"              json:"sensitivity"`
+	GoodMassTonnes          map[string]float64              `yaml:"good_mass_tonnes"         json:"good_mass_tonnes"`
+	FacilityEfficiency      map[string][]float64            `yaml:"facility_efficiency"      json:"facility_efficiency"`
+	FacilityOutputPerTick   map[string][]int                `yaml:"facility_output_per_tick" json:"facility_output_per_tick"`
+	StorageCapacityPerModule map[string][]int               `yaml:"storage_capacity_per_module" json:"storage_capacity_per_module"`
+	DepositInit             map[string]DepositInitConfig    `yaml:"deposit_init"             json:"deposit_init"`
+	Survey                  SurveyConfig                    `yaml:"survey"                   json:"survey"`
+	Elevator                ElevatorConfig                  `yaml:"elevator"                 json:"elevator"`
+	DepositWarnings         DepositWarningsConfig           `yaml:"deposit_warnings"         json:"deposit_warnings"`
+	ColonyShipStarter       ColonyShipStarterConfig         `yaml:"colony_ship_starter"      json:"colony_ship_starter"`
+}
+
+type ProductionEfficiencyConfig struct {
+	AccumulatorPrecision int `yaml:"accumulator_precision" json:"accumulator_precision"`
+}
+
+type SensitivityConfig struct {
+	ClassI   SensitivityClass `yaml:"class_I"   json:"class_I"`
+	ClassII  SensitivityClass `yaml:"class_II"  json:"class_II"`
+	ClassIII SensitivityClass `yaml:"class_III" json:"class_III"`
+	ClassIV  SensitivityClassIV `yaml:"class_IV" json:"class_IV"`
+}
+
+type SensitivityClass struct {
+	StorageModuleRequired      string  `yaml:"storage_module_required"      json:"storage_module_required"`
+	TransportPenaltyPerTick    float64 `yaml:"transport_penalty_per_tick"   json:"transport_penalty_per_tick"`
+	WrongStorageDegradationPct float64 `yaml:"wrong_storage_degradation_pct" json:"wrong_storage_degradation_pct"`
+	CombatRadiationLossMin     float64 `yaml:"combat_radiation_loss_min"    json:"combat_radiation_loss_min"`
+	CombatRadiationLossMax     float64 `yaml:"combat_radiation_loss_max"    json:"combat_radiation_loss_max"`
+	NaturalDecayPerTick        float64 `yaml:"natural_decay_per_tick"       json:"natural_decay_per_tick"`
+}
+
+type SensitivityClassIV struct {
+	SensitivityClass `yaml:",inline"`
+	TransportRequiresDedicated   bool    `yaml:"transport_requires_dedicated"    json:"transport_requires_dedicated"`
+	DetonationChanceWrongStorage float64 `yaml:"detonation_chance_wrong_storage" json:"detonation_chance_wrong_storage"`
+	DetonationChanceOnDestruction float64 `yaml:"detonation_chance_on_destruction" json:"detonation_chance_on_destruction"`
+}
+
+type DepositInitConfig struct {
+	BaseUnits   float64 `yaml:"base_units"    json:"base_units"`
+	BaseMaxRate float64 `yaml:"base_max_rate" json:"base_max_rate"`
+	BaseSlots   int     `yaml:"base_slots"    json:"base_slots"`
+}
+
+type SurveyConfig struct {
+	FullMechanicEnabled              bool        `yaml:"full_mechanic_enabled"               json:"full_mechanic_enabled"`
+	UncertaintyReductionPerRound     float64     `yaml:"uncertainty_reduction_per_round"     json:"uncertainty_reduction_per_round"`
+	GroundSurveyTicksPerRound        int         `yaml:"ground_survey_ticks_per_round"       json:"ground_survey_ticks_per_round"`
+	ColonyShipSurveyQualityPerRound  []float64   `yaml:"colony_ship_survey_quality_per_round" json:"colony_ship_survey_quality_per_round"`
+	QualityThresholds                SurveyQualityThresholds `yaml:"quality_thresholds" json:"quality_thresholds"`
+}
+
+type SurveyQualityThresholds struct {
+	TypeOnly    float64 `yaml:"type_only"    json:"type_only"`
+	RangeApprox float64 `yaml:"range_approx" json:"range_approx"`
+	RangeNarrow float64 `yaml:"range_narrow" json:"range_narrow"`
+	Exact       float64 `yaml:"exact"        json:"exact"`
+}
+
+type ElevatorConfig struct {
+	CapacityPerLevel       int    `yaml:"capacity_per_level"        json:"capacity_per_level"`
+	ShuttleCapacityPerTick int    `yaml:"shuttle_capacity_per_tick" json:"shuttle_capacity_per_tick"`
+	ShuttleCostPerUnit     int    `yaml:"shuttle_cost_per_unit"     json:"shuttle_cost_per_unit"`
+	DefaultAllocation      string `yaml:"default_allocation"        json:"default_allocation"`
+}
+
+type DepositWarningsConfig struct {
+	WarningPercent  float64 `yaml:"warning_percent"  json:"warning_percent"`
+	CriticalPercent float64 `yaml:"critical_percent" json:"critical_percent"`
+}
+
+type ColonyShipStarterConfig struct {
+	SurveyQualityOnLanding float64                     `yaml:"survey_quality_on_landing" json:"survey_quality_on_landing"`
+	PrebuiltFacilities     []PrebuiltFacilityConfig    `yaml:"prebuilt_facilities"       json:"prebuilt_facilities"`
+	MaterialReserve        map[string]float64          `yaml:"material_reserve"          json:"material_reserve"`
+}
+
+type PrebuiltFacilityConfig struct {
+	Type  string `yaml:"type"  json:"type"`
+	Level int    `yaml:"level" json:"level"`
+	Count int    `yaml:"count" json:"count"`
+}
+
 // Load reads the YAML file at path and returns a validated Config.
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
@@ -152,6 +243,15 @@ func Load(path string) (*Config, error) {
 	}
 	if v := os.Getenv("REDIS_URL"); v != "" {
 		cfg.RedisURL = v
+	}
+	if v := os.Getenv("KEYCLOAK_JWKS_URL"); v != "" {
+		cfg.KeycloakJWKSURL = v
+	}
+	if v := os.Getenv("KEYCLOAK_ISSUER"); v != "" {
+		cfg.KeycloakIssuer = v
+	}
+	if v := os.Getenv("PERMISSION_SERVICE_URL"); v != "" {
+		cfg.PermissionServiceURL = v
 	}
 
 	return &cfg, nil

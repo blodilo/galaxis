@@ -24,6 +24,32 @@
 - Nie einen Magic Number direkt im Code hardcoden – immer aus game-params laden
 - Bei Versionierung: geänderte game-params-Datei → neue Versionsnummer (`game-params_v1.1.yaml`)
 
+## Datenbankstrategie — JSON over Columns
+
+**Grundprinzip:** Datenbankeinträge werden auf ein Minimum reduziert.
+Komplexe, sich häufig ändernde oder konfigurationsnahe Daten leben in YAML-Dateien
+oder JSONB-Spalten — nie in separaten relationalen Spalten.
+
+### Wann relationale Spalten:
+- Echte FK-Beziehungen (star_id, planet_id, player_id)
+- Felder, auf die WHERE / JOIN / ORDER BY angewendet werden muss (status, facility_type, tick_n)
+
+### Wann JSONB:
+- Konfigurationen und Parameter, die sich ohne Migration ändern sollen
+- Inventare, Listen, Maps (z. B. `{ "iron_ore": 47.5 }`)
+- Verschachtelte Strukturen ohne eigene Abfragebedarf (z. B. Deposit-Zustand pro Ressource)
+
+### Wann YAML-Datei (nie in DB):
+- Rezepte (`recipes_v1.0.yaml`)
+- Gut-Definitionen (Sensitivitätsklasse, Masse, ID)
+- Anlagen-Parameter (η per Level, Output/Tick, Baukosten)
+- Alle game-params — in-memory geladen beim Server-Start
+
+### Konsequenz:
+- Neue Güter, Rezepte, Effizienzwerte → YAML-Änderung, **keine Migration**
+- Neue Felder in Spielzustand (z. B. Deposit bekommt `depth`) → JSONB, **keine Migration**
+- Neue echte Entität mit Relationen (z. B. Trade-Routen) → neue Tabelle mit Migration
+
 ## Stack
 - Frontend: React + Vite + TypeScript
 - Commits: Conventional Commits (`feat/fix/docs/chore`)

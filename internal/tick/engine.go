@@ -6,6 +6,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -16,11 +17,15 @@ type Handler func(ctx context.Context, tickN int64)
 
 // Engine drives the strategy tick loop.
 type Engine struct {
-	duration time.Duration
-	handlers []Handler
-	mu       sync.RWMutex
-	stopCh   chan struct{}
-	wg       sync.WaitGroup
+	duration  time.Duration
+	handlers  []Handler
+	mu        sync.RWMutex
+	stopCh    chan struct{}
+	wg        sync.WaitGroup
+	// tickCounter is shared between the timer loop and Advance().
+	// The timer loop increments it on each scheduled tick; Advance() does the same
+	// for manual ticks. This ensures tick numbers are globally monotonic.
+	tickCounter atomic.Int64
 }
 
 // NewEngine creates a new Engine with the given tick duration.
@@ -51,13 +56,19 @@ func (e *Engine) Stop() {
 	e.wg.Wait()
 }
 
+// Advance fires one manual tick immediately, incrementing the shared tick counter.
+// Used by POST /admin/tick/advance in the MVP to drive production without
+// waiting for the real-time timer. Safe to call concurrently with the timer loop.
+func (e *Engine) Advance(ctx context.Context) {
+	n := e.tickCounter.Add(1)
+	e.fireTick(ctx, n, time.Now())
+}
+
 func (e *Engine) run(ctx context.Context) {
 	defer e.wg.Done()
 
 	ticker := time.NewTicker(e.duration)
 	defer ticker.Stop()
-
-	var tickN int64
 
 	for {
 		select {
@@ -66,8 +77,8 @@ func (e *Engine) run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case t := <-ticker.C:
-			tickN++
-			e.fireTick(ctx, tickN, t)
+			n := e.tickCounter.Add(1)
+			e.fireTick(ctx, n, t)
 		}
 	}
 }

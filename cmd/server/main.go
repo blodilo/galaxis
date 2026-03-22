@@ -15,12 +15,13 @@ import (
 	"galaxis/internal/api"
 	"galaxis/internal/config"
 	"galaxis/internal/db"
+	"galaxis/internal/economy"
 	"galaxis/internal/jobs"
 	"galaxis/internal/tick"
 )
 
 func main() {
-	configPath  := flag.String("config",      "game-params_v1.2.yaml",                 "Path to game-params YAML")
+	configPath  := flag.String("config",      "game-params_v1.6.yaml",                 "Path to game-params YAML")
 	migrateOnly := flag.Bool("migrate-only",  false,                                    "Run migrations and exit")
 	addr        := flag.String("addr",         ":8080",                                 "HTTP listen address")
 	assetsDir   := flag.String("assets-dir",   "assets",                                "Directory to serve under /assets/")
@@ -57,9 +58,24 @@ func main() {
 	defer pool.Close()
 	log.Println("database: connected")
 
+	// ── Economy Registries ────────────────────────────────────────────────────
+	recipesPath := "recipes_v1.0.yaml"
+	reg, err := economy.LoadRegistries(recipesPath, cfg)
+	if err != nil {
+		log.Fatalf("economy registries: %v", err)
+	}
+	log.Printf("economy: loaded %d recipes", len(reg.Recipes))
+
 	// ── Tick Engine ───────────────────────────────────────────────────────────
 	tickDuration := time.Duration(cfg.Time.StrategyTickMinutes) * time.Minute
 	engine := tick.NewEngine(tickDuration)
+
+	// SSE broadcast bus for tick events.
+	bus := economy.NewBroadcaster()
+
+	// Register production tick handler.
+	engine.Register(economy.ProductionHandler(pool, reg))
+
 	engine.Start(ctx)
 	defer engine.Stop()
 	log.Printf("tick engine: started (tick = %v)", tickDuration)
@@ -68,7 +84,7 @@ func main() {
 	jobStore := jobs.NewStore()
 
 	// ── HTTP Server ───────────────────────────────────────────────────────────
-	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath)
+	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, bus, engine)
 	srv := &http.Server{
 		Addr:         *addr,
 		Handler:      router,

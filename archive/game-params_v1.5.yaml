@@ -1,0 +1,539 @@
+# Galaxis – Spielparameter
+# Version: 1.5 · Datum: 2026-03-22
+# Änderungen gegenüber v1.4:
+#   - production: Neuer Block — Sensitivitätsklassen, Anlagen-Effizienz,
+#     Güter-Einheitenmassen, Transport-Penalties, Lagerparameter, Bootstrap
+#
+# Änderungen v1.4 (2026-03-21):
+#   - economy: Vollständige Wirtschaftsparameter (economy_v1.0.md finalisiert)
+#     Neu: tick_duration_minutes, deposits, elevator, market, research_unlock, sabotage
+#
+# Zweck: Zentrale Konfigurationsdatei für alle balancierbaren Spielparameter.
+# Vor Beginn einer neuen Partie editierbar.
+#
+# Konvention:
+#   - Jeder Parameter hat einen Kommentar mit Beschreibung und Auswirkung
+#   - Einheiten immer explizit angeben (ly, m², L☉, Ticks, Credits, ...)
+#   - Kalibrierungskonstanten sind mit [KALIBRIERUNG] markiert
+#   - Balancing-Parameter mit [BALANCING]
+#   - Technische Limits mit [PERFORMANCE]
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 1. GALAXIE-GENERIERUNG
+# ═══════════════════════════════════════════════════════════════════
+galaxy:
+  seed: 42
+  # Deterministischer Startwert. Gleicher Seed → gleiche Galaxie.
+
+  num_stars: 500000
+  # Anzahl der Sternensysteme. Empfohlener Bereich: 10.000–500.000
+  # [PERFORMANCE] Höhere Werte → längere Generierungszeit und mehr DB-Speicher.
+
+  radius_ly: 50000
+  # Radius der Galaxie in Lichtjahren.
+
+  type: SBb
+  # Galaxie-Morphologie. Optionen: Sa, Sb, Sc, SBa, SBb, SBc, Irr.
+  # Entspricht der Morphologie-ID aus galaxy_morphology_catalog_v1.0.yaml.
+
+  arms: 2
+  # Anzahl der Spiralarme.
+
+  arm_winding: 0.35
+  # [KALIBRIERUNG] Wie stark sich die Spiralarme drehen (höher = engere Windung).
+  # Kalibriert auf 0.35 (war 2.0 – erzeugte unrealistisch enge Arme; BL-01).
+
+  arm_spread: 0.5
+  # Auffransung der Spiralarme (höher = diffuser, natürlicher).
+
+  smbh_mass_solar: 4_300_000
+  # Masse des zentralen Supermassiven Schwarzen Lochs in Sonnenmassen.
+  # Referenz: Sagittarius A* = 4,3 Mio. M☉.
+  # Beeinflusst direkt die Größe der FTL-Bremszone im Zentrum.
+
+  exotic_counts:
+    # [BALANCING] Exotika werden ZUSÄTZLICH zu num_stars erzeugt (zählen nicht gegen das Cap).
+    wr:         15    # Wolf-Rayet Sterne
+    rstar:      80    # Rote Überriesen
+    sstar:      40    # S-Sterne
+    pulsar:     25    # Pulsare
+    stellar_bh: 10    # Stellare Schwarze Löcher (SMBH immer = 1, nicht konfigurierbar)
+
+  exotic_placement: "color_affine"
+  # Strategie für Exotika-Platzierung.
+  # "color_affine": Exotika in farblich passenden Bildregionen (bevorzugte Option).
+  # "random": gleichverteilt (Fallback/Tests).
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 2. FTL-WIDERSTANDSFELD (FTLW)
+# ═══════════════════════════════════════════════════════════════════
+ftlw:
+  vacuum_base: 1.0
+  # [KALIBRIERUNG] Basis-FTLW im leeren Raum (Vakuum).
+  # Alle anderen FTLW-Werte sind relativ zu diesem Wert.
+
+  k_factor: 1.0
+  # [KALIBRIERUNG] Skalierungsfaktor der Formel FTLW = k * M / r².
+  # Höher → Sterne bremsen stärker → Kern schwerer durchquerbar.
+  # Beeinflusst strategische Bedeutung des galaktischen Kerns.
+
+  cutoff_percent: 1.0
+  # [PERFORMANCE] Unter diesem Prozentsatz von vacuum_base wird der
+  # FTLW-Beitrag eines Sterns für entfernte Voxel ignoriert (Culling).
+  # Niedriger → genaueres Feld, aber höhere Rechenzeit.
+
+  voxel_size_ly: 500
+  # [PERFORMANCE] Räumliche Auflösung des FTLW-Voxelgrids in Lichtjahren.
+  # Kleiner → genauer, aber mehr Speicher und langsameres A*.
+  # Empfehlung: 500 ly Standard, 250 ly für Feinauflösung.
+
+  coarse_voxel_size_ly: 2500
+  # [PERFORMANCE] Voxelgröße für den ersten A*-Durchlauf (hierarchisch).
+  # Sollte ein Vielfaches von voxel_size_ly sein.
+
+  pulsar_multiplier: 3.0
+  # [BALANCING] FTLW-Multiplikator für Pulsare über ihre reine Masse hinaus.
+  # Simuliert Magnetfeld-Interferenz mit dem FTL-Feld.
+
+  black_hole_multiplier: 10.0
+  # [BALANCING] FTLW-Multiplikator für Schwarze Löcher (stellar + SMBH).
+  # Erzeugt die gewünschten "No-Go-Zonen" um BHs ohne künstliche Grenzen.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 3. SENSOREN & FOG OF WAR
+# ═══════════════════════════════════════════════════════════════════
+sensors:
+  optical_k: 1500.0
+  # [KALIBRIERUNG] Detektionsreichweite: d [ly] = optical_k * sqrt(SR [m²] * L [L☉])
+  # Referenzpunkt: Observatorium (SR=177) sieht M-Zwerg (L=0,01) bis 2.000 ly.
+  # Höher → größere Reichweiten für alle optischen Sensoren.
+
+  ftl_k: 800.0
+  # [KALIBRIERUNG] Detektionsreichweite FTL-Sensor: d [ly] = ftl_k * sqrt(SR_ftl * M [M☉])
+  # Analog zu optical_k, aber für Gravitationslinsen-Detektion.
+
+  ship_thermal_k: 1500.0
+  # [KALIBRIERUNG] Wie optical_k, aber für thermische Schiffssignaturen.
+  # Normalerweise identisch mit optical_k (gleiche Physik).
+
+  # Sensor Ratings (SR) der Standardtypen in m²:
+  sensor_ratings:
+    scout_array: 0.07          # Kleines Schiff / Sonde
+    tactical_array: 0.79       # Fregatte / Zerstörer
+    survey_array: 2.00         # Aufklärungsschiff
+    planetary_outpost: 19.6    # Frühe Kolonie
+    planetary_observatory: 177 # Ausgebauter Planet
+    deep_space_array: 707      # Megastruktur
+    ftl_sensor_basic: 50       # FTL-Basisstation
+    ftl_sensor_advanced: 300   # Fortgeschrittener FTL-Sensor
+
+  # Thermische Signaturen der Schiffszustände (effektive Leuchtkraft in L☉):
+  ship_thermal_signatures:
+    shutdown: 1.0e-17          # Abgeschaltet / Drift
+    standby: 1.0e-15           # Standby
+    normal_operation: 1.0e-13  # Normalbetrieb
+    full_thrust_combat: 1.0e-11 # Vollschub / Kampf
+    ftl_warp_initiation: 1.0e-9 # FTL-Warp-Start (kurzzeitig)
+
+  # Detektions-Qualitätsschwellen (Anteil der max. Detektionsreichweite):
+  info_quality:
+    full_detail_threshold: 0.10   # < 10% → volle Informationen
+    medium_detail_threshold: 0.50 # < 50% → Typ und Leuchtkraftklasse
+    low_detail_threshold: 0.90    # < 90% → nur Lichtsignal
+    # > 90% → Typ unbekannt; > 100% → unsichtbar
+
+  survey_duration_ticks: 5
+  # [BALANCING] Ticks für einen vollständigen Orbital-Survey (Ressourcen + Nutzfläche).
+
+  last_known_position_decay_ticks: 10
+  # [BALANCING] Nach wie vielen Ticks ohne Bestätigung wird eine feindliche
+  # Flotte als "letzte bekannte Position" markiert (gestrichelt).
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 4. ZEITVERLAUF & TICKS
+# ═══════════════════════════════════════════════════════════════════
+time:
+  strategy_tick_minutes: 60
+  # Länge eines Strategie-Ticks in Echtzeit-Minuten.
+  # Richtwerte: 15 = Wochenendpartie, 60 = Standard, 360 = Langzeitkampagne.
+
+  combat_tick_seconds: 10
+  # [BALANCING] Länge eines Kampf-Ticks in Sekunden (im Combat Pod).
+
+  combat_opt_in_window_hours: 24
+  # [BALANCING] Zeit in Echtzeit-Stunden, in der Spieler einer Live-Gefechtsinstanz
+  # beitreten können. Nach Ablauf: automatische Auflösung.
+
+  max_action_queue_depth: 50
+  # [BALANCING] Maximale Anzahl von Befehlen, die ein Spieler gleichzeitig
+  # in der Warteschlange haben kann.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 5. WIRTSCHAFT & PRODUKTION
+# ═══════════════════════════════════════════════════════════════════
+economy:
+
+  # ── Tick-Länge ────────────────────────────────────────────────────
+  production_tick_minutes: 360
+  # [BALANCING] Länge eines Produktions-Ticks in Echtzeit-Minuten. Partieparameter.
+  # Basis: 360 min (6 h). Kürzere Werte → Schnellpartien; längere → Langzeitkampagnen.
+  # Alle Produktionszeiten in economy_v1.0.md beziehen sich auf diesen Tick.
+
+  # ── Ressourcenvorkommen (erschöpfbar, Entscheidung 1) ────────────
+  deposits:
+    common_deposit_units: 50_000
+    # [BALANCING] Startmenge eines häufigen Vorkommens (Eisenerz, Nickel) in Einheiten.
+    # Ein Bergwerk Lv1 (10 E/Tick) würde 5.000 Ticks (= ~2 Jahre Echtzeit @ 6h/Tick) brauchen.
+
+    rare_deposit_units: 10_000
+    # [BALANCING] Startmenge seltener Vorkommen (Seltene Erden, Platin-Gruppe, Exotische Materie).
+
+    strategic_deposit_units: 20_000
+    # [BALANCING] Startmenge strategischer Vorkommen (Uran/Thorium, He-3).
+
+    deposit_depletion_warning_percent: 0.20
+    # [BALANCING] UI-Warnung wenn Vorkommen unter diesen Prozentsatz sinkt.
+
+    deep_drill_unlock_threshold_percent: 0.50
+    # [BALANCING] Ab welchem Füllstand Orbital-Bohrer (Tiefenabbau) freischaltbar wird.
+    # Erzeugt logistischen Mehraufwand bei erschöpfenden Oberflächen-Vorkommen.
+
+    deep_drill_yield_multiplier: 0.60
+    # [BALANCING] Ertragsmultiplikator des Orbital-Bohrers vs. Bergwerk gleicher Stufe.
+    # Tiefenabbau ist teurer und langsamer → erzwingt Expansion in neue Systeme.
+
+  # ── Aufzug-Engpass ────────────────────────────────────────────────
+  elevator:
+    capacity_per_level: 100
+    # [BALANCING] Aufzug-Kapazität in Einheiten/Tick pro Level.
+    # Formel aus economy_v1.0.md: capacity = elevator_level × capacity_per_level.
+
+    shuttle_capacity_per_tick: 10
+    # [BALANCING] Shuttle-Kapazität als Aufzug-Ersatz (kein Aufzug gebaut).
+    # Deutlich langsamer → Motivation, Aufzug früh zu bauen.
+
+    shuttle_cost_per_unit: 5
+    # [BALANCING] Credits-Kosten pro transportierter Einheit via Shuttle.
+
+  # ── Hybridautomatik (Entscheidung 2C) ────────────────────────────
+  automation:
+    detail_mode_efficiency_bonus: 0.50
+    # [BALANCING] Effizienzsteigerung durch aktives Management (Detail-Modus).
+
+    detail_mode_upgrade_downtime_ticks: 20
+    # [BALANCING] Ticks, die eine Anlage beim Upgrade in den Detail-Modus stillsteht.
+
+    detail_mode_break_even_ticks: 200
+    # [BALANCING] Richtwert Break-even Detail-Modus (dokumentarisch).
+
+  # ── Markt (vollständig spielergetrieben, Entscheidung 1A) ─────────
+  market:
+    market_fee_percent: 0.02
+    # [BALANCING] Marktgebühr pro Trade in Prozent des Handelswertes (2%).
+    # Verhindert Spam-Orders; fließt in Credits-Senke.
+
+    price_info_delay_ticks: 3
+    # [BALANCING] Verzögerung von Preisinformationen aus fernen Systemen in Ticks.
+    # Simuliert Kommunikationsverzögerung (Hard-Sci-Fi). 0 = kein Delay.
+
+    max_open_orders_per_player: 200
+    # [BALANCING] Maximale gleichzeitig offene Marktorders pro Spieler.
+
+  # ── Blaupausen / Forschungsfreischaltung (Entscheidung 7) ─────────
+  research_unlock:
+    start_with_recipes: false
+    # Sind Produktionsrezepte zu Spielbeginn bekannt?
+    # false = alle Rezepte müssen über den Tech-Tree erforscht werden.
+
+    starter_recipe_tier: 1
+    # [BALANCING] Höchste Stufe (Rohstoff=1 bis Logistik=5) die im Tutorial
+    # als Starterpaket freigeschaltet wird (falls Tutorial-Modus aktiv).
+    # Bei start_with_recipes=false gilt dies nur für optionale Tutorial-Runs.
+
+  # ── Sabotage (Entscheidung 5) ──────────────────────────────────────
+  sabotage:
+    downtime_ticks_min: 5
+    # [BALANCING] Minimale Ausfallzeit einer sabotierten Anlage in Ticks.
+
+    downtime_ticks_max: 30
+    # [BALANCING] Maximale Ausfallzeit einer sabotierten Anlage in Ticks.
+
+    detection_base_chance: 0.30
+    # [BALANCING] Basiswahrscheinlichkeit, dass ein Sabotage-Versuch entdeckt wird (30%).
+    # Steigt mit Sicherheitsstufe der Station. Details in AP6 (Agenten-Mechanik).
+
+  # ── Bevölkerung & Kosten (aus v1.3) ──────────────────────────────
+  base_population_growth_rate: 0.02
+  # [BALANCING] Monatliche Bevölkerungswachstumsrate auf kompatiblen Welten (2%).
+
+  planet_surface_cost_exponent: 2.0
+  # [BALANCING] Exponent der exponentiell steigenden Baukosten bei abnehmender freier Nutzfläche.
+
+  asteroid_yield_multiplier: 1.0
+  # [BALANCING] Relativer Ressourcenertrag von Asteroiden vs. Planetenminen gleicher Stufe.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 6. PLANETENSYSTEM-GENERIERUNG
+# ═══════════════════════════════════════════════════════════════════
+planet_generation:
+
+  biochemistry_archetypes_file: "biochemistry_archetypes_v1.0.yaml"
+  # Biochemie-Archetypen: Konfiguration in separater YAML-Datei.
+
+  frost_line_constant_au: 2.7
+  # [KALIBRIERUNG] Frostgrenze: d_frost = sqrt(L / L☉) * frost_line_constant_au
+  # Quelle: Hayashi, C. (1981). Prog. Theor. Phys. Suppl. 70, 35–53.
+
+  greenhouse_overlap_correction: 0.75
+  # [KALIBRIERUNG] Korrekturfaktor für Spektralüberlappungen bei additiver
+  # Treibhausgasberechnung.
+  # Quelle: Pierrehumbert (2010), Principles of Planetary Climate, Kap. 4.
+
+  so2_aerosol_threshold_water_activity: 0.01
+  # [KALIBRIERUNG] Schwellenwert H2O-Aktivität für SO2 → H2SO4-Aerosol-Bildung.
+  # Quelle: Bullock & Grinspoon (2001), Icarus 150(1). doi:10.1006/icar.2000.6570
+
+  planet_count_lambda:
+    O: 1.2
+    B: 1.2
+    A: 2.5
+    F: 3.5
+    G: 4.0
+    K: 3.8
+    M: 3.5
+    WR: 1.5
+    RStar: 1.5
+    SStar: 1.5
+    Pulsar: 0.8
+    StellarBH: 0.5
+    SMBH: 0.2
+  # [KALIBRIERUNG] Poisson-λ für Planetenanzahl pro Spektraltyp.
+  # Quelle: Borucki et al. (2011), Science 327(5968) (Kepler).
+
+  moon_collision_probability: 0.10
+  # [BALANCING] Wahrscheinlichkeit Kollisionsmond (Giant Impact) bei Gesteinsplaneten.
+  # Quelle: Canup & Asphaug (2001), Nature 412, 708–712.
+
+  gas_giant_moon_count_min: 2
+  gas_giant_moon_count_max: 5
+  # [BALANCING] Anzahl großer Monde um Gasriesen.
+
+  usable_surface_base: 0.85
+  # [BALANCING] Basis-Nutzfläche auf kompatiblen Welten (85%).
+
+  usable_surface_hostile_base: 0.10
+  # [BALANCING] Basis-Nutzfläche auf inkompatiblen Welten ohne Habitate (10%).
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 7. FORSCHUNG & TECHNOLOGIEBAUM
+# ═══════════════════════════════════════════════════════════════════
+research:
+  base_research_speed: 1.0
+  # [BALANCING] Multiplikator auf alle Forschungszeiten.
+
+  scientist_research_bonus: 0.10
+  # [BALANCING] Forschungsbonus pro Wissenschaftler.
+
+  scientist_risk_reduction: 0.05
+  # [BALANCING] Risikoreduktion pro zusätzlichem Wissenschaftler über Minimum.
+
+  lab_bonus_factor: 0.25
+  # [BALANCING] Zusätzlicher Fortschritt pro Extra-Labor über Minimum.
+
+  parallel_research_slots: 1
+  # [BALANCING] Wie viele Technologien gleichzeitig erforscht werden können.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 8. KAMPF
+# ═══════════════════════════════════════════════════════════════════
+combat:
+  railgun_base_velocity_km_s: 50.0
+  # [BALANCING] Mündungsgeschwindigkeit der Basis-Railgun in km/s.
+
+  graser_antimaterie_cost_per_shot: 10.0
+  # [BALANCING] Antimaterie-Kosten pro Graser-Schuss.
+
+  sandcaster_intercept_radius_km: 500.0
+  # [BALANCING] Effektiver Abfangradius einer Sandcaster-Wolke.
+
+  combat_arena_radius_km: 300_000
+  # [BALANCING] Gefechtsdistanz (Gravitationsbrunnnen-Arena) in km.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 9. SERVER
+# ═══════════════════════════════════════════════════════════════════
+server:
+  max_players: 100
+  # Maximale Spieleranzahl pro Instanz.
+
+  max_ai_factions: 10
+  # Maximale Anzahl KI-Fraktionen pro Instanz.
+
+  instance_name: "Galaxis Alpha"
+  # Anzeigename dieser Instanz.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 10. RENDERING (Client-Parameter, vom Frontend gelesen)
+# ═══════════════════════════════════════════════════════════════════
+rendering:
+  nebula_lod_viewport_threshold: 0.20
+  # [PERFORMANCE] Ab welchem Viewport-Füllgrad (0–1) ein Nebel von Billboard-Sprites
+  # auf volumetrisches Raymarching umschaltet.
+  # 0.20 = Nebel füllt ≥ 20% des Viewports → Sektor-Rendering aktiviert.
+
+  nebula_raymarch_steps: 64
+  # [PERFORMANCE] Anzahl der Raymarching-Schritte pro Fragment beim volumetrischen
+  # Nebel-Rendering (BL-06b). Höhere Werte = mehr Qualität, mehr GPU-Last.
+  # Empfohlene Werte: 32 (schnell), 64 (Standard), 128 (hochwertig, WebGPU).
+
+  nebula_fbm_octaves: 6
+  # [KALIBRIERUNG] Anzahl FBM-Oktaven für die Nebeldichte-Funktion.
+  # Muss identisch mit dem Wert im Server-Octree (ADR-010, ADR-011) sein.
+  # 6 Oktaven entsprechen den 6 Dichtestufen (0.1–10.000 /m³).
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 11. PRODUKTION — ANLAGEN, GÜTER, SENSITIVITÄT
+# ═══════════════════════════════════════════════════════════════════
+# Vollständige Spezifikation: production-mechanics_v1.0.md
+production:
+
+  # ── Effizienzmodell ──────────────────────────────────────────────
+  efficiency:
+    accumulator_precision: 6
+    # [KALIBRIERUNG] Dezimalstellen des Float-Akkumulators für Effizienz-Reste.
+    # Verhindert Floating-Point-Drift bei langen Spielläufen.
+
+  # ── Sensitivitätsklassen ─────────────────────────────────────────
+  sensitivity:
+
+    class_I:  # Bulk / Inert
+      storage_module_required:         "standard"
+      transport_penalty_per_tick:      0.0
+      # Kein Verlust ohne Spezialfrachter — robuste Massengüter.
+      wrong_storage_degradation_pct:   0.0
+      combat_radiation_loss_min:       0.0
+      combat_radiation_loss_max:       0.0
+
+    class_II:  # Reguliert / Kontrolliert
+      storage_module_required:         "sealed"
+      transport_penalty_per_tick:      0.01
+      # [BALANCING] 1 % Verlust / Tick bei Transport im Standard-Frachter.
+      wrong_storage_degradation_pct:   0.01
+      # [BALANCING] 1 % Degradation / Tick bei Falschlagerung.
+      combat_radiation_loss_min:       0.0
+      combat_radiation_loss_max:       0.05
+      # [BALANCING] 0–5 % Verlust bei Energietreffer (Gasleck, Hitze).
+
+    class_III:  # Sensitiv / Fragil
+      storage_module_required:         "shielded"
+      transport_penalty_per_tick:      0.05
+      # [BALANCING] 5 % Verlust / Tick ohne Faraday-Frachtraum — deutliche Strafe.
+      wrong_storage_degradation_pct:   0.05
+      # [BALANCING] 5 % Degradation / Tick bei Falschlagerung.
+      combat_radiation_loss_min:       0.10
+      combat_radiation_loss_max:       0.50
+      # [BALANCING] 10–50 % Verlust bei Strahlungs-/EMP-Treffer.
+      natural_decay_per_tick:          0.0
+      # Kein natürlicher Zerfall bei korrekter Lagerung (cosmic ray: vernachlässigt).
+
+    class_IV:  # Segregiert / Isoliert
+      storage_module_required:         "segregated"
+      transport_requires_dedicated:    true
+      # Hard-Constraint: Kein Transport in Standard- oder Klasse-II/III-Frachter.
+      wrong_storage_degradation_pct:   0.20
+      # [BALANCING] 20 % Degradation / Tick + Detonationsrisiko.
+      detonation_chance_wrong_storage: 0.02
+      # [BALANCING] 2 % Detonationsrisiko / Tick bei Falschlagerung.
+      detonation_chance_on_destruction: 0.40
+      # [BALANCING] 40 % Detonationsrisiko wenn Schiff/Station zerstört wird.
+      combat_radiation_loss_min:       0.20
+      combat_radiation_loss_max:       1.00
+
+  # ── Güter: Masse pro Einheit ─────────────────────────────────────
+  # Masse in Tonnen pro Spieleinheit (E). Beeinflusst Transportkapazitäten.
+  good_mass_tonnes:
+    # Stufe 1 — Rohstoffe
+    iron_ore:          10000    # [KALIBRIERUNG] Bulk-Erz, Klasse I
+    silicates:         10000    # [KALIBRIERUNG] Bulk-Mineral, Klasse I
+    titan_ore:         10000    # [KALIBRIERUNG] Bulk-Erz, Klasse I
+    nickel_ore:        10000    # [KALIBRIERUNG] Bulk-Erz, Klasse I
+    rare_earths:         100    # [KALIBRIERUNG] Legierungsklasse, Klasse II
+    uranium_raw:         100    # [KALIBRIERUNG] Legierungsklasse, Klasse II
+    helium3:            5000    # [KALIBRIERUNG] Flüssiggas, Klasse II
+    hydrogen:           5000    # [KALIBRIERUNG] Flüssiggas, Klasse II
+    water_ice:         10000    # [KALIBRIERUNG] Bulk, Klasse I
+    organics:              1    # [KALIBRIERUNG] Präzision, Klasse II
+    platinum_group:        1    # [KALIBRIERUNG] Präzision, Klasse I
+    exotic_matter:         1    # [KALIBRIERUNG] Präzision, Klasse III
+    # Stufe 2 — Halbzeug
+    steel:             10000    # Klasse I
+    titansteel:        10000    # Klasse I
+    semiconductor_wafer:   1    # Klasse III
+    fusion_fuel:        5000    # Klasse II
+    fissile_material:    100    # Klasse IV
+    biosynth_base:         1    # Klasse II
+    coolant:             100    # Klasse II
+    # Stufe 3 — Komponenten
+    base_component:      0.1    # Klasse III (Stück)
+    nav_computer:        0.1    # Klasse III (Stück)
+    fusion_reactor_lv1:  0.1    # Klasse II (Stück)
+    ion_thruster:        0.1    # Klasse II (Stück)
+    jump_drive:          0.1    # Klasse III (Stück)
+
+  # ── Anlagen-Effizienz pro Level ──────────────────────────────────
+  facility_efficiency:
+    smelter:           [0.90, 0.92, 0.94, 0.96, 0.98]
+    # [BALANCING] η je Level (Lv1–5). Forschung kann jeden Wert um max. +0.05 steigern.
+    refinery:          [0.85, 0.87, 0.90, 0.92, 0.95]
+    precision_factory: [0.88, 0.90, 0.92, 0.94, 0.96]
+    assembler:         [0.95, 0.97, 0.99]
+    # Assembler hat keinen Materialverlust, η betrifft nur Zeiteffizienz (Ticks).
+    shipyard:          [0.90, 0.92, 0.95]
+
+  # ── Anlagen-Output pro Tick pro Level ────────────────────────────
+  facility_output_per_tick:
+    mine:              [10, 20, 35, 55, 80]
+    # [BALANCING] Einheiten/Tick. Wird durch Aufzug-Kapazität gedeckelt.
+    smelter:           [5, 10, 18, 30, 45]
+    refinery:          [2, 5, 10, 18, 28]
+
+  # ── Lager — Kapazität pro Modul-Level ───────────────────────────
+  storage_capacity_per_module:
+    standard:  [500, 1000, 2000, 4000, 8000]
+    # [BALANCING] Einheiten pro Lagermodul-Level (Klasse I).
+    sealed:    [200,  500, 1000, 2500, 5000]
+    # Klasse II — kleinere Kapazität durch Containment-Aufwand.
+    shielded:  [100,  250,  500, 1200, 3000]
+    # Klasse III — dichteste Abschirmung, geringste Kapazität pro Modul.
+    segregated: [50,  100,  250,  600, 1500]
+    # Klasse IV — isoliertes Magazin, eigenes Stationsmodul.
+
+  # ── Bootstrap / Kolonieschiff ────────────────────────────────────
+  colony_ship_starter:
+    prebuilt_facilities:
+      - type: mine
+        level: 1
+        count: 1
+      - type: elevator
+        level: 1
+        count: 1
+      - type: smelter
+        level: 1
+        count: 1
+      - type: assembler
+        level: 1
+        count: 1
+    material_reserve:
+      steel:      200    # [BALANCING] Startreserve Stahl für erste Bauten.
+      titansteel:  50    # [BALANCING] Startreserve Titanstahl.
