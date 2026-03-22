@@ -11,13 +11,14 @@ import { SystemTree } from './components/SystemTree'
 import { VisualTuner } from './components/VisualTuner'
 import { GeneratorPage } from './pages/GeneratorPage'
 import { HudDevPage } from './pages/HudDevPage'
+import { EconomyPage } from './pages/EconomyPage'
 import { VisualParamsProvider } from './context/VisualParamsContext'
 import { fetchGalaxies, fetchAllStars, fetchNebulae, fetchSystem } from './api/galaxy'
 import type { Galaxy, Star, Nebula, StarFilter, Planet } from './types/galaxy'
 import { DEFAULT_FILTER } from './types/galaxy'
 import './index.css'
 
-type View = 'viewer' | 'generator' | 'hud-dev' | 'system' | 'moon'
+type View = 'viewer' | 'generator' | 'hud-dev' | 'system' | 'moon' | 'economy'
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
 const STAR_TYPE_LABELS: Record<string, string> = {
@@ -180,6 +181,13 @@ function AppInner() {
             ${view === 'hud-dev' ? 'text-[var(--color-galaxis-cyan)]' : 'text-slate-600 hover:text-slate-400'}`}
         >
           HUD DEV
+        </button>
+        <button
+          onClick={() => setView('economy')}
+          className={`text-xs font-bold tracking-widest px-2 py-0.5 rounded transition-colors
+            ${view === 'economy' ? 'text-emerald-400' : 'text-slate-600 hover:text-slate-400'}`}
+        >
+          ECONOMY
         </button>
 
         {(view === 'viewer' || view === 'system' || view === 'moon') && (
@@ -400,6 +408,26 @@ function AppInner() {
       {view === 'hud-dev' && (
         <div className="absolute inset-0 top-10">
           <HudDevPage />
+        </div>
+      )}
+
+      {/* ── ECONOMY ── */}
+      {view === 'economy' && (
+        <div className="absolute inset-0 top-10 bg-slate-950">
+          {systemStar ? (
+            <EconomyPage starId={systemStar.id} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-2">
+              <p className="text-sm">Kein Stern gewählt.</p>
+              <p className="text-xs">
+                Wechsle zu{' '}
+                <button onClick={() => setView('viewer')} className="text-cyan-400 underline">
+                  GOD MODE
+                </button>
+                , wähle einen Stern und komm hierher zurück.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
