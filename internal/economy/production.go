@@ -23,13 +23,24 @@ type FacilityConfig struct {
 
 // Facility is the in-memory representation of a facilities row.
 type Facility struct {
-	ID           uuid.UUID
-	PlayerID     uuid.UUID
-	StarID       uuid.UUID
-	PlanetID     *uuid.UUID // nil for orbital facilities
-	FacilityType string
-	Status       string
-	Config       FacilityConfig
+	ID             uuid.UUID
+	PlayerID       uuid.UUID
+	StarID         uuid.UUID
+	PlanetID       *uuid.UUID // nil for orbital facilities
+	FacilityType   string
+	Status         string
+	Config         FacilityConfig
+	StorageNodeID  *uuid.UUID // which storage node this facility reads/writes
+	CurrentOrderID *uuid.UUID // set when assigned by Pool-Scheduler
+}
+
+// storageNode returns the storage node ID for this facility,
+// creating the node if it does not yet exist.
+func (f *Facility) storageNode(ctx context.Context, db *pgxpool.Pool) (uuid.UUID, error) {
+	if f.StorageNodeID != nil {
+		return *f.StorageNodeID, nil
+	}
+	return GetOrCreateNode(ctx, db, f.PlayerID, f.StarID, f.PlanetID)
 }
 
 // tickEvent is a single entry in production_log.events.
@@ -102,11 +113,26 @@ func processFacility(
 	f *Facility,
 	tickN int64,
 ) ([]tickEvent, error) {
+	if f.Status == "building" {
+		return processBuild(ctx, db, f)
+	}
 	// Mine facilities are handled separately (deposit extraction, no recipe).
 	if f.FacilityType == "mine" {
 		return processMine(ctx, db, reg, f, tickN)
 	}
 	return processRecipeFacility(ctx, db, reg, f, tickN)
+}
+
+// processBuild decrements the construction timer; marks facility 'idle' when done.
+func processBuild(ctx context.Context, db *pgxpool.Pool, f *Facility) ([]tickEvent, error) {
+	if f.Config.TicksRemaining <= 1 {
+		if err := setStatus(ctx, db, f.ID, "idle"); err != nil {
+			return nil, err
+		}
+		return []tickEvent{{Type: "build_complete", FacilityID: f.ID.String()}}, nil
+	}
+	f.Config.TicksRemaining--
+	return nil, saveFacilityConfig(ctx, db, f)
 }
 
 // processMine extracts resources from a planet deposit into system storage.
@@ -146,8 +172,12 @@ func processMine(
 		return nil, fmt.Errorf("mine: deplete: %w", err)
 	}
 
-	// Produce into storage.
-	if _, err := Produce(ctx, db, f.PlayerID, f.StarID, map[string]float64{f.Config.DepositID: rate}); err != nil {
+	// Produce into this facility's storage node.
+	nodeID, err := f.storageNode(ctx, db)
+	if err != nil {
+		return nil, fmt.Errorf("mine: resolve storage node: %w", err)
+	}
+	if _, err := ProduceToNode(ctx, db, nodeID, map[string]float64{f.Config.DepositID: rate}); err != nil {
 		return nil, fmt.Errorf("mine: produce to storage: %w", err)
 	}
 
@@ -195,8 +225,12 @@ func processRecipeFacility(
 		return nil, saveFacilityConfig(ctx, db, f)
 	}
 
-	// Batch complete: try to consume inputs.
-	storage, err := GetStorage(ctx, db, f.PlayerID, f.StarID)
+	// Batch complete: resolve storage node then try to consume inputs.
+	nodeID, err := f.storageNode(ctx, db)
+	if err != nil {
+		return nil, fmt.Errorf("recipe: resolve storage node: %w", err)
+	}
+	storage, err := GetNodeStorage(ctx, db, nodeID)
 	if err != nil {
 		return nil, err
 	}
@@ -245,14 +279,33 @@ func processRecipeFacility(
 	}
 
 	// Save updated storage.
-	if err := SetStorage(ctx, db, f.PlayerID, f.StarID, storage); err != nil {
+	if err := SetNodeStorage(ctx, db, nodeID, storage); err != nil {
 		return nil, err
+	}
+
+	// Ensure facility is running (may have been paused_input before inputs arrived).
+	if f.Status != "running" {
+		if err := setStatus(ctx, db, f.ID, "running"); err != nil {
+			return nil, err
+		}
 	}
 
 	// Reset batch counter and save facility config.
 	f.Config.TicksRemaining = recipe.Ticks
 	if err := saveFacilityConfig(ctx, db, f); err != nil {
 		return nil, err
+	}
+
+	// Order lifecycle: decrement batch counter or check demand threshold.
+	if f.CurrentOrderID != nil {
+		unassign, err := HandleOrderBatchComplete(ctx, db, f, storage)
+		if err != nil {
+			log.Printf("production: order batch complete %s: %v", f.CurrentOrderID, err)
+		} else if unassign {
+			if err := unassignFacility(ctx, db, f.ID); err != nil {
+				log.Printf("production: unassign facility %s: %v", f.ID, err)
+			}
+		}
 	}
 
 	return events, nil
@@ -300,9 +353,10 @@ func mineOutputRate(reg *Registries, level int) float64 {
 
 func loadRunningFacilities(ctx context.Context, db *pgxpool.Pool) ([]*Facility, error) {
 	rows, err := db.Query(ctx,
-		`SELECT id, player_id, star_id, planet_id, facility_type, status, config
+		`SELECT id, player_id, star_id, planet_id, facility_type, status, config, storage_node_id, current_order_id
 		 FROM facilities
-		 WHERE status = 'running'`,
+		 WHERE status IN ('running', 'building')
+		    OR (status = 'paused_input' AND current_order_id IS NOT NULL)`,
 	)
 	if err != nil {
 		return nil, err
@@ -316,7 +370,7 @@ func loadRunningFacilities(ctx context.Context, db *pgxpool.Pool) ([]*Facility, 
 			rawConf []byte
 		)
 		if err := rows.Scan(&f.ID, &f.PlayerID, &f.StarID, &f.PlanetID,
-			&f.FacilityType, &f.Status, &rawConf); err != nil {
+			&f.FacilityType, &f.Status, &rawConf, &f.StorageNodeID, &f.CurrentOrderID); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal(rawConf, &f.Config); err != nil {
@@ -343,6 +397,14 @@ func setStatus(ctx context.Context, db *pgxpool.Pool, facilityID uuid.UUID, stat
 	_, err := db.Exec(ctx,
 		`UPDATE facilities SET status = $1, updated_at = now() WHERE id = $2`,
 		status, facilityID,
+	)
+	return err
+}
+
+func unassignFacility(ctx context.Context, db *pgxpool.Pool, facilityID uuid.UUID) error {
+	_, err := db.Exec(ctx,
+		`UPDATE facilities SET status = 'idle', current_order_id = NULL, updated_at = now() WHERE id = $1`,
+		facilityID,
 	)
 	return err
 }

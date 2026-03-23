@@ -139,6 +139,7 @@ type ProductionConfig struct {
 	GoodMassTonnes          map[string]float64              `yaml:"good_mass_tonnes"         json:"good_mass_tonnes"`
 	FacilityEfficiency      map[string][]float64            `yaml:"facility_efficiency"      json:"facility_efficiency"`
 	FacilityOutputPerTick   map[string][]int                `yaml:"facility_output_per_tick" json:"facility_output_per_tick"`
+	FacilityBuildTicks      map[string]int                  `yaml:"facility_build_ticks"     json:"facility_build_ticks"`
 	StorageCapacityPerModule map[string][]int               `yaml:"storage_capacity_per_module" json:"storage_capacity_per_module"`
 	DepositInit             map[string]DepositInitConfig    `yaml:"deposit_init"             json:"deposit_init"`
 	Survey                  SurveyConfig                    `yaml:"survey"                   json:"survey"`

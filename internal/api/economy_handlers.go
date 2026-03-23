@@ -25,6 +25,12 @@ func registerEconomyRoutes(
 	bus *economy.Broadcaster,
 	eng *tick.Engine,
 ) {
+	// Player overview
+	r.Get("/economy/my-systems", getMySystemsHandler(db))
+
+	// Recipes
+	r.Get("/economy/recipes", getRecipes(reg))
+
 	// System-level
 	r.Get("/economy/system/{starId}", getEconomySystem(db, reg))
 	r.Post("/economy/system/{starId}/build", buildFacility(db, reg))
@@ -33,12 +39,18 @@ func registerEconomyRoutes(
 	r.Get("/economy/system/{starId}/events", streamTickEvents(bus))
 	r.Get("/economy/system/{starId}/surveys", getSystemSurveys(db))
 
+	// Production orders
+	r.Post("/economy/system/{starId}/orders", createOrder(db, reg))
+	r.Patch("/economy/system/{starId}/orders/{orderId}", updateOrder(db))
+	r.Delete("/economy/system/{starId}/orders/{orderId}", cancelOrder(db))
+
 	// Planet-level
 	r.Post("/economy/planets/{planetId}/survey", executeSurvey(db, reg))
 	r.Get("/economy/planets/{planetId}/survey", getSurvey(db))
 
 	// Admin
 	r.Post("/admin/tick/advance", advanceTick(eng))
+	r.Post("/admin/home-planet", setupHomePlanet(db, reg))
 }
 
 // --- Player ID helper -------------------------------------------------------
@@ -55,24 +67,123 @@ func playerIDFromRequest(r *http.Request) uuid.UUID {
 	return id
 }
 
+// --- GET /economy/my-systems ------------------------------------------------
+
+type mySystemDTO struct {
+	StarID        string `json:"star_id"`
+	FacilityCount int    `json:"facility_count"`
+	PlanetCount   int    `json:"planet_count"`  // distinct planets with facilities
+	RunningCount  int    `json:"running_count"` // facilities currently running
+}
+
+func getMySystemsHandler(db *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		playerID := playerIDFromRequest(r)
+
+		rows, err := db.Query(r.Context(), `
+			SELECT
+			  star_id,
+			  COUNT(*)                                      AS facility_count,
+			  COUNT(DISTINCT planet_id)                    AS planet_count,
+			  COUNT(*) FILTER (WHERE status = 'running')   AS running_count
+			FROM facilities
+			WHERE player_id = $1
+			GROUP BY star_id
+			ORDER BY star_id`,
+			playerID,
+		)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		defer rows.Close()
+
+		result := make([]mySystemDTO, 0)
+		for rows.Next() {
+			var dto mySystemDTO
+			if err := rows.Scan(&dto.StarID, &dto.FacilityCount, &dto.PlanetCount, &dto.RunningCount); err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			result = append(result, dto)
+		}
+		writeJSON(w, http.StatusOK, result)
+	}
+}
+
+// --- GET /economy/recipes ---------------------------------------------------
+
+type recipeDTO struct {
+	ID           string             `json:"id"`
+	Name         string             `json:"name"`
+	FacilityType string             `json:"facility_type"`
+	OutputGood   string             `json:"output_good"`
+	Tier         int                `json:"tier"`
+	Ticks        int                `json:"ticks"`
+	Inputs       map[string]float64 `json:"inputs"`
+	Outputs      map[string]float64 `json:"outputs"`
+}
+
+func getRecipes(reg *economy.Registries) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		result := make([]recipeDTO, 0, len(reg.Recipes))
+		for _, rec := range reg.Recipes {
+			result = append(result, recipeDTO{
+				ID:           rec.ID,
+				Name:         rec.Name,
+				FacilityType: rec.FacilityType,
+				OutputGood:   rec.OutputGood,
+				Tier:         rec.Tier,
+				Ticks:        rec.Ticks,
+				Inputs:       rec.Inputs,
+				Outputs:      rec.Outputs,
+			})
+		}
+		writeJSON(w, http.StatusOK, result)
+	}
+}
+
 // --- GET /economy/system/:starId --------------------------------------------
 
+type storageNodeResponse struct {
+	ID       string                  `json:"id"`
+	Level    string                  `json:"level"`
+	PlanetID *string                 `json:"planet_id,omitempty"`
+	Capacity *float64                `json:"capacity,omitempty"`
+	Storage  economy.StorageContents `json:"storage"`
+}
+
+type orderDTO struct {
+	ID             string  `json:"id"`
+	FacilityType   string  `json:"facility_type"`
+	RecipeID       string  `json:"recipe_id"`
+	Mode           string  `json:"mode"`
+	BatchRemaining *int    `json:"batch_remaining,omitempty"`
+	GoodID         *string `json:"good_id,omitempty"`
+	MinStock       *float64 `json:"min_stock,omitempty"`
+	TargetStock    *float64 `json:"target_stock,omitempty"`
+	Priority       int     `json:"priority"`
+	Active         bool    `json:"active"`
+}
+
 type systemResponse struct {
-	StarID           string                        `json:"star_id"`
-	LastTickN        int64                         `json:"last_tick_n"`
-	Storage          economy.StorageContents       `json:"storage"`
-	Facilities       []facilityResponse            `json:"facilities"`
-	OrbitalSlotsUsed int                           `json:"orbital_slots_used"`
-	OrbitalSlotsMax  int                           `json:"orbital_slots_max"`
-	Surveys          []*economy.PlayerSurvey       `json:"surveys"`
+	StarID           string                  `json:"star_id"`
+	LastTickN        int64                   `json:"last_tick_n"`
+	StorageNodes     []storageNodeResponse   `json:"storage_nodes"`
+	Facilities       []facilityResponse      `json:"facilities"`
+	Orders           []orderDTO              `json:"orders"`
+	OrbitalSlotsUsed int                     `json:"orbital_slots_used"`
+	OrbitalSlotsMax  int                     `json:"orbital_slots_max"`
+	Surveys          []*economy.PlayerSurvey `json:"surveys"`
 }
 
 type facilityResponse struct {
-	ID           string                  `json:"id"`
-	FacilityType string                  `json:"facility_type"`
-	PlanetID     *string                 `json:"planet_id,omitempty"`
-	Status       string                  `json:"status"`
-	Config       economy.FacilityConfig  `json:"config"`
+	ID             string                 `json:"id"`
+	FacilityType   string                 `json:"facility_type"`
+	PlanetID       *string                `json:"planet_id,omitempty"`
+	Status         string                 `json:"status"`
+	Config         economy.FacilityConfig `json:"config"`
+	CurrentOrderID *string                `json:"current_order_id,omitempty"`
 }
 
 func getEconomySystem(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFunc {
@@ -84,7 +195,7 @@ func getEconomySystem(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFun
 		}
 		playerID := playerIDFromRequest(r)
 
-		storage, err := economy.GetStorage(r.Context(), db, playerID, starID)
+		nodes, err := economy.GetSystemNodes(r.Context(), db, playerID, starID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "storage read failed")
 			return
@@ -104,12 +215,34 @@ func getEconomySystem(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFun
 			return
 		}
 
+		nodeResps := make([]storageNodeResponse, len(nodes))
+		for i, n := range nodes {
+			nr := storageNodeResponse{
+				ID:       n.ID.String(),
+				Level:    n.Level,
+				Capacity: n.Capacity,
+				Storage:  n.Storage,
+			}
+			if n.PlanetID != nil {
+				s := n.PlanetID.String()
+				nr.PlanetID = &s
+			}
+			nodeResps[i] = nr
+		}
+
+		orders, err := loadOrdersForSystem(r.Context(), db, playerID, starID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "orders read failed")
+			return
+		}
+
 		resp := systemResponse{
 			StarID:           starID.String(),
-			Storage:          storage,
+			StorageNodes:     nodeResps,
 			Facilities:       toFacilityResponses(facilities),
+			Orders:           orders,
 			OrbitalSlotsUsed: orbitalUsed,
-			OrbitalSlotsMax:  8, // game-params: orbital_slots — TODO wire from cfg
+			OrbitalSlotsMax:  8,
 			Surveys:          surveys,
 		}
 		writeJSON(w, http.StatusOK, resp)
@@ -123,6 +256,13 @@ type buildRequest struct {
 	PlanetID     *string `json:"planet_id"`
 	Level        int     `json:"level"`
 	DepositID    string  `json:"deposit_id,omitempty"` // required for mine
+}
+
+func buildTicks(reg *economy.Registries, facilityType string) int {
+	if t, ok := reg.Facilities.BuildTicks[facilityType]; ok && t > 0 {
+		return t
+	}
+	return 3 // fallback
 }
 
 func buildFacility(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFunc {
@@ -159,18 +299,25 @@ func buildFacility(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFunc {
 
 		cfg := economy.FacilityConfig{
 			Level:          req.Level,
-			TicksRemaining: 1,
+			TicksRemaining: buildTicks(reg, req.FacilityType),
 			DepositID:      req.DepositID,
 		}
 		cfgRaw, _ := json.Marshal(cfg)
 
+		// Ensure storage node exists for this location.
+		nodeID, err := economy.GetOrCreateNode(r.Context(), db, playerID, starID, planetID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "storage node failed")
+			return
+		}
+
 		var facilityID uuid.UUID
 		err = db.QueryRow(r.Context(),
 			`INSERT INTO facilities
-			   (player_id, star_id, planet_id, facility_type, status, config)
-			 VALUES ($1, $2, $3, $4, 'idle', $5)
+			   (player_id, star_id, planet_id, facility_type, status, config, storage_node_id)
+			 VALUES ($1, $2, $3, $4, 'building', $5, $6)
 			 RETURNING id`,
-			playerID, starID, planetID, req.FacilityType, cfgRaw,
+			playerID, starID, planetID, req.FacilityType, cfgRaw, nodeID,
 		).Scan(&facilityID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "facility creation failed")
@@ -431,7 +578,7 @@ func loadFacilitiesForSystem(
 	playerID, starID uuid.UUID,
 ) ([]*economy.Facility, error) {
 	rows, err := db.Query(ctx,
-		`SELECT id, player_id, star_id, planet_id, facility_type, status, config
+		`SELECT id, player_id, star_id, planet_id, facility_type, status, config, storage_node_id, current_order_id
 		 FROM facilities
 		 WHERE player_id = $1 AND star_id = $2`,
 		playerID, starID,
@@ -448,7 +595,7 @@ func loadFacilitiesForSystem(
 			rawConf []byte
 		)
 		if err := rows.Scan(&f.ID, &f.PlayerID, &f.StarID, &f.PlanetID,
-			&f.FacilityType, &f.Status, &rawConf); err != nil {
+			&f.FacilityType, &f.Status, &rawConf, &f.StorageNodeID, &f.CurrentOrderID); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal(rawConf, &f.Config); err != nil {
@@ -471,6 +618,10 @@ func toFacilityResponses(facilities []*economy.Facility) []facilityResponse {
 		if f.PlanetID != nil {
 			s := f.PlanetID.String()
 			r.PlanetID = &s
+		}
+		if f.CurrentOrderID != nil {
+			s := f.CurrentOrderID.String()
+			r.CurrentOrderID = &s
 		}
 		resp[i] = r
 	}
@@ -507,6 +658,350 @@ func loadPlanetResourceQualities(
 		return nil, fmt.Errorf("planet resource_deposits parse: %w", err)
 	}
 	return qualities, nil
+}
+
+// --- POST /admin/home-planet ------------------------------------------------
+
+type homePlanetRequest struct {
+	PlanetID string `json:"planet_id"`
+	StarID   string `json:"star_id"`
+}
+
+// setupHomePlanet sets up a planet as the player's home world:
+//  1. Sets all known deposit resources to quality=1.0 on the planet
+//  2. Initialises/overwrites planet_deposits with full-quality deposits
+//  3. Creates a quality=1.0 survey for the player
+//  4. Creates one facility of each type (mines running, others idle)
+//  5. Seeds system_storage with starter materials
+func setupHomePlanet(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req homePlanetRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid body")
+			return
+		}
+		planetID, err := uuid.Parse(req.PlanetID)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid planet_id")
+			return
+		}
+		starID, err := uuid.Parse(req.StarID)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid star_id")
+			return
+		}
+		playerID := playerIDFromRequest(r)
+		ctx := r.Context()
+
+		// Guard: reject if facilities already exist for this player+star.
+		var existingCount int
+		if err := db.QueryRow(ctx,
+			`SELECT COUNT(*) FROM facilities WHERE player_id = $1 AND star_id = $2`,
+			playerID, starID,
+		).Scan(&existingCount); err != nil {
+			writeError(w, http.StatusInternalServerError, "facility check failed: "+err.Error())
+			return
+		}
+		if existingCount > 0 {
+			writeError(w, http.StatusConflict, "Heimatplanet für dieses System bereits eingerichtet")
+			return
+		}
+
+		// 1. Build quality=1.0 map for all known deposit resources.
+		fullQualities := make(map[string]float64, len(reg.Deposits))
+		for goodID := range reg.Deposits {
+			fullQualities[goodID] = 1.0
+		}
+
+		// 2. Overwrite planets.resource_deposits.
+		rawQ, _ := json.Marshal(fullQualities)
+		if _, err := db.Exec(ctx,
+			`UPDATE planets SET resource_deposits = $1 WHERE id = $2`,
+			rawQ, planetID,
+		); err != nil {
+			writeError(w, http.StatusInternalServerError, "planet update failed: "+err.Error())
+			return
+		}
+
+		// 3. Overwrite planet_deposits with full-quality state.
+		depositState := make(map[string]economy.DepositState, len(reg.Deposits))
+		for goodID, spec := range reg.Deposits {
+			depositState[goodID] = economy.DepositState{
+				Remaining:     spec.BaseUnits,
+				MaxRate:       spec.BaseMaxRate,
+				Slots:         spec.BaseSlots,
+				SurveyQuality: 1.0,
+			}
+		}
+		rawDeposit, _ := json.Marshal(depositState)
+		if _, err := db.Exec(ctx,
+			`INSERT INTO planet_deposits (planet_id, state)
+			 VALUES ($1, $2)
+			 ON CONFLICT (planet_id) DO UPDATE SET state = $2, updated_at = now()`,
+			planetID, rawDeposit,
+		); err != nil {
+			writeError(w, http.StatusInternalServerError, "deposit upsert failed: "+err.Error())
+			return
+		}
+
+		// 4. Upsert quality=1.0 survey (full information).
+		survey, err := economy.ExecuteSurvey(ctx, db, playerID, planetID, 1.0, 0, fullQualities, reg)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "survey failed: "+err.Error())
+			return
+		}
+
+		// 5. Remove existing facilities for this player+star to avoid duplicates.
+		if _, err := db.Exec(ctx,
+			`DELETE FROM facilities WHERE player_id = $1 AND star_id = $2`,
+			playerID, starID,
+		); err != nil {
+			writeError(w, http.StatusInternalServerError, "facility cleanup failed: "+err.Error())
+			return
+		}
+
+		// 6. Ensure storage nodes exist for planet (planetary) and system (orbital).
+		planetNodeID, err := economy.GetOrCreateNode(ctx, db, playerID, starID, &planetID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "planet node failed: "+err.Error())
+			return
+		}
+		orbitalNodeID, err := economy.GetOrCreateNode(ctx, db, playerID, starID, nil)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "orbital node failed: "+err.Error())
+			return
+		}
+
+		insertFacility := func(ftype, status string, pid *uuid.UUID, nodeID uuid.UUID, cfg economy.FacilityConfig) error {
+			rawCfg, _ := json.Marshal(cfg)
+			_, err := db.Exec(ctx,
+				`INSERT INTO facilities (player_id, star_id, planet_id, facility_type, status, config, storage_node_id)
+				 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+				playerID, starID, pid, ftype, status, rawCfg, nodeID,
+			)
+			return err
+		}
+
+		// 7. Create mines (one per deposit resource, running, planet node).
+		for goodID := range reg.Deposits {
+			cfg := economy.FacilityConfig{Level: 1, TicksRemaining: 1, DepositID: goodID}
+			if err := insertFacility("mine", "running", &planetID, planetNodeID, cfg); err != nil {
+				writeError(w, http.StatusInternalServerError, "mine creation failed: "+err.Error())
+				return
+			}
+		}
+
+		// 8. Create processing facilities on planet (idle, planet node).
+		onPlanet := []string{"elevator", "steel_mill", "semiconductor_plant", "biosynth_lab", "precision_factory", "assembler"}
+		for _, ftype := range onPlanet {
+			cfg := economy.FacilityConfig{Level: 1, TicksRemaining: 1}
+			if err := insertFacility(ftype, "idle", &planetID, planetNodeID, cfg); err != nil {
+				writeError(w, http.StatusInternalServerError, ftype+" creation failed: "+err.Error())
+				return
+			}
+		}
+
+		// 9. Create shipyard orbital (orbital node).
+		{
+			cfg := economy.FacilityConfig{Level: 1, TicksRemaining: 1}
+			if err := insertFacility("shipyard", "idle", nil, orbitalNodeID, cfg); err != nil {
+				writeError(w, http.StatusInternalServerError, "shipyard creation failed: "+err.Error())
+				return
+			}
+		}
+
+		// 10. Seed planet node with starter materials.
+		starter := economy.StorageContents{"steel": 200, "titansteel": 50}
+		if err := economy.SetNodeStorage(ctx, db, planetNodeID, starter); err != nil {
+			writeError(w, http.StatusInternalServerError, "storage seed failed: "+err.Error())
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]any{
+			"status":   "ok",
+			"deposits": len(reg.Deposits),
+			"survey":   survey.PlanetID,
+		})
+	}
+}
+
+// --- Production orders CRUD -------------------------------------------------
+
+type createOrderRequest struct {
+	FacilityType   string   `json:"facility_type"`
+	RecipeID       string   `json:"recipe_id"`
+	Mode           string   `json:"mode"`
+	BatchRemaining *int     `json:"batch_remaining,omitempty"`
+	GoodID         *string  `json:"good_id,omitempty"`
+	MinStock       *float64 `json:"min_stock,omitempty"`
+	TargetStock    *float64 `json:"target_stock,omitempty"`
+	Priority       int      `json:"priority"`
+}
+
+func createOrder(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		starID, err := uuid.Parse(chi.URLParam(r, "starId"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid starId")
+			return
+		}
+		playerID := playerIDFromRequest(r)
+
+		var req createOrderRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid body")
+			return
+		}
+
+		if req.FacilityType == "" || req.RecipeID == "" {
+			writeError(w, http.StatusUnprocessableEntity, "facility_type and recipe_id required")
+			return
+		}
+		validModes := map[string]bool{"continuous_full": true, "continuous_demand": true, "batch": true}
+		if !validModes[req.Mode] {
+			writeError(w, http.StatusUnprocessableEntity, "mode must be continuous_full, continuous_demand, or batch")
+			return
+		}
+		if _, ok := reg.Recipes[req.RecipeID]; !ok {
+			writeError(w, http.StatusUnprocessableEntity, "unknown recipe_id")
+			return
+		}
+
+		var orderID uuid.UUID
+		err = db.QueryRow(r.Context(), `
+			INSERT INTO production_orders
+			  (player_id, star_id, facility_type, recipe_id, mode, batch_remaining,
+			   good_id, min_stock, target_stock, priority)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+			RETURNING id`,
+			playerID, starID, req.FacilityType, req.RecipeID, req.Mode,
+			req.BatchRemaining, req.GoodID, req.MinStock, req.TargetStock, req.Priority,
+		).Scan(&orderID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "order creation failed: "+err.Error())
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]string{"id": orderID.String()})
+	}
+}
+
+type updateOrderRequest struct {
+	Priority *int  `json:"priority,omitempty"`
+	Active   *bool `json:"active,omitempty"`
+}
+
+func updateOrder(db *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		orderID, err := uuid.Parse(chi.URLParam(r, "orderId"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid orderId")
+			return
+		}
+		playerID := playerIDFromRequest(r)
+
+		var req updateOrderRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid body")
+			return
+		}
+
+		if req.Priority != nil {
+			if _, err := db.Exec(r.Context(), `
+				UPDATE production_orders SET priority = $1, updated_at = now()
+				WHERE id = $2 AND player_id = $3`,
+				*req.Priority, orderID, playerID,
+			); err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+		}
+		if req.Active != nil {
+			if _, err := db.Exec(r.Context(), `
+				UPDATE production_orders SET active = $1, updated_at = now()
+				WHERE id = $2 AND player_id = $3`,
+				*req.Active, orderID, playerID,
+			); err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "updated"})
+	}
+}
+
+func cancelOrder(db *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		orderID, err := uuid.Parse(chi.URLParam(r, "orderId"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid orderId")
+			return
+		}
+		playerID := playerIDFromRequest(r)
+
+		// Deactivate the order and unassign all facilities currently executing it.
+		tx, err := db.Begin(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		defer tx.Rollback(r.Context()) //nolint:errcheck
+
+		if _, err := tx.Exec(r.Context(), `
+			UPDATE production_orders SET active = false, updated_at = now()
+			WHERE id = $1 AND player_id = $2`,
+			orderID, playerID,
+		); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if _, err := tx.Exec(r.Context(), `
+			UPDATE facilities SET status = 'idle', current_order_id = NULL, updated_at = now()
+			WHERE current_order_id = $1`,
+			orderID,
+		); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if err := tx.Commit(r.Context()); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "cancelled"})
+	}
+}
+
+func loadOrdersForSystem(
+	ctx context.Context,
+	db *pgxpool.Pool,
+	playerID, starID uuid.UUID,
+) ([]orderDTO, error) {
+	rows, err := db.Query(ctx, `
+		SELECT id, facility_type, recipe_id, mode, batch_remaining,
+		       good_id, min_stock, target_stock, priority, active
+		FROM production_orders
+		WHERE player_id = $1 AND star_id = $2
+		ORDER BY priority DESC, created_at ASC`,
+		playerID, starID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []orderDTO
+	for rows.Next() {
+		var o orderDTO
+		if err := rows.Scan(&o.ID, &o.FacilityType, &o.RecipeID, &o.Mode,
+			&o.BatchRemaining, &o.GoodID, &o.MinStock, &o.TargetStock,
+			&o.Priority, &o.Active); err != nil {
+			return nil, err
+		}
+		result = append(result, o)
+	}
+	if result == nil {
+		result = []orderDTO{}
+	}
+	return result, rows.Err()
 }
 
 // sseTimeout replaces the router's global 60s timeout for SSE handlers.

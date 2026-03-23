@@ -10,6 +10,7 @@ export default defineConfig({
   },
   plugins: [react()],
   server: {
+    port: 5174,
     proxy: {
       '/api': {
         target: 'http://localhost:8090',
@@ -18,6 +19,12 @@ export default defineConfig({
         configure: (proxy) => {
           proxy.on('proxyReq', (proxyReq) => {
             proxyReq.setHeader('Connection', 'keep-alive')
+          })
+          proxy.on('proxyRes', (proxyRes) => {
+            if (proxyRes.headers['content-type']?.includes('text/event-stream')) {
+              proxyRes.headers['x-accel-buffering'] = 'no'
+              proxyRes.headers['cache-control'] = 'no-cache'
+            }
           })
         },
       },

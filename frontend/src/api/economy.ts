@@ -16,6 +16,7 @@ export interface Facility {
   planet_id?: string
   status: string
   config: FacilityConfig
+  current_order_id?: string
 }
 
 export interface ResourceSnapshot {
@@ -36,11 +37,33 @@ export interface Survey {
   stale: boolean
 }
 
+export interface StorageNode {
+  id: string
+  level: string        // 'orbital' | 'planetary' | 'intersystem'
+  planet_id?: string
+  capacity?: number
+  storage: Record<string, number>
+}
+
+export interface ProductionOrder {
+  id: string
+  facility_type: string
+  recipe_id: string
+  mode: 'continuous_full' | 'continuous_demand' | 'batch'
+  batch_remaining?: number
+  good_id?: string
+  min_stock?: number
+  target_stock?: number
+  priority: number
+  active: boolean
+}
+
 export interface SystemState {
   star_id: string
   last_tick_n: number
-  storage: Record<string, number>
+  storage_nodes: StorageNode[]
   facilities: Facility[]
+  orders: ProductionOrder[]
   orbital_slots_used: number
   orbital_slots_max: number
   surveys: Survey[]
@@ -61,6 +84,24 @@ export interface LogRow {
   TickN: number
   Events: LogEvent[]
   CreatedAt: string
+}
+
+export interface MySystem {
+  star_id: string
+  facility_count: number
+  planet_count: number
+  running_count: number
+}
+
+export interface RecipeInfo {
+  id: string
+  name: string
+  facility_type: string
+  output_good: string
+  tier: number
+  ticks: number
+  inputs: Record<string, number>
+  outputs: Record<string, number>
 }
 
 export interface TickEvent {
@@ -134,11 +175,67 @@ export async function advanceTick(): Promise<{ status: string }> {
   return post('/api/v1/admin/tick/advance')
 }
 
+export async function setupHomePlanet(
+  starId: string,
+  planetId: string,
+): Promise<{ status: string; deposits: number }> {
+  return post('/api/v1/admin/home-planet', { star_id: starId, planet_id: planetId })
+}
+
 // ── SSE stream ───────────────────────────────────────────────────────────────
 
 /** Opens an SSE connection for tick events in a system.
  *  Returns a cleanup function; call it on unmount.
  */
+export async function fetchMySystems(): Promise<MySystem[]> {
+  return get<MySystem[]>(`${BASE}/my-systems`)
+}
+
+export interface CreateOrderParams {
+  facility_type: string
+  recipe_id: string
+  mode: 'continuous_full' | 'continuous_demand' | 'batch'
+  batch_remaining?: number
+  good_id?: string
+  min_stock?: number
+  target_stock?: number
+  priority?: number
+}
+
+export async function createOrder(
+  starId: string,
+  params: CreateOrderParams,
+): Promise<{ id: string }> {
+  return post(`${BASE}/system/${starId}/orders`, params)
+}
+
+export async function cancelOrder(
+  starId: string,
+  orderId: string,
+): Promise<{ status: string }> {
+  const res = await fetch(`${BASE}/system/${starId}/orders/${orderId}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error(`API ${res.status}`)
+  return res.json()
+}
+
+export async function updateOrderPriority(
+  starId: string,
+  orderId: string,
+  priority: number,
+): Promise<{ status: string }> {
+  const res = await fetch(`${BASE}/system/${starId}/orders/${orderId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ priority }),
+  })
+  if (!res.ok) throw new Error(`API ${res.status}`)
+  return res.json()
+}
+
+export async function fetchRecipes(): Promise<RecipeInfo[]> {
+  return get<RecipeInfo[]>(`${BASE}/recipes`)
+}
+
 export function openTickStream(
   starId: string,
   onEvent: (ev: TickEvent) => void,

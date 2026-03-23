@@ -193,6 +193,21 @@ Daten überprüft werden.
 
 ---
 
+## ADR-013: Port-Belegung – lokaler Dev-Stack
+
+**Status:** Entschieden 2026-03-23
+
+| Dienst | Port |
+|--------|------|
+| Frontend (Vite Dev Server) | 5174 |
+| Backend (Go API Server) | 8090 |
+| PostgreSQL | 5432 |
+| Redis | 6379 |
+
+**Begründung:** Port 8080 kollidiert auf dem Entwicklungsrechner mit anderen laufenden Anwendungen. 8090 ist frei und bleibt reserviert für Galaxis.
+
+---
+
 ## ADR-007: KI – Headless Client, gleiche Regeln
 
 **Status:** Entschieden

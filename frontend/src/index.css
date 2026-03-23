@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@ds/tokens/theme.css";
+/* @import "@creaminds/design/theme.css"; -- noch nicht integriert */
 
 * { box-sizing: border-box; }
 

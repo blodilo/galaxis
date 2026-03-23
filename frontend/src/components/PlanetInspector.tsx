@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Planet, Moon } from '../types/galaxy'
+import { setupHomePlanet } from '../api/economy'
 
 const TYPE_LABELS: Record<string, string> = {
   rocky:         'Gesteinsplanet',
@@ -71,9 +72,27 @@ function MoonList({ moons }: { moons: Moon[] }) {
 
 interface Props {
   planet: Planet | null
+  starId?: string
 }
 
-export function PlanetInspector({ planet }: Props) {
+export function PlanetInspector({ planet, starId }: Props) {
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  async function handleSetupHome() {
+    if (!planet || !starId) return
+    setBusy(true)
+    setMsg(null)
+    try {
+      const res = await setupHomePlanet(starId, planet.id)
+      setMsg(`✓ Heimatplanet eingerichtet (${res.deposits} Vorkommen, Anlagen gebaut, Lager befüllt)`)
+    } catch (e) {
+      setMsg(`Fehler: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (!planet) {
     return (
       <div className="flex flex-col gap-2">
@@ -197,6 +216,26 @@ export function PlanetInspector({ planet }: Props) {
             Monde ({planet.moons.length})
           </span>
           <MoonList moons={planet.moons} />
+        </div>
+      )}
+
+      {/* God Mode: Heimatplaneten anlegen */}
+      {starId && (
+        <div className="border-t border-slate-800 pt-2 flex flex-col gap-1.5">
+          <span className="text-xs text-slate-500 uppercase tracking-widest">God Mode</span>
+          <button
+            onClick={handleSetupHome}
+            disabled={busy}
+            className="w-full text-xs font-bold px-2 py-1.5 rounded border border-red-800 text-red-400
+                       hover:bg-red-900/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {busy ? 'Wird eingerichtet…' : 'Heimatplaneten anlegen'}
+          </button>
+          {msg && (
+            <p className={`text-xs break-words ${msg.startsWith('✓') ? 'text-emerald-400' : 'text-red-400'}`}>
+              {msg}
+            </p>
+          )}
         </div>
       )}
 

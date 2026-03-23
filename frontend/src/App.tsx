@@ -12,13 +12,14 @@ import { VisualTuner } from './components/VisualTuner'
 import { GeneratorPage } from './pages/GeneratorPage'
 import { HudDevPage } from './pages/HudDevPage'
 import { EconomyPage } from './pages/EconomyPage'
+import { MySystemsPicker } from './pages/MySystemsPicker'
 import { VisualParamsProvider } from './context/VisualParamsContext'
 import { fetchGalaxies, fetchAllStars, fetchNebulae, fetchSystem } from './api/galaxy'
 import type { Galaxy, Star, Nebula, StarFilter, Planet } from './types/galaxy'
 import { DEFAULT_FILTER } from './types/galaxy'
 import './index.css'
 
-type View = 'viewer' | 'generator' | 'hud-dev' | 'system' | 'moon' | 'economy'
+type View = 'viewer' | 'generator' | 'hud-dev' | 'system' | 'moon' | 'economy' | 'start-conditions'
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
 const STAR_TYPE_LABELS: Record<string, string> = {
@@ -49,6 +50,8 @@ function AppInner() {
   const [resumeGalaxy, setResumeGalaxy] = useState<Galaxy | null>(null)
   // Moon system view (BL-24: Doppelklick Planet → Mondsystem)
   const [moonPlanet, setMoonPlanet] = useState<Planet | null>(null)
+  // Economy: aktives System (unabhängig vom GOD MODE Stern)
+  const [economyStarId, setEconomyStarId] = useState<string | null>(null)
   // Visual tuner panel
   const [tunerOpen, setTunerOpen] = useState(false)
 
@@ -183,11 +186,21 @@ function AppInner() {
           HUD DEV
         </button>
         <button
-          onClick={() => setView('economy')}
+          onClick={() => {
+            if (systemStar) setEconomyStarId(systemStar.id)
+            setView('economy')
+          }}
           className={`text-xs font-bold tracking-widest px-2 py-0.5 rounded transition-colors
             ${view === 'economy' ? 'text-emerald-400' : 'text-slate-600 hover:text-slate-400'}`}
         >
           ECONOMY
+        </button>
+        <button
+          onClick={() => setView('start-conditions')}
+          className={`text-xs font-bold tracking-widest px-2 py-0.5 rounded transition-colors
+            ${view === 'start-conditions' ? 'text-orange-400' : 'text-slate-600 hover:text-slate-400'}`}
+        >
+          STARTBEDINGUNGEN
         </button>
 
         {(view === 'viewer' || view === 'system' || view === 'moon') && (
@@ -375,7 +388,7 @@ function AppInner() {
             <div className="absolute top-10 right-0 bottom-0 w-60 z-10
                             bg-black/70 border-l border-slate-800 backdrop-blur-sm
                             overflow-y-auto p-3">
-              <PlanetInspector planet={selectedPlanet} />
+              <PlanetInspector planet={selectedPlanet} starId={systemStar?.id} />
             </div>
           )}
         </>
@@ -414,20 +427,32 @@ function AppInner() {
       {/* ── ECONOMY ── */}
       {view === 'economy' && (
         <div className="absolute inset-0 top-10 bg-slate-950">
-          {systemStar ? (
-            <EconomyPage starId={systemStar.id} />
+          {economyStarId ? (
+            <EconomyPage
+              starId={economyStarId}
+              onBack={() => setEconomyStarId(null)}
+            />
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-2">
-              <p className="text-sm">Kein Stern gewählt.</p>
-              <p className="text-xs">
-                Wechsle zu{' '}
-                <button onClick={() => setView('viewer')} className="text-cyan-400 underline">
-                  GOD MODE
-                </button>
-                , wähle einen Stern und komm hierher zurück.
-              </p>
-            </div>
+            <MySystemsPicker onSelect={setEconomyStarId} />
           )}
+        </div>
+      )}
+
+      {/* ── STARTBEDINGUNGEN ── */}
+      {view === 'start-conditions' && (
+        <div className="absolute inset-0 top-10 bg-slate-950 flex flex-col items-center justify-center gap-4 text-slate-400">
+          <span className="text-xs font-bold tracking-widest text-orange-400 uppercase">Startbedingungen editieren</span>
+          <p className="text-sm text-slate-500 max-w-sm text-center">
+            Hier werden alle Wirtschafts-Parameter konfigurierbar sein:
+            Startressourcen, Anlagenausstattung, Lagerbestände, Survey-Qualität.
+          </p>
+          <p className="text-xs text-slate-700">(Post-MVP — noch nicht implementiert)</p>
+          <p className="text-xs text-slate-600 mt-4">
+            Heimatplanet per God Mode einrichten:{' '}
+            <button onClick={() => setView('system')} className="text-cyan-400 underline">
+              GOD MODE → Planet auswählen → "Heimatplaneten anlegen"
+            </button>
+          </p>
         </div>
       )}
 

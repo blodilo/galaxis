@@ -13,11 +13,12 @@ import (
 
 // --- Recipe types -----------------------------------------------------------
 
-// Recipe describes a single production recipe loaded from recipes_v1.0.yaml.
+// Recipe describes a single production recipe loaded from recipes_v1.1.yaml.
 type Recipe struct {
 	ID             string             `yaml:"id"`
 	Name           string             `yaml:"name"`
 	FacilityType   string             `yaml:"facility_type"`
+	OutputGood     string             `yaml:"output_good"`
 	Tier           int                `yaml:"tier"`
 	Ticks          int                `yaml:"ticks"`
 	BaseEfficiency float64            `yaml:"base_efficiency"`
@@ -60,8 +61,14 @@ type SurveyThresholds struct {
 type FacilityRegistry struct {
 	// Efficiency[facilityType][level-1] → η (0–1)
 	Efficiency map[string][]float64
-	// OutputPerTick[facilityType][level-1] → units/tick
+	// OutputPerTick[facilityType][level-1] → units/tick (mine only)
 	OutputPerTick map[string][]int
+	// BuildTicks[facilityType] → ticks to complete construction
+	BuildTicks map[string]int
+	// OutputGood[facilityType] → the good_id this facility type produces.
+	// Derived from recipe output_good fields during LoadRegistries.
+	// Empty for mine (deposit-specific) and assembler/elevator (special).
+	OutputGood map[string]string
 }
 
 // Eta returns the efficiency for the given facility type and 1-based level.
@@ -113,12 +120,22 @@ func LoadRegistries(recipesPath string, cfg *config.Config) (*Registries, error)
 		Exact:       qt.Exact,
 	}
 
+	// Build facilityType → output_good from recipe declarations.
+	outputGood := make(map[string]string, len(recipes))
+	for _, r := range recipes {
+		if r.OutputGood != "" {
+			outputGood[r.FacilityType] = r.OutputGood
+		}
+	}
+
 	return &Registries{
 		Recipes:  recipes,
 		Deposits: deposits,
 		Facilities: FacilityRegistry{
 			Efficiency:    prod.FacilityEfficiency,
 			OutputPerTick: prod.FacilityOutputPerTick,
+			BuildTicks:    prod.FacilityBuildTicks,
+			OutputGood:    outputGood,
 		},
 		SurveyThresholds: thresholds,
 		DepositWarnings:  prod.DepositWarnings,

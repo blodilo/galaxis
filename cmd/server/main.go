@@ -59,7 +59,7 @@ func main() {
 	log.Println("database: connected")
 
 	// ── Economy Registries ────────────────────────────────────────────────────
-	recipesPath := "recipes_v1.0.yaml"
+	recipesPath := "recipes_v1.1.yaml"
 	reg, err := economy.LoadRegistries(recipesPath, cfg)
 	if err != nil {
 		log.Fatalf("economy registries: %v", err)
@@ -73,7 +73,9 @@ func main() {
 	// SSE broadcast bus for tick events.
 	bus := economy.NewBroadcaster()
 
-	// Register production tick handler.
+	// Register tick handlers. Scheduler runs first to assign idle facilities,
+	// then Production advances the newly assigned (and already-running) facilities.
+	engine.Register(economy.SchedulerHandler(pool, reg))
 	engine.Register(economy.ProductionHandler(pool, reg))
 
 	engine.Start(ctx)

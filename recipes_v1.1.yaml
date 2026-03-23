@@ -1,0 +1,562 @@
+# Galaxis — Produktionsrezepte
+# Version: 1.1 · Datum: 2026-03-23
+#
+# Änderungen gegenüber v1.0:
+#   - facility_type ist jetzt output-gut-spezifisch:
+#       smelter → steel_mill | titansteel_forge | chrom_alloy_plant | keramik_plant
+#       refinery → semiconductor_plant | fuel_processor | reprocessing_plant | coolant_plant
+#       bioreaktor → biosynth_lab
+#   - Neues Pflichtfeld output_good (muss mit dem einzigen outputs-Key übereinstimmen)
+#   - Neues Rezept: steel_chromium (T2 Stahl, Chrom-veredelt)
+#   - Assembler-Rezepte: facility-Output-IDs an neue Typnamen angepasst
+#
+# Prinzip (finalisiert):
+#   facility_type bestimmt das Output-Gut — eine Stahlwerk produziert immer Stahl.
+#   Rezepte modellieren nur noch Tech-Level und Effizienz-Varianten
+#   (gleicher Output, veränderte Inputs und/oder bessere Ausbeute).
+#
+# Konvention:
+#   - id: snake_case, eindeutig über alle Rezepte
+#   - output_good: good_id des Outputs (muss mit outputs-Key übereinstimmen)
+#   - inputs/outputs: good_id → Menge in Einheiten (E)
+#   - base_efficiency: η bei Level 1, ohne Forschungsbonus (0.0–1.0)
+#   - ticks: Produktionsdauer in Strategie-Ticks
+#
+# Stufen (product tiers — was das Gut IST, nicht wie es produziert wird):
+#   tier 1 = Rohstoffverarbeitung (nur in-situ, kein Rezept nötig)
+#   tier 2 = Halbzeug (Schmelze, Raffinerie, Bio, Treibstoff)
+#   tier 3 = Komponenten (Präzisionsfabrik, nur orbital)
+#   tier 4 = Endprodukte (Werft, Assembler)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# STUFE 2 — HALBZEUG
+# Metalle (steel_mill, titansteel_forge, chrom_alloy_plant, keramik_plant)
+# ═══════════════════════════════════════════════════════════════════
+recipes:
+
+  # ── Stahlwerk (steel_mill) ────────────────────────────────────────
+  # Produziert: steel
+  # T1: Basis — reines Eisenerz
+  - id: steel_basic
+    name: "Stahl (Basis)"
+    facility_type: steel_mill
+    output_good: steel
+    tier: 2
+    ticks: 1
+    base_efficiency: 0.90
+    # [BALANCING] Basis-Stahlproduktion. 5 E Eisenerz → 5 E Stahl.
+    inputs:
+      iron_ore: 5
+    outputs:
+      steel: 5
+
+  # T2: Chrom-veredelt — weniger Eisenerz-Verbrauch, gleiche Ausbeute
+  - id: steel_chromium
+    name: "Stahl (Chrom-veredelt)"
+    facility_type: steel_mill
+    output_good: steel
+    tier: 2
+    ticks: 1
+    base_efficiency: 0.93
+    # [BALANCING] Verbesserte Variante: Chromzusatz erhöht Festigkeit und reduziert
+    # Eisenerz-Verbrauch. Gleiche Ausbeute bei weniger Hauptinput = Tech-Upgrade.
+    inputs:
+      iron_ore: 4
+      chrom: 1
+    outputs:
+      steel: 5
+
+  # ── Titanstahl-Schmiede (titansteel_forge) ────────────────────────
+  # Produziert: titansteel
+  - id: titansteel_basic
+    name: "Titanstahl (Basis)"
+    facility_type: titansteel_forge
+    output_good: titansteel
+    tier: 2
+    ticks: 1
+    base_efficiency: 0.90
+    # [BALANCING] Kernmaterial für Anlagenbau. 3 E Eisenerz + 1 E Titan → 3 E Titanstahl.
+    inputs:
+      iron_ore: 3
+      titan_ore: 1
+    outputs:
+      titansteel: 3
+
+  # ── Chrom-Legierungswerk (chrom_alloy_plant) ──────────────────────
+  # Produziert: chrom_alloy
+  - id: chrom_alloy_basic
+    name: "Chrom-Legierung (Basis)"
+    facility_type: chrom_alloy_plant
+    output_good: chrom_alloy
+    tier: 2
+    ticks: 1
+    base_efficiency: 0.88
+    inputs:
+      chrom: 2
+      iron_ore: 1
+    outputs:
+      chrom_alloy: 2
+
+  # ── Keramikwerk (keramik_plant) ───────────────────────────────────
+  # Produziert: keramik_komposit
+  - id: keramik_komposit_basic
+    name: "Keramik-Komposit (Basis)"
+    facility_type: keramik_plant
+    output_good: keramik_komposit
+    tier: 2
+    ticks: 2
+    base_efficiency: 0.85
+    inputs:
+      silicates: 2
+      chrom: 1
+    outputs:
+      keramik_komposit: 2
+
+
+# ═══════════════════════════════════════════════════════════════════
+# STUFE 2 — HALBZEUG
+# Chemie / Elektronik / Bio
+# (semiconductor_plant, fuel_processor, reprocessing_plant, coolant_plant, biosynth_lab)
+# ═══════════════════════════════════════════════════════════════════
+
+  # ── Halbleiterwerk (semiconductor_plant) ─────────────────────────
+  # Produziert: semiconductor_wafer
+  - id: semiconductor_wafer_basic
+    name: "Halbleiter-Wafer (Basis)"
+    facility_type: semiconductor_plant
+    output_good: semiconductor_wafer
+    tier: 2
+    ticks: 3
+    base_efficiency: 0.85
+    # [BALANCING] Schlüsselgut für Klasse-III-Produktion. Engpass-Ressource.
+    # Seltene Erden sind Klasse II → Anlage braucht Sealed-Lager.
+    inputs:
+      silicates: 1
+      rare_earths: 1
+    outputs:
+      semiconductor_wafer: 2
+
+  # ── Treibstoffanlage (fuel_processor) ────────────────────────────
+  # Produziert: fusion_fuel
+  - id: fusion_fuel_basic
+    name: "Fusionstreibstoff (Basis)"
+    facility_type: fuel_processor
+    output_good: fusion_fuel
+    tier: 2
+    ticks: 1
+    base_efficiency: 0.92
+    inputs:
+      helium3: 2
+      hydrogen: 3
+    outputs:
+      fusion_fuel: 4
+
+  # ── Wiederaufbereitungsanlage (reprocessing_plant) ────────────────
+  # Produziert: fissile_material
+  - id: fissile_material_basic
+    name: "Spaltmaterial (Basis)"
+    facility_type: reprocessing_plant
+    output_good: fissile_material
+    tier: 2
+    ticks: 4
+    base_efficiency: 0.80
+    # [BALANCING] Klasse IV — Anlage benötigt Segregated-Magazin.
+    # Detonationsrisiko bei Falschlagerung (game-params: sensitivity.class_IV).
+    inputs:
+      uranium_raw: 2
+    outputs:
+      fissile_material: 1
+
+  # ── Kühlmittelwerk (coolant_plant) ────────────────────────────────
+  # Produziert: coolant
+  - id: coolant_basic
+    name: "Kühlmittel (Basis)"
+    facility_type: coolant_plant
+    output_good: coolant
+    tier: 2
+    ticks: 1
+    base_efficiency: 0.90
+    inputs:
+      water_ice: 3
+    outputs:
+      coolant: 2
+
+  # ── Biosynth-Labor (biosynth_lab) ─────────────────────────────────
+  # Produziert: biosynth_base
+  - id: biosynth_base_basic
+    name: "Biosynth-Grundstoff (Basis)"
+    facility_type: biosynth_lab
+    output_good: biosynth_base
+    tier: 2
+    ticks: 2
+    base_efficiency: 0.82
+    inputs:
+      organics: 2
+      water_ice: 1
+    outputs:
+      biosynth_base: 2
+
+
+# ═══════════════════════════════════════════════════════════════════
+# STUFE 3 — KOMPONENTEN (Präzisionsfabrik, nur orbital)
+# Präzisionsfabrik bleibt MVP-flexibel: kann alle T3-Komponenten produzieren.
+# Spezialisierung per Rezept-Auswahl → Pool-Scheduler weist je Batch zu.
+# ═══════════════════════════════════════════════════════════════════
+
+  - id: base_component
+    name: "Basiskomponente"
+    facility_type: precision_factory
+    output_good: base_component
+    tier: 3
+    ticks: 4
+    base_efficiency: 0.88
+    # [BALANCING] Universelles Baumaterial für alle Anlagen-Upgrades.
+    # Klasse III — Präzisionsfabrik braucht Shielded-Lager.
+    inputs:
+      titansteel: 2
+      semiconductor_wafer: 1
+    outputs:
+      base_component: 3
+
+  - id: nav_computer
+    name: "Navigationscomputer"
+    facility_type: precision_factory
+    output_good: nav_computer
+    tier: 3
+    ticks: 10
+    base_efficiency: 0.85
+    # [BALANCING] Für Schiffe und Hochtech-Stationsmodule. Klasse III.
+    inputs:
+      semiconductor_wafer: 6
+      platinum_group: 2
+    outputs:
+      nav_computer: 1
+
+  - id: fusion_reactor_lv1
+    name: "Fusionsreaktor Lv1"
+    facility_type: precision_factory
+    output_good: fusion_reactor_lv1
+    tier: 3
+    ticks: 12
+    base_efficiency: 0.82
+    inputs:
+      fusion_fuel: 5
+      titansteel: 8
+      semiconductor_wafer: 4
+    outputs:
+      fusion_reactor_lv1: 1
+
+  - id: ion_thruster
+    name: "Ionentriebwerk"
+    facility_type: precision_factory
+    output_good: ion_thruster
+    tier: 3
+    ticks: 8
+    base_efficiency: 0.85
+    inputs:
+      fusion_fuel: 3
+      titan_ore: 4
+      semiconductor_wafer: 3
+    outputs:
+      ion_thruster: 1
+
+  - id: jump_drive
+    name: "Sprung-Antrieb"
+    facility_type: precision_factory
+    output_good: jump_drive
+    tier: 3
+    ticks: 24
+    base_efficiency: 0.80
+    # [BALANCING] Ermöglicht FTL-Navigation. Klasse III. Erfordert Fusionsreaktor als Input.
+    inputs:
+      fusion_reactor_lv1: 1
+      fissile_material: 4
+      rare_earths: 6
+    outputs:
+      jump_drive: 1
+
+  - id: phase_shield
+    name: "Phasen-Schild"
+    facility_type: precision_factory
+    output_good: phase_shield
+    tier: 3
+    ticks: 10
+    base_efficiency: 0.83
+    inputs:
+      semiconductor_wafer: 6
+      rare_earths: 4
+      coolant: 3
+    outputs:
+      phase_shield: 1
+
+  - id: life_support
+    name: "Lebenserhaltung"
+    facility_type: precision_factory
+    output_good: life_support
+    tier: 3
+    ticks: 8
+    base_efficiency: 0.85
+    inputs:
+      biosynth_base: 4
+      semiconductor_wafer: 3
+      water_ice: 2
+    outputs:
+      life_support: 1
+
+  - id: exotic_processor
+    name: "Exotik-Prozessor"
+    facility_type: precision_factory
+    output_good: exotic_processor
+    tier: 3
+    ticks: 40
+    base_efficiency: 0.75
+    # [BALANCING] Hightech-Schlüsselkomponente. Sehr seltene Inputs. Klasse III.
+    inputs:
+      exotic_matter: 1
+      semiconductor_wafer: 8
+      platinum_group: 4
+    outputs:
+      exotic_processor: 1
+
+  - id: kinetic_weapon
+    name: "Waffensystem (kinetisch)"
+    facility_type: precision_factory
+    output_good: kinetic_weapon
+    tier: 3
+    ticks: 6
+    base_efficiency: 0.88
+    inputs:
+      titansteel: 6
+      semiconductor_wafer: 2
+    outputs:
+      kinetic_weapon: 1
+
+  - id: energy_weapon
+    name: "Waffensystem (Energie)"
+    facility_type: precision_factory
+    output_good: energy_weapon
+    tier: 3
+    ticks: 14
+    base_efficiency: 0.82
+    inputs:
+      fissile_material: 2
+      semiconductor_wafer: 8
+      rare_earths: 2
+    outputs:
+      energy_weapon: 1
+
+
+# ═══════════════════════════════════════════════════════════════════
+# STUFE 4 — ENDPRODUKTE (Werft / Assembler)
+# ═══════════════════════════════════════════════════════════════════
+
+  - id: system_freighter
+    name: "Systemfrachter"
+    facility_type: shipyard
+    output_good: system_freighter
+    tier: 4
+    ticks: 30
+    base_efficiency: 0.95
+    # [BALANCING] Intra-System-Logistik. Kein Sprungantrieb. Erstes Schiff im MVP.
+    inputs:
+      titansteel: 30
+      base_component: 10
+      ion_thruster: 2
+      life_support: 1
+    outputs:
+      system_freighter: 1
+
+  - id: ftl_freighter
+    name: "FTL-Frachter"
+    facility_type: shipyard
+    output_good: ftl_freighter
+    tier: 4
+    ticks: 60
+    base_efficiency: 0.93
+    inputs:
+      titansteel: 60
+      base_component: 20
+      ion_thruster: 2
+      jump_drive: 1
+      life_support: 1
+      nav_computer: 1
+    outputs:
+      ftl_freighter: 1
+
+  - id: fighter
+    name: "Jäger"
+    facility_type: shipyard
+    output_good: fighter
+    tier: 4
+    ticks: 20
+    base_efficiency: 0.92
+    inputs:
+      titansteel: 20
+      base_component: 5
+      ion_thruster: 1
+      kinetic_weapon: 2
+      life_support: 1
+    outputs:
+      fighter: 1
+
+  # ── Assembler-Rezepte (Anlagen- und Modulbau) ───────────────────
+  # Assembler bleibt MVP-flexibel (produziert alle Facility-Module).
+  # output_good: facility_<type>_lv<n> — wird im Spieler-Inventar gelagert
+  # und später beim Ausbau eingesetzt.
+
+  - id: build_mine_lv2
+    name: "Bergwerk Lv2"
+    facility_type: assembler
+    output_good: facility_mine_lv2
+    tier: 4
+    ticks: 5
+    base_efficiency: 1.0
+    inputs:
+      steel: 30
+      base_component: 5
+    outputs:
+      facility_mine_lv2: 1
+
+  - id: build_steel_mill_lv2
+    name: "Stahlwerk Lv2"
+    facility_type: assembler
+    output_good: facility_steel_mill_lv2
+    tier: 4
+    ticks: 8
+    base_efficiency: 1.0
+    inputs:
+      titansteel: 20
+      base_component: 5
+    outputs:
+      facility_steel_mill_lv2: 1
+
+  - id: build_titansteel_forge_lv1
+    name: "Titanstahl-Schmiede Lv1"
+    facility_type: assembler
+    output_good: facility_titansteel_forge_lv1
+    tier: 4
+    ticks: 8
+    base_efficiency: 1.0
+    inputs:
+      titansteel: 20
+      base_component: 5
+    outputs:
+      facility_titansteel_forge_lv1: 1
+
+  - id: build_semiconductor_plant_lv1
+    name: "Halbleiterwerk Lv1"
+    facility_type: assembler
+    output_good: facility_semiconductor_plant_lv1
+    tier: 4
+    ticks: 6
+    base_efficiency: 1.0
+    inputs:
+      titansteel: 15
+      base_component: 3
+    outputs:
+      facility_semiconductor_plant_lv1: 1
+
+  - id: build_semiconductor_plant_lv2
+    name: "Halbleiterwerk Lv2"
+    facility_type: assembler
+    output_good: facility_semiconductor_plant_lv2
+    tier: 4
+    ticks: 10
+    base_efficiency: 1.0
+    inputs:
+      titansteel: 30
+      base_component: 8
+    outputs:
+      facility_semiconductor_plant_lv2: 1
+
+  - id: build_precision_factory_lv1
+    name: "Präzisionsfabrik Lv1"
+    facility_type: assembler
+    output_good: facility_precision_factory_lv1
+    tier: 4
+    ticks: 12
+    base_efficiency: 1.0
+    inputs:
+      titansteel: 25
+      semiconductor_wafer: 10
+    outputs:
+      facility_precision_factory_lv1: 1
+
+  - id: build_shipyard_lv1
+    name: "Werft Lv1"
+    facility_type: assembler
+    output_good: facility_shipyard_lv1
+    tier: 4
+    ticks: 20
+    base_efficiency: 1.0
+    inputs:
+      titansteel: 60
+      base_component: 20
+    outputs:
+      facility_shipyard_lv1: 1
+
+  - id: build_elevator_lv2
+    name: "Aufzug Lv2"
+    facility_type: assembler
+    output_good: facility_elevator_lv2
+    tier: 4
+    ticks: 10
+    base_efficiency: 1.0
+    inputs:
+      titansteel: 40
+      base_component: 8
+    outputs:
+      facility_elevator_lv2: 1
+
+  - id: build_storage_standard
+    name: "Lagermodul Standard (Klasse I)"
+    facility_type: assembler
+    output_good: storage_module_standard
+    tier: 4
+    ticks: 4
+    base_efficiency: 1.0
+    inputs:
+      steel: 20
+    outputs:
+      storage_module_standard: 1
+
+  - id: build_storage_sealed
+    name: "Lagermodul Sealed (Klasse II)"
+    facility_type: assembler
+    output_good: storage_module_sealed
+    tier: 4
+    ticks: 6
+    base_efficiency: 1.0
+    inputs:
+      titansteel: 15
+      base_component: 3
+    outputs:
+      storage_module_sealed: 1
+
+  - id: build_storage_shielded
+    name: "Lagermodul Shielded (Klasse III)"
+    facility_type: assembler
+    output_good: storage_module_shielded
+    tier: 4
+    ticks: 10
+    base_efficiency: 1.0
+    inputs:
+      titansteel: 20
+      base_component: 8
+      semiconductor_wafer: 2
+    outputs:
+      storage_module_shielded: 1
+
+
+# ═══════════════════════════════════════════════════════════════════
+# METADATEN
+# ═══════════════════════════════════════════════════════════════════
+meta:
+  version: "1.1"
+  date: "2026-03-23"
+  recipe_count: 33
+  notes: >
+    chrom-Rohstoff hat noch kein deposit_init-Eintrag in game-params
+    (wird in v1.9 ergänzt wenn chrom_ore als Deposit eingeführt wird).
+  next_tier_placeholder: "Tier 5 (Megastrukturen, Exotik-Hightech) — TBD"
