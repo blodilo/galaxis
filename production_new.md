@@ -43,25 +43,60 @@ Spieler-UI zeigt: `Lager: 500 | Gebunden: 300 | Frei: 200`
 
 ---
 
-## 3. Routen
+## 3. Routen & Schiffe
 
-Routen sind **dauerhafte Infrastruktur** mit Durchsatz – keine Einzelfahrten.
+### Schicht-Trennung
+
+```
+Spieler-Ebene:   Route A→B, 500t/h       (abstrakt, konfigurierbar)
+Implementierung: N Schiffe pendeln A↔B   (real, simuliert)
+```
+
+Die Route-Kapazität ergibt sich aus: `Anzahl Schiffe × Ladekapazität / Umlaufzeit`
+
+### Datenmodell Route
 
 ```go
 type Route struct {
     ID              string
     FromLocationID  string
     ToLocationID    string
-    CapacityPerTick float64  // maximaler Durchsatz
+    CapacityPerTick float64  // ergibt sich aus zugewiesenen Schiffen
+    Status          string   // "active", "suspended"
 }
 ```
 
-Material im Remote-Lager ist erst planbar, wenn eine Route mit freier Kapazität existiert.
+### Datenmodell Schiff
 
-**Ankunftszeit:**
+Ein Schiff pendelt kontinuierlich durch vier Zustände:
+
+```go
+type ShipState string
+
+const (
+    ShipStateLoading     ShipState = "loading"      // lädt in FromLocation
+    ShipStateTransitTo   ShipState = "transit_to"   // unterwegs zur Ziellocation
+    ShipStateUnloading   ShipState = "unloading"    // entlädt in ToLocation
+    ShipStateTransitBack ShipState = "transit_back" // leer zurück
+)
+
+type Ship struct {
+    ID       string
+    RouteID  string
+    State    ShipState
+    Cargo    map[string]float64  // aktuelle Ladung
+    CargoMax float64
+    ETA      int64               // Tick der nächsten Zustandsänderung
+}
+```
+
+### Ankunftszeit
+
 ```
 Menge / Routenkapazität + Transitzeit = früheste Verfügbarkeit (EarliestArrival)
 ```
+
+Material im Remote-Lager ist erst planbar, wenn eine Route mit freier Kapazität existiert.
 
 ---
 
@@ -293,9 +328,53 @@ func AllocateOrder(factory *Factory, order *ProductionOrder, totals map[string]f
 
 ---
 
-## 9. Offene Punkte
+## 9. Fabrikzerstörung
 
-- [ ] Distributed Locking (mehrere Server-Instanzen)
-- [ ] Umallokation von in-transit Material (Frachter umlenken)
-- [ ] Spieler-seitige Prioritätsvergabe zwischen Aufträgen
-- [ ] `MinContinuousShare` als spielerseitige Einstellung pro Route?
+### Grundregel
+
+Wird eine Fabrik zerstört, ist **alles verloren** – kein Teilrückbuch, keine Ausnahmen:
+
+- Fabriklager (frei + allokiert) → vernichtet
+- Ladung auf Schiffen, die gerade entladen oder zur Fabrik unterwegs sind → vernichtet
+- Alle Aufträge → `cancelled`
+- Routen zur Fabrik → `suspended` (Schiffe überleben, Route kann neu zugewiesen werden)
+
+```go
+func (f *Factory) Destroy() {
+    f.mu.Lock()
+    defer f.mu.Unlock()
+
+    for _, order := range f.OrderQueue {
+        order.Status = OrderStatusCancelled
+    }
+    f.OrderQueue = nil
+    f.Storage    = nil
+}
+```
+
+### Schiff-Verhalten bei Fabrikzerstörung
+
+| Schiff-Zustand | Konsequenz |
+|---|---|
+| Lädt in Remote-Lager | Ladevorgang abbrechen, Schiff frei |
+| Transit → Fabrik | Landet, Ladung vernichtet |
+| Entlädt in Fabrik | Ladung vernichtet |
+| Transit → Remote | Nicht betroffen |
+
+Schiffe überleben stets – nur Ladung und Lagerinhalt gehen verloren.
+
+---
+
+## 10. Entscheidungen & Offene Punkte
+
+### Entschieden
+
+- **Distributed Locking:** nicht nötig – ein Spieler wird immer durch eine Server-Instanz abgedeckt
+- **Umallokation:** nicht vorgesehen – einmal allokiert bleibt gebunden
+- **Priorität:** Spieler vergibt explizite Prioritäten (1, 2, 3, ...) auf Aufträge; Queue wird vor jedem `DistributeMaterials`-Lauf danach sortiert
+- **MinContinuousShare:** spielerseitig einstellbar pro Route
+- **Fabrikzerstörung:** alles verloren, kein Teilrückbuch; Schiffe überleben, Routen werden suspendiert
+
+### Offen
+
+- [ ] Tear-Down / Call-Home von Transportflotten (anderer Kontext, noch nicht spezifiziert)
