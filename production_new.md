@@ -184,31 +184,83 @@ func (r *Route) AllocateCapacity(batches, continuous []*ProductionOrder) []Warni
 
 ---
 
-## 7. Top-Down Bedarfsauflösung (MRP)
+## 7. Rezepte
+
+Rezepte sind durch `ProductID` und `FactoryType` eindeutig. Bessere Technologie = anderes Rezept mit günstigeren Inputs oder höherem Yield – kein Techlevel-Feld.
+
+```go
+type RecipeInput struct {
+    ItemID string
+    Amount float64
+}
+
+type Recipe struct {
+    RecipeID    string
+    ProductID   string
+    FactoryType string
+    Inputs      []RecipeInput  // mehrere Inputs, explizit als Slice
+    BaseYield   float64
+}
+
+// Lookup-Key
+type RecipeKey struct {
+    ProductID   string
+    FactoryType string
+}
+
+var RecipeBook map[RecipeKey]Recipe
+```
+
+### Inputs werden bei Auftragseinstellung kopiert
+
+```go
+type ProductionOrder struct {
+    OrderID   string
+    FactoryID string
+    OrderType OrderType
+
+    // Snapshot – unveränderlich nach Erstellung
+    RecipeID  string
+    Inputs    []RecipeInput        // kopiert aus Rezept, nicht referenziert
+    TargetQty float64
+
+    // Laufende Allokation
+    AllocatedInputs map[string]float64
+}
+```
+
+**Vorteile:**
+- Rezept kann sich ändern (Forschung), laufende Aufträge bleiben stabil
+- Continuous-Produktion rechnet pro Tick direkt mit `order.Inputs` – kein Lookup
+
+---
+
+## 8. Top-Down Bedarfsauflösung (MRP)
 
 Zwei-Phasen-Ansatz um Lager-Mutation bei Teilfehlern zu verhindern:
 
 ### Phase 1: Dry Run (keine Mutation)
 
 ```go
-func ResolveDemand(itemID string, amount float64, recipes map[string]Recipe,
-    totals map[string]float64, visiting map[string]bool) error {
+func ResolveDemand(productID string, amount float64, factory *Factory,
+    recipes map[RecipeKey]Recipe, totals map[string]float64, visiting map[string]bool) error {
 
-    if visiting[itemID] {
-        return fmt.Errorf("cycle detected at: %s", itemID)
+    if visiting[productID] {
+        return fmt.Errorf("cycle detected at: %s", productID)
     }
-    visiting[itemID] = true
-    defer delete(visiting, itemID)
+    visiting[productID] = true
+    defer delete(visiting, productID)
 
-    recipe, exists := recipes[itemID]
+    key := RecipeKey{productID, factory.Type}
+    recipe, exists := recipes[key]
     if !exists {
-        totals[itemID] += amount  // Basisrohstoff
+        totals[productID] += amount  // Basisrohstoff
         return nil
     }
 
-    runs := (amount / recipe.BaseYield) / recipe.ProdEfficiency
-    for inputID, inputAmount := range recipe.Inputs {
-        if err := ResolveDemand(inputID, inputAmount*runs, recipes, totals, visiting); err != nil {
+    runs := amount / recipe.BaseYield
+    for _, input := range recipe.Inputs {
+        if err := ResolveDemand(input.ItemID, input.Amount*runs, factory, recipes, totals, visiting); err != nil {
             return err
         }
     }
@@ -225,7 +277,6 @@ func AllocateOrder(factory *Factory, order *ProductionOrder, totals map[string]f
 
     for itemID, needed := range totals {
         if factory.Storage[itemID].Available() < needed {
-            // Nicht abbrechen – Auftrag geht in "waiting_for_mats"
             order.Status = OrderStatusWaiting
             return nil
         }
@@ -242,7 +293,7 @@ func AllocateOrder(factory *Factory, order *ProductionOrder, totals map[string]f
 
 ---
 
-## 8. Offene Punkte
+## 9. Offene Punkte
 
 - [ ] Distributed Locking (mehrere Server-Instanzen)
 - [ ] Umallokation von in-transit Material (Frachter umlenken)
