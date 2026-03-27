@@ -1,4 +1,66 @@
 recipes:
+  # ── Mine recipes ─────────────────────────────────────────────────────────────
+  # geological_input: the good_id drawn from planet_deposits each tick.
+  # base_yield / efficiency: applied via accumulator (floor(acc += rate * η)).
+  # Output rate per tick = MineParams.RateForLevel(facility.level).
+  # inputs: [] — no goods-storage inputs; slot limit enforced by scheduler.
+
+  - recipe_id: mine_iron_ore
+    product_id: iron_ore
+    factory_type: mine
+    geological_input: iron_ore
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: mine_silicates
+    product_id: silicates
+    factory_type: mine
+    geological_input: silicates
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: mine_titan
+    product_id: titan
+    factory_type: mine
+    geological_input: titan
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: mine_rare_earths
+    product_id: rare_earths
+    factory_type: mine
+    geological_input: rare_earths
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.90  # [BALANCING] Seltene Erden: etwas Verlust beim Abbau
+
+  - recipe_id: mine_he3
+    product_id: he3
+    factory_type: mine
+    geological_input: he3
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.95  # [BALANCING] Gas-Harvesting: leichte Verluste
+
+  - recipe_id: mine_hydrogen
+    product_id: hydrogen
+    factory_type: mine
+    geological_input: hydrogen
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.98
+
+  # ── Smelter recipes ───────────────────────────────────────────────────────────
+
   - recipe_id: smelter_steel
     product_id: steel
     factory_type: smelter

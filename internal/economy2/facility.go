@@ -14,6 +14,9 @@ type FacilityConfig struct {
 	Level          int     `json:"level"`
 	TicksRemaining int     `json:"ticks_remaining"`
 	EfficiencyAcc  float64 `json:"efficiency_acc"`
+	// DepositGoodID is set for mine facilities and names the good being extracted.
+	// It determines which planet_deposits entry to deplete each tick.
+	DepositGoodID string `json:"deposit_good_id,omitempty"`
 }
 
 // Facility is the in-memory representation of an econ2_facilities row.

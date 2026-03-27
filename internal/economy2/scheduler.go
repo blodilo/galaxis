@@ -98,14 +98,15 @@ func tryAllocatePending(ctx context.Context, db *pgxpool.Pool, recipes RecipeBoo
 }
 
 // assignReadyOrders assigns ready orders to idle matching facilities.
+// For mine facilities, enforces the deposit slot limit before assigning.
 func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 	rows, err := db.Query(ctx, `
 		SELECT
-		    f.id,
-		    o.id, o.recipe_id, o.recipe_ticks
+		    f.id, f.factory_type, f.planet_id,
+		    o.id, o.recipe_id, o.recipe_ticks, o.product_id
 		FROM econ2_facilities f
 		CROSS JOIN LATERAL (
-		    SELECT id, recipe_id, recipe_ticks
+		    SELECT id, recipe_id, recipe_ticks, product_id
 		    FROM econ2_orders
 		    WHERE node_id      = f.node_id
 		      AND factory_type = f.factory_type
@@ -123,15 +124,21 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 
 	type assignment struct {
 		facilityID  uuid.UUID
+		factoryType string
+		planetID    *uuid.UUID
 		orderID     uuid.UUID
 		recipeID    string
 		recipeTicks int
+		productID   string
 	}
 
 	var assignments []assignment
 	for rows.Next() {
 		var a assignment
-		if err := rows.Scan(&a.facilityID, &a.orderID, &a.recipeID, &a.recipeTicks); err != nil {
+		if err := rows.Scan(
+			&a.facilityID, &a.factoryType, &a.planetID,
+			&a.orderID, &a.recipeID, &a.recipeTicks, &a.productID,
+		); err != nil {
 			return fmt.Errorf("economy2: assign scan: %w", err)
 		}
 		assignments = append(assignments, a)
@@ -141,11 +148,41 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 	}
 
 	for _, a := range assignments {
+		// Mine slot enforcement: check deposit.max_rate as max_mines.
+		if a.factoryType == "mine" {
+			if ok, err := mineSlotAvailable(ctx, db, a.planetID, a.productID); err != nil {
+				log.Printf("economy2: mine slot check facility %s: %v", a.facilityID, err)
+				continue
+			} else if !ok {
+				continue // deposit slots exhausted
+			}
+		}
+
 		if err := assignFacility(ctx, db, a.facilityID, a.orderID, a.recipeTicks); err != nil {
 			log.Printf("economy2: assign facility %s to order %s: %v", a.facilityID, a.orderID, err)
 		}
 	}
 	return nil
+}
+
+// mineSlotAvailable returns true when the deposit still has free mine slots.
+// max_mines is read from planet_deposits.state[goodID].max_rate.
+func mineSlotAvailable(ctx context.Context, db *pgxpool.Pool, planetID *uuid.UUID, goodID string) (bool, error) {
+	if planetID == nil {
+		return false, fmt.Errorf("economy2: mine facility missing planet_id")
+	}
+
+	ds, err := readDeposit(ctx, db, *planetID, goodID)
+	if err != nil {
+		return false, err
+	}
+
+	active, err := countActiveMines(ctx, db, *planetID, goodID)
+	if err != nil {
+		return false, err
+	}
+
+	return float64(active) < ds.MaxRate, nil
 }
 
 func assignFacility(ctx context.Context, db *pgxpool.Pool, facilityID, orderID uuid.UUID, ticks int) error {

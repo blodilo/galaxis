@@ -20,6 +20,7 @@ import (
 	"galaxis/internal/jobs"
 	"galaxis/internal/tick"
 
+	"gopkg.in/yaml.v3"
 )
 
 func main() {
@@ -75,6 +76,13 @@ func main() {
 	}
 	log.Printf("economy2: loaded %d recipes", len(recipes))
 
+	// ── Economy2 Mine Params ──────────────────────────────────────────────────
+	mineParams, err := loadMineParams(*configPath)
+	if err != nil {
+		log.Fatalf("economy2: load mine params: %v", err)
+	}
+	log.Printf("economy2: mine base_rate=%.1f levels=%d", mineParams.BaseRate, len(mineParams.LevelMultiplier))
+
 	// ── Tick Engine ───────────────────────────────────────────────────────────
 	tickDuration := time.Duration(cfg.Time.StrategyTickMinutes) * time.Minute
 	engine := tick.NewEngine(tickDuration)
@@ -88,7 +96,7 @@ func main() {
 
 	// Neues Economy2-System
 	engine.Register(economy2.SchedulerHandler(pool, recipes))
-	engine.Register(economy2.ProductionHandler(pool, recipes))
+	engine.Register(economy2.ProductionHandler(pool, recipes, mineParams))
 	engine.Register(economy2.ShipTickHandler(pool))
 
 	engine.Start(ctx)
@@ -130,3 +138,23 @@ func main() {
 	log.Println("server: stopped")
 }
 
+// loadMineParams reads the mine: section from the game-params YAML file.
+func loadMineParams(path string) (economy2.MineParams, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return economy2.MineParams{}, fmt.Errorf("read %s: %w", path, err)
+	}
+	var cfg struct {
+		Mine economy2.MineParams `yaml:"mine"`
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return economy2.MineParams{}, fmt.Errorf("parse mine params: %w", err)
+	}
+	if cfg.Mine.BaseRate <= 0 {
+		cfg.Mine.BaseRate = 5.0
+	}
+	if len(cfg.Mine.LevelMultiplier) == 0 {
+		cfg.Mine.LevelMultiplier = []float64{0.5}
+	}
+	return cfg.Mine, nil
+}
