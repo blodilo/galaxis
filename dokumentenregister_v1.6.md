@@ -1,6 +1,6 @@
 # Dokumentenregister – Galaxis
 
-**Projektstatus:** Economy2-System lauffähig — Rezept-getriebene UI, Bau-als-Auftrag, Tick-Generator · Nächster Schritt: Integrations-Tests
+**Projektstatus:** Economy2-System lauffähig — Rezept-getriebene UI, Bau-als-Auftrag, Tick-Generator, galaxis-devctl · Nächster Schritt: Produktion verifizieren + Integrations-Tests
 **GDD-Version:** v1.24
 **Datum:** 2026-03-27
 

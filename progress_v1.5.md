@@ -36,6 +36,7 @@
 | **2026-03-27** | **Economy2: Bau als Auftrag** — 9 Construction-Rezepte in econ2_recipes_v1.0.yaml; `BuildTickHandler`; `GET /econ2/recipes`; `OrderTypeBuild`; `parseBuildProductID` |
 | **2026-03-27** | **Economy2: Rezept-getriebene UI** — AnlagenPanel: Bau-Rezept-Dropdown → erstellt Build-Order, zeigt Fortschrittsbalken; AuftraegePanel: Produktionsrezept-Dropdown, filtert Bau-Aufträge heraus; menschenlesbare Labels |
 | **2026-03-27** | **Tick-Generator in Menüleiste** — `POST /admin/tick/advance` (gibt Tick-Nr. zurück), `GET /admin/tick/current`; TickGenerator-Widget (▶/⏹, ×10/÷10, 0.1–100 ticks/s, Tick-Anzeige) |
+| **2026-03-27** | **galaxis-devctl** — Standalone Go Prozessmanager auf `:9191`; Start/Stop/Restart für postgres, galaxis-api, galaxis-frontend; SSE Log-Streaming; Echtzeit-Status (Port, PID, Uptime); erkennt bereits laufende Komponenten beim Start |
 
 ---
 
@@ -43,7 +44,7 @@
 
 | Priorität | Aufgabe |
 |---|---|
-| 🔥 Hoch | **Balancing** — Mine-Build-Ticks auf 1 gesetzt (Dev); Produktion testen mit Tick-Generator |
+| 🔥 Hoch | **Produktion verifizieren** — devctl starten, Ticks feuern, prüfen ob Rohstofflager ansteigt |
 | 🔥 Hoch | **Integrations-Tests Economy2** — `go test ./internal/economy2/...` mit echter DB |
 | Mittel | **MRP-Verbesserung** — Bau-Aufträge aus `tryAllocatePending` ausschließen (construction hat keine Inputs die aufgelöst werden müssen falls leer) |
 | Mittel | **Transport-Routen UI** — Node-IDs aus Dropdown statt UUID-Freitext |
@@ -97,3 +98,5 @@
 | `frontend/src/api/economy2.ts` | Alle API-Calls inkl. listRecipes(); createOrder mit order_type:'build' |
 | `frontend/src/pages/Economy2Page.tsx` | MyAssetsView, AnlagenPanel (Bau-Rezept-Dropdown), AuftraegePanel (Rezept-Dropdown), TickGenerator-Widget |
 | `frontend/src/components/PlanetInspector.tsx` | bootstrap() beim Heimatplaneten anlegen |
+| `cmd/devctl/main.go` | galaxis-devctl: Prozessmanager, HTTP-API, SSE Log-Streaming |
+| `cmd/devctl/ui.go` | galaxis-devctl: eingebettetes HTML/JS Dashboard |
