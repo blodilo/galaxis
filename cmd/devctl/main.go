@@ -260,6 +260,10 @@ func makePostgres() *component {
 	c := &component{id: "postgres", display: "PostgreSQL", port: 5432}
 	c.fnHealth = func() bool { return tcpAlive(5432) }
 	c.fnStart = func(c *component) error {
+		if tcpAlive(5432) {
+			c.buf.add("[devctl] PostgreSQL läuft bereits (externer Container)")
+			return nil
+		}
 		return runShell(c, "docker", "compose", "up", "-d", "postgres")
 	}
 	c.fnStop = func(c *component) {
