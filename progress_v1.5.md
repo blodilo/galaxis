@@ -37,6 +37,7 @@
 | **2026-03-27** | **Economy2: Rezept-getriebene UI** — AnlagenPanel: Bau-Rezept-Dropdown → erstellt Build-Order, zeigt Fortschrittsbalken; AuftraegePanel: Produktionsrezept-Dropdown, filtert Bau-Aufträge heraus; menschenlesbare Labels |
 | **2026-03-27** | **Tick-Generator in Menüleiste** — `POST /admin/tick/advance` (gibt Tick-Nr. zurück), `GET /admin/tick/current`; TickGenerator-Widget (▶/⏹, ×10/÷10, 0.1–100 ticks/s, Tick-Anzeige) |
 | **2026-03-27** | **galaxis-devctl** — Standalone Go Prozessmanager auf `:9191`; Start/Stop/Restart für postgres, galaxis-api, galaxis-frontend; SSE Log-Streaming; Echtzeit-Status (Port, PID, Uptime); erkennt bereits laufende Komponenten beim Start |
+| **2026-03-27** | **Facility-Location-Refactor** — Migration 011: `planet_id` aus `econ2_facilities` entfernt, `moon_id` auf `econ2_nodes` ergänzt; Facility-Standort ausschließlich über Node; Bootstrap legt planet-level Node an; alle DB-Queries JOINen mit `econ2_nodes` für planet_id |
 
 ---
 

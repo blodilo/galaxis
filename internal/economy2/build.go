@@ -129,19 +129,22 @@ func finishBuildOrder(
 	// Derive factory_type and deposit_good_id from product_id.
 	factoryType, depositGoodID := parseBuildProductID(productID)
 
-	// Mine facilities need a planet. If the build node has no planet_id (star-level node),
-	// fall back to the star's first planet and initialise deposits if needed.
-	if factoryType == "mine" && planetID == nil {
-		pid, err := FindHomePlanet(ctx, db, starID)
-		if err == nil {
-			planetID = pid
+	// For mine facilities: ensure the node's planet has deposits initialised.
+	// The mine's physical location = the node's planet (planetID comes from node join in runBuildTick).
+	if factoryType == "mine" {
+		if planetID == nil {
+			// Fallback: node is star-level; find home planet.
+			pid, err := FindHomePlanet(ctx, db, starID)
+			if err == nil {
+				planetID = pid
+			}
+		}
+		if planetID != nil {
+			_ = EnsureDeposits(ctx, db, *planetID)
 		}
 	}
-	if factoryType == "mine" && planetID != nil {
-		_ = EnsureDeposits(ctx, db, *planetID)
-	}
 
-	// Create the facility.
+	// Create the facility on the node — location is encoded in the node, not the facility.
 	cfg := FacilityConfig{Level: 1, DepositGoodID: depositGoodID}
 	cfgRaw, err := json.Marshal(cfg)
 	if err != nil {
@@ -149,10 +152,10 @@ func finishBuildOrder(
 	}
 	var facilityID uuid.UUID
 	if err := tx.QueryRow(ctx, `
-		INSERT INTO econ2_facilities (player_id, star_id, planet_id, node_id, factory_type, status, config)
-		VALUES ($1,$2,$3,$4,$5,'idle',$6)
+		INSERT INTO econ2_facilities (player_id, star_id, node_id, factory_type, status, config)
+		VALUES ($1,$2,$3,$4,'idle',$5)
 		RETURNING id
-	`, playerID, starID, planetID, nodeID, factoryType, cfgRaw).Scan(&facilityID); err != nil {
+	`, playerID, starID, nodeID, factoryType, cfgRaw).Scan(&facilityID); err != nil {
 		return err
 	}
 

@@ -100,11 +100,13 @@ func tryAllocatePending(ctx context.Context, db *pgxpool.Pool, recipes RecipeBoo
 // assignReadyOrders assigns ready orders to idle matching facilities.
 // For mine facilities, enforces the deposit slot limit before assigning.
 func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
+	// JOIN with econ2_nodes to get the node's planet_id (mine slot check needs it).
 	rows, err := db.Query(ctx, `
 		SELECT
-		    f.id, f.factory_type, f.planet_id,
+		    f.id, f.factory_type, n.planet_id,
 		    o.id, o.recipe_id, o.recipe_ticks, o.product_id
 		FROM econ2_facilities f
+		JOIN econ2_nodes n ON n.id = f.node_id
 		CROSS JOIN LATERAL (
 		    SELECT id, recipe_id, recipe_ticks, product_id
 		    FROM econ2_orders

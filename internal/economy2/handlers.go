@@ -107,10 +107,14 @@ func createFacilityHandler(db *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 
+		// For mine facilities on a planet-level node, ensure deposits are initialised.
+		if req.FactoryType == "mine" && planetID != nil {
+			_ = EnsureDeposits(r.Context(), db, *planetID)
+		}
+
 		f := &Facility{
 			PlayerID:    playerID,
 			StarID:      starID,
-			PlanetID:    planetID,
 			NodeID:      nodeID,
 			FactoryType: req.FactoryType,
 			Status:      "idle",
@@ -147,11 +151,14 @@ func listFacilitiesHandler(db *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 
+		// JOIN with nodes to expose planet_id in the response.
 		rows, err := db.Query(r.Context(), `
-			SELECT id, player_id, star_id, planet_id, node_id, factory_type, status, config, current_order_id
-			FROM econ2_facilities
-			WHERE player_id=$1 AND star_id=$2
-			ORDER BY created_at ASC
+			SELECT f.id, f.player_id, f.star_id, f.node_id, f.factory_type, f.status, f.config, f.current_order_id,
+			       n.planet_id
+			FROM econ2_facilities f
+			JOIN econ2_nodes n ON n.id = f.node_id
+			WHERE f.player_id=$1 AND f.star_id=$2
+			ORDER BY f.created_at ASC
 		`, playerID, starID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
@@ -166,8 +173,9 @@ func listFacilitiesHandler(db *pgxpool.Pool) http.HandlerFunc {
 				cfgRaw []byte
 			)
 			if err := rows.Scan(
-				&f.ID, &f.PlayerID, &f.StarID, &f.PlanetID, &f.NodeID,
+				&f.ID, &f.PlayerID, &f.StarID, &f.NodeID,
 				&f.FactoryType, &f.Status, &cfgRaw, &f.CurrentOrderID,
+				&f.PlanetID,
 			); err != nil {
 				writeError(w, http.StatusInternalServerError, err.Error())
 				return

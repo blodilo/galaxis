@@ -141,10 +141,13 @@ func processFacility(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook, 
 }
 
 func loadRunningFacilities(ctx context.Context, db *pgxpool.Pool) ([]*Facility, error) {
+	// JOIN with econ2_nodes to populate PlanetID from the node's location.
 	rows, err := db.Query(ctx, `
-		SELECT id, player_id, star_id, planet_id, node_id, factory_type, status, config, current_order_id
-		FROM econ2_facilities
-		WHERE status IN ('running','building')
+		SELECT f.id, f.player_id, f.star_id, f.node_id, f.factory_type, f.status, f.config, f.current_order_id,
+		       n.planet_id
+		FROM econ2_facilities f
+		JOIN econ2_nodes n ON n.id = f.node_id
+		WHERE f.status IN ('running','building')
 	`)
 	if err != nil {
 		return nil, err
@@ -158,8 +161,9 @@ func loadRunningFacilities(ctx context.Context, db *pgxpool.Pool) ([]*Facility, 
 			cfgRaw []byte
 		)
 		if err := rows.Scan(
-			&f.ID, &f.PlayerID, &f.StarID, &f.PlanetID, &f.NodeID,
+			&f.ID, &f.PlayerID, &f.StarID, &f.NodeID,
 			&f.FactoryType, &f.Status, &cfgRaw, &f.CurrentOrderID,
+			&f.PlanetID,
 		); err != nil {
 			return nil, err
 		}

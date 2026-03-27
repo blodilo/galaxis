@@ -20,16 +20,19 @@ type FacilityConfig struct {
 }
 
 // Facility is the in-memory representation of an econ2_facilities row.
+// PlanetID is NOT a DB column on this table — it is populated by joining
+// with econ2_nodes when the node's location is needed (e.g. processMine).
 type Facility struct {
-	ID             uuid.UUID  `json:"id"`
-	PlayerID       uuid.UUID  `json:"player_id"`
-	StarID         uuid.UUID  `json:"star_id"`
-	PlanetID       *uuid.UUID `json:"planet_id"`
-	NodeID         uuid.UUID  `json:"node_id"`
-	FactoryType    string     `json:"factory_type"`
-	Status         string     `json:"status"`
+	ID             uuid.UUID      `json:"id"`
+	PlayerID       uuid.UUID      `json:"player_id"`
+	StarID         uuid.UUID      `json:"star_id"`
+	NodeID         uuid.UUID      `json:"node_id"`
+	FactoryType    string         `json:"factory_type"`
+	Status         string         `json:"status"`
 	Config         FacilityConfig `json:"config"`
-	CurrentOrderID *uuid.UUID `json:"current_order_id"`
+	CurrentOrderID *uuid.UUID     `json:"current_order_id"`
+	// PlanetID is derived from the node (populated via JOIN, not stored on facilities).
+	PlanetID *uuid.UUID `json:"planet_id,omitempty"`
 }
 
 // Destroy cancels all orders, wipes node stock, suspends incoming routes, and marks facility destroyed.
@@ -78,30 +81,37 @@ func (f *Facility) Destroy(ctx context.Context, db *pgxpool.Pool) error {
 }
 
 // CreateFacility inserts a new facility row and sets f.ID.
+// The facility's physical location is determined by its node (econ2_nodes.planet_id / moon_id),
+// not by a column on this table.
 func CreateFacility(ctx context.Context, db *pgxpool.Pool, f *Facility) error {
 	cfg, err := json.Marshal(f.Config)
 	if err != nil {
 		return fmt.Errorf("economy2: marshal facility config: %w", err)
 	}
 	return db.QueryRow(ctx, `
-		INSERT INTO econ2_facilities (player_id, star_id, planet_id, node_id, factory_type, status, config)
-		VALUES ($1,$2,$3,$4,$5,$6,$7)
+		INSERT INTO econ2_facilities (player_id, star_id, node_id, factory_type, status, config)
+		VALUES ($1,$2,$3,$4,$5,$6)
 		RETURNING id
-	`, f.PlayerID, f.StarID, f.PlanetID, f.NodeID, f.FactoryType, f.Status, cfg).Scan(&f.ID)
+	`, f.PlayerID, f.StarID, f.NodeID, f.FactoryType, f.Status, cfg).Scan(&f.ID)
 }
 
 // LoadFacilityByID loads a single facility by primary key.
+// PlanetID is populated via JOIN with econ2_nodes.
 func LoadFacilityByID(ctx context.Context, db *pgxpool.Pool, id uuid.UUID) (*Facility, error) {
 	var (
 		f      Facility
 		cfgRaw []byte
 	)
 	err := db.QueryRow(ctx, `
-		SELECT id, player_id, star_id, planet_id, node_id, factory_type, status, config, current_order_id
-		FROM econ2_facilities WHERE id=$1
+		SELECT f.id, f.player_id, f.star_id, f.node_id, f.factory_type, f.status, f.config, f.current_order_id,
+		       n.planet_id
+		FROM econ2_facilities f
+		JOIN econ2_nodes n ON n.id = f.node_id
+		WHERE f.id=$1
 	`, id).Scan(
-		&f.ID, &f.PlayerID, &f.StarID, &f.PlanetID, &f.NodeID,
+		&f.ID, &f.PlayerID, &f.StarID, &f.NodeID,
 		&f.FactoryType, &f.Status, &cfgRaw, &f.CurrentOrderID,
+		&f.PlanetID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("economy2: load facility %s: %w", id, err)
