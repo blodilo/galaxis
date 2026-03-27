@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { ItemStock, Facility, Order, Route, Recipe, MyNodeEntry } from '../types/economy2'
+import type { ItemStock, Facility, Order, Route, Recipe, MyNodeEntry, DepositEntry } from '../types/economy2'
 import {
   getStock,
   listFacilities,
@@ -12,6 +12,7 @@ import {
   listRecipes,
   bootstrap,
   listMyNodes,
+  getDeposits,
 } from '../api/economy2'
 
 // ── Labels ────────────────────────────────────────────────────────────────────
@@ -759,37 +760,17 @@ function TransportPanel({ routes, loading, onRefresh }: TransportPanelProps) {
 const TICK_MIN = 0.1
 const TICK_MAX = 100
 
-function TickGenerator() {
-  const [speed, setSpeed]           = useState(1)        // ticks/sec
-  const [running, setRunning]       = useState(false)
-  const [currentTick, setCurrentTick] = useState<number | null>(null)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+interface TickGeneratorProps {
+  speed: number
+  onSetSpeed: (updater: (s: number) => number) => void
+  running: boolean
+  onToggle: () => void
+  currentTick: number | null
+}
 
-  // Fetch initial tick on mount
-  useEffect(() => {
-    fetch('/api/v2/admin/tick/current')
-      .then(r => r.json())
-      .then(d => setCurrentTick(d.tick))
-      .catch(() => {})
-  }, [])
-
-  // Drive interval whenever running or speed changes
-  useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current)
-    if (!running) return
-    const ms = Math.round(1000 / speed)
-    intervalRef.current = setInterval(() => {
-      fetch('/api/v2/admin/tick/advance', { method: 'POST' })
-        .then(r => r.json())
-        .then(d => setCurrentTick(d.tick))
-        .catch(() => {})
-    }, ms)
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [running, speed])
-
-  function faster() { setSpeed(s => Math.min(TICK_MAX, +(s * 10).toPrecision(4))) }
-  function slower() { setSpeed(s => Math.max(TICK_MIN, +(s / 10).toPrecision(4))) }
-
+function TickGenerator({ speed, onSetSpeed, running, onToggle, currentTick }: TickGeneratorProps) {
+  function faster() { onSetSpeed(s => Math.min(TICK_MAX, +(s * 10).toPrecision(4))) }
+  function slower() { onSetSpeed(s => Math.max(TICK_MIN, +(s / 10).toPrecision(4))) }
   const speedLabel = speed < 1 ? speed.toFixed(1) : speed >= 10 ? speed.toFixed(0) : speed.toString()
 
   return (
@@ -815,7 +796,7 @@ function TickGenerator() {
         title="Schneller"
       >×10</button>
       <button
-        onClick={() => setRunning(r => !r)}
+        onClick={onToggle}
         className={`px-2 py-0.5 rounded border font-bold transition-colors ${
           running
             ? 'border-orange-700 text-orange-400 hover:bg-orange-900/30'
@@ -905,6 +886,45 @@ function MyAssetsView({ onSelect }: { onSelect: (node: MyNodeEntry) => void }) {
   )
 }
 
+// ── Planetare Vorkommen ───────────────────────────────────────────────────────
+
+function VorkommenPanel({ deposits }: { deposits: Record<string, DepositEntry> }) {
+  const entries = Object.entries(deposits).filter(([, d]) => d.remaining > 0)
+  if (entries.length === 0) return (
+    <div>
+      <div className="text-xs font-bold tracking-widest uppercase text-slate-600 mb-2">Vorkommen</div>
+      <div className="text-xs text-slate-700 italic">Keine Daten</div>
+    </div>
+  )
+  return (
+    <div>
+      <div className="text-xs font-bold tracking-widest uppercase text-slate-600 mb-2">Vorkommen</div>
+      <div className="space-y-2">
+        {entries
+          .sort((a, b) => b[1].remaining - a[1].remaining)
+          .map(([goodId, d]) => {
+            // initial ≈ max_rate × 10 000 (derived from EnsureDeposits scaling)
+            const initial = Math.max(d.max_rate * 10_000, d.remaining)
+            const pct = initial > 0 ? Math.min(100, (d.remaining / initial) * 100) : 0
+            const barColor = pct > 50 ? 'bg-amber-700/70' : pct > 20 ? 'bg-orange-700/70' : 'bg-red-700/70'
+            return (
+              <div key={goodId}>
+                <div className="flex justify-between text-xs mb-0.5">
+                  <span className="text-slate-400">{itemLabel(goodId)}</span>
+                  <span className="text-slate-500 tabular-nums">{d.remaining.toFixed(0)}</span>
+                </div>
+                <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${barColor}`}
+                    style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            )
+          })}
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 const AUTO_REFRESH_SEC = 10
@@ -916,6 +936,7 @@ export function Economy2Page() {
   const [facilities, setFacilities] = useState<Facility[]>([])
   const [orders, setOrders]       = useState<Order[]>([])
   const [routes, setRoutes]       = useState<Route[]>([])
+  const [deposits, setDeposits]   = useState<Record<string, DepositEntry>>({})
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')
   const [countdown, setCountdown] = useState(AUTO_REFRESH_SEC)
@@ -923,21 +944,46 @@ export function Economy2Page() {
   const [bootstrapMsg, setBootstrapMsg]   = useState('')
   const [starType, setStarType]           = useState('')
 
+  // ── Tick Generator state (single instance, persists across view changes) ──
+  const [tickSpeed, setTickSpeed]     = useState(1)
+  const [tickRunning, setTickRunning] = useState(false)
+  const [currentTick, setCurrentTick] = useState<number | null>(null)
+  const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    fetch('/api/v2/admin/tick/current').then(r => r.json()).then(d => setCurrentTick(d.tick)).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (tickIntervalRef.current) clearInterval(tickIntervalRef.current)
+    if (!tickRunning) { tickIntervalRef.current = null; return }
+    const ms = Math.round(1000 / tickSpeed)
+    tickIntervalRef.current = setInterval(() => {
+      fetch('/api/v2/admin/tick/advance', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => setCurrentTick(d.tick))
+        .catch(() => {})
+    }, ms)
+    return () => { if (tickIntervalRef.current) { clearInterval(tickIntervalRef.current); tickIntervalRef.current = null } }
+  }, [tickRunning, tickSpeed])
+
   const loadData = useCallback(async (nid: string, sid: string) => {
     if (!nid) return
     setLoading(true)
     setError('')
     try {
-      const [s, f, o, r] = await Promise.all([
+      const [s, f, o, r, dep] = await Promise.all([
         getStock(nid),
         sid ? listFacilities(sid) : Promise.resolve([]),
         listOrders(nid),
         listRoutes(),
+        sid ? getDeposits(sid).then(res => res.deposits ?? {}).catch(() => ({})) : Promise.resolve({}),
       ])
       setStock(s)
       setFacilities(f)
       setOrders(o)
       setRoutes(r)
+      setDeposits(dep)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ladefehler')
     } finally {
@@ -988,91 +1034,99 @@ export function Economy2Page() {
     }
   }
 
-  if (!nodeId) {
-    return (
-      <div className="absolute inset-0 top-0 flex flex-col font-mono bg-slate-950">
-        <div className="flex items-center gap-3 px-4 py-2 bg-black/70 border-b border-slate-800 flex-shrink-0">
-          <span className="text-xs font-bold tracking-widest text-emerald-500 uppercase">Meine Assets</span>
-          <TickGenerator />
-        </div>
-        <MyAssetsView onSelect={n => { setStarId(n.star_id); setNodeId(n.node_id); setStarType(n.star_type); loadData(n.node_id, n.star_id) }} />
-      </div>
-    )
+  const tickProps: TickGeneratorProps = {
+    speed: tickSpeed,
+    onSetSpeed: setTickSpeed,
+    running: tickRunning,
+    onToggle: () => setTickRunning(r => !r),
+    currentTick,
   }
 
   return (
-    <div className="absolute inset-0 top-0 flex flex-col font-mono">
-      {/* Page top bar */}
+    <div className="absolute inset-0 top-0 flex flex-col font-mono bg-slate-950">
+      {/* Single top bar — always visible, single TickGenerator instance */}
       <div className="flex items-center gap-3 px-4 py-2 bg-black/70 border-b border-slate-800 backdrop-blur-sm flex-shrink-0">
-        <button
-          onClick={() => { setNodeId(''); setStarId('') }}
-          className="text-xs text-slate-500 hover:text-slate-300 transition-colors mr-1"
-          title="Zurück zur Übersicht"
-        >
-          ← Assets
-        </button>
-        <span className="text-xs text-slate-700">|</span>
-        <span className="text-xs text-slate-400 font-mono">
-          {starType ? (STAR_TYPE_LABELS[starType] ?? starType) : 'Stern'} · {starId.slice(0, 8)}…
-        </span>
-        <TickGenerator />
-        <button
-          onClick={handleBootstrap}
-          disabled={bootstrapping || !starId.trim()}
-          className="text-xs px-2 py-0.5 rounded border border-blue-700 text-blue-400
-                     hover:bg-blue-900/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          {bootstrapping ? '…' : '⬡ Spielstart-Kit'}
-        </button>
-        <PrimaryButton onClick={handleRefresh} disabled={!nodeId}>
-          Aktualisieren
-        </PrimaryButton>
+        {!nodeId ? (
+          <span className="text-xs font-bold tracking-widest text-emerald-500 uppercase">Meine Assets</span>
+        ) : (
+          <>
+            <button
+              onClick={() => { setNodeId(''); setStarId(''); setDeposits({}) }}
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors mr-1"
+              title="Zurück zur Übersicht"
+            >← Assets</button>
+            <span className="text-xs text-slate-700">|</span>
+            <span className="text-xs text-slate-400 font-mono">
+              {starType ? (STAR_TYPE_LABELS[starType] ?? starType) : 'Stern'} · {starId.slice(0, 8)}…
+            </span>
+          </>
+        )}
+        <TickGenerator {...tickProps} />
         {nodeId && (
-          <span className="text-xs text-slate-600">
-            Auto-Refresh in {countdown}s
-          </span>
+          <>
+            <button
+              onClick={handleBootstrap}
+              disabled={bootstrapping || !starId.trim()}
+              className="text-xs px-2 py-0.5 rounded border border-blue-700 text-blue-400
+                         hover:bg-blue-900/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {bootstrapping ? '…' : '⬡ Spielstart-Kit'}
+            </button>
+            <PrimaryButton onClick={handleRefresh}>Aktualisieren</PrimaryButton>
+            <span className="text-xs text-slate-600">Auto-Refresh in {countdown}s</span>
+          </>
         )}
         {bootstrapMsg && <span className="text-xs text-blue-400">{bootstrapMsg}</span>}
         {error && <span className="text-xs text-red-400">{error}</span>}
       </div>
 
-      {/* Three-column layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left — LAGER */}
-        <div className="w-56 flex-shrink-0 bg-black/70 border-r border-slate-800 backdrop-blur-sm overflow-y-auto p-3">
-          <LagerPanel stock={stock} loading={loading} />
-        </div>
+      {/* Content */}
+      {!nodeId ? (
+        <MyAssetsView onSelect={n => { setStarId(n.star_id); setNodeId(n.node_id); setStarType(n.star_type); loadData(n.node_id, n.star_id) }} />
+      ) : (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left — LAGER + VORKOMMEN */}
+          <div className="w-56 flex-shrink-0 bg-black/70 border-r border-slate-800 backdrop-blur-sm overflow-y-auto p-3 space-y-4">
+            <LagerPanel stock={stock} loading={loading} />
+            {Object.keys(deposits).length > 0 && (
+              <>
+                <div className="border-t border-slate-800" />
+                <VorkommenPanel deposits={deposits} />
+              </>
+            )}
+          </div>
 
-        {/* Center — ANLAGEN + AUFTRÄGE */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4">
-          <AnlagenPanel
-            facilities={facilities}
-            orders={orders}
-            stock={stock}
-            loading={loading}
-            starId={starId}
-            nodeId={nodeId}
-            onRefresh={handleRefresh}
-          />
-          <div className="border-t border-slate-800" />
-          <AuftraegePanel
-            orders={orders}
-            loading={loading}
-            nodeId={nodeId}
-            starId={starId}
-            onRefresh={handleRefresh}
-          />
-        </div>
+          {/* Center — ANLAGEN + AUFTRÄGE */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-4">
+            <AnlagenPanel
+              facilities={facilities}
+              orders={orders}
+              stock={stock}
+              loading={loading}
+              starId={starId}
+              nodeId={nodeId}
+              onRefresh={handleRefresh}
+            />
+            <div className="border-t border-slate-800" />
+            <AuftraegePanel
+              orders={orders}
+              loading={loading}
+              nodeId={nodeId}
+              starId={starId}
+              onRefresh={handleRefresh}
+            />
+          </div>
 
-        {/* Right — TRANSPORT */}
-        <div className="w-56 flex-shrink-0 bg-black/70 border-l border-slate-800 backdrop-blur-sm overflow-y-auto p-3">
-          <TransportPanel
-            routes={routes}
-            loading={loading}
-            onRefresh={handleRefresh}
-          />
+          {/* Right — TRANSPORT */}
+          <div className="w-56 flex-shrink-0 bg-black/70 border-l border-slate-800 backdrop-blur-sm overflow-y-auto p-3">
+            <TransportPanel
+              routes={routes}
+              loading={loading}
+              onRefresh={handleRefresh}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

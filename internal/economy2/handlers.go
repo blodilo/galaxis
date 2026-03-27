@@ -49,6 +49,7 @@ func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook, bootstra
 	r.Post("/econ2/bootstrap", bootstrapHandler(db, bootstrapCfg))
 
 	r.Get("/econ2/recipes", listRecipesHandler(recipes))
+	r.Get("/econ2/deposits", depositsHandler(db))
 }
 
 // --- GET /econ2/recipes ---
@@ -621,5 +622,40 @@ func listMyNodesHandler(db *pgxpool.Pool) http.HandlerFunc {
 			nodes = []myNodeEntry{}
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"nodes": nodes})
+	}
+}
+
+// --- GET /econ2/deposits?star_id=... ---
+// Returns planet_deposits state for the star's home planet (first by orbit_index).
+
+func depositsHandler(db *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		starIDStr := r.URL.Query().Get("star_id")
+		if starIDStr == "" {
+			writeError(w, http.StatusBadRequest, "star_id query param required")
+			return
+		}
+		starID, err := uuid.Parse(starIDStr)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid star_id")
+			return
+		}
+
+		planetID, err := FindHomePlanet(r.Context(), db, starID)
+		if err != nil {
+			writeJSON(w, http.StatusOK, map[string]any{"deposits": map[string]any{}})
+			return
+		}
+
+		deposits, err := ReadAllDeposits(r.Context(), db, *planetID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]any{
+			"planet_id": planetID,
+			"deposits":  deposits,
+		})
 	}
 }

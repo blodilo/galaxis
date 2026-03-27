@@ -129,6 +129,18 @@ func finishBuildOrder(
 	// Derive factory_type and deposit_good_id from product_id.
 	factoryType, depositGoodID := parseBuildProductID(productID)
 
+	// Mine facilities need a planet. If the build node has no planet_id (star-level node),
+	// fall back to the star's first planet and initialise deposits if needed.
+	if factoryType == "mine" && planetID == nil {
+		pid, err := FindHomePlanet(ctx, db, starID)
+		if err == nil {
+			planetID = pid
+		}
+	}
+	if factoryType == "mine" && planetID != nil {
+		_ = EnsureDeposits(ctx, db, *planetID)
+	}
+
 	// Create the facility.
 	cfg := FacilityConfig{Level: 1, DepositGoodID: depositGoodID}
 	cfgRaw, err := json.Marshal(cfg)

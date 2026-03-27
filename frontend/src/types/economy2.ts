@@ -78,6 +78,11 @@ export interface Route {
   status: 'active' | 'suspended'
 }
 
+export interface DepositEntry {
+  remaining: number
+  max_rate: number
+}
+
 export interface MyNodeEntry {
   node_id: string
   star_id: string

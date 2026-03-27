@@ -1,4 +1,4 @@
-import type { ItemStock, Facility, Order, Route, Recipe } from '../types/economy2'
+import type { ItemStock, Facility, Order, Route, Recipe, DepositEntry } from '../types/economy2'
 
 const BASE = '/api/v2/econ2'
 const PLAYER_ID = '00000000-0000-0000-0000-000000000001'
@@ -117,6 +117,11 @@ export interface BootstrapResult {
 
 export async function bootstrap(starId: string): Promise<BootstrapResult> {
   return post<BootstrapResult>(`${BASE}/bootstrap`, { star_id: starId })
+}
+
+// Deposits
+export async function getDeposits(starId: string): Promise<{ planet_id: string; deposits: Record<string, DepositEntry> }> {
+  return get<{ planet_id: string; deposits: Record<string, DepositEntry> }>(`${BASE}/deposits?star_id=${starId}`)
 }
 
 // My nodes

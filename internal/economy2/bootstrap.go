@@ -29,12 +29,23 @@ type BootstrapResult struct {
 }
 
 // RunBootstrap seeds a new node with the configured starting stock and facilities.
+// Mine facilities are placed on the star's first planet; planet_deposits is
+// lazily initialised from the planet's resource_deposits quality map if needed.
 // It is additive — calling it twice gives twice the stock. Idempotency guard belongs
 // at the game-logic layer (player state), not here.
 func RunBootstrap(ctx context.Context, db *pgxpool.Pool, playerID, starID uuid.UUID, cfg BootstrapConfig) (*BootstrapResult, error) {
 	nodeID, err := GetOrCreateNode(ctx, db, playerID, starID, nil)
 	if err != nil {
 		return nil, fmt.Errorf("bootstrap: get/create node: %w", err)
+	}
+
+	// Resolve home planet for mine placement.
+	homePlanetID, err := FindHomePlanet(ctx, db, starID)
+	if err != nil {
+		return nil, fmt.Errorf("bootstrap: home planet: %w", err)
+	}
+	if err := EnsureDeposits(ctx, db, *homePlanetID); err != nil {
+		return nil, fmt.Errorf("bootstrap: ensure deposits: %w", err)
 	}
 
 	for itemID, qty := range cfg.Stock {
@@ -44,9 +55,14 @@ func RunBootstrap(ctx context.Context, db *pgxpool.Pool, playerID, starID uuid.U
 	}
 
 	for _, fac := range cfg.Facilities {
+		var planetID *uuid.UUID
+		if fac.FactoryType == "mine" {
+			planetID = homePlanetID
+		}
 		f := &Facility{
 			PlayerID:    playerID,
 			StarID:      starID,
+			PlanetID:    planetID,
 			NodeID:      nodeID,
 			FactoryType: fac.FactoryType,
 			Status:      "idle",
