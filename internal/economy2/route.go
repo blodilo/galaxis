@@ -27,13 +27,13 @@ type Warning struct {
 
 // Route is the in-memory representation of an econ2_routes row.
 type Route struct {
-	ID                 uuid.UUID
-	PlayerID           uuid.UUID
-	FromNodeID         uuid.UUID
-	ToNodeID           uuid.UUID
-	CapacityPerTick    float64
-	MinContinuousShare float64
-	Status             RouteStatus
+	ID                 uuid.UUID   `json:"id"`
+	PlayerID           uuid.UUID   `json:"player_id"`
+	FromNodeID         uuid.UUID   `json:"from_node_id"`
+	ToNodeID           uuid.UUID   `json:"to_node_id"`
+	CapacityPerTick    float64     `json:"capacity_per_tick"`
+	MinContinuousShare float64     `json:"min_continuous_share"`
+	Status             RouteStatus `json:"status"`
 }
 
 // AllocateCapacity distributes route capacity between batch (max 80%) and continuous (min 20%) orders.

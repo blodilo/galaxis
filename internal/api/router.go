@@ -48,7 +48,7 @@ func NewRouter(
 
 	// CORS: allow the Vite dev server on both default and configured ports
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:5174", "http://localhost:3000"},
+		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		ExposedHeaders:   []string{"Link"},
@@ -76,6 +76,15 @@ func NewRouter(
 
 	r.Route("/api/v2", func(r chi.Router) {
 		economy2.RegisterRoutes(r, db, recipes, bootstrapCfg)
+
+		// Admin: Tick-Steuerung (Dev/MVP only)
+		r.Post("/admin/tick/advance", func(w http.ResponseWriter, r *http.Request) {
+			n := eng.Advance(r.Context())
+			writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "tick": n})
+		})
+		r.Get("/admin/tick/current", func(w http.ResponseWriter, r *http.Request) {
+			writeJSON(w, http.StatusOK, map[string]any{"tick": eng.Current()})
+		})
 	})
 
 	return r

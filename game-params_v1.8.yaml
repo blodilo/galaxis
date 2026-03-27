@@ -687,3 +687,44 @@ production:
     material_reserve:
       steel:      200    # [BALANCING] Startreserve Stahl für erste Bauten.
       titansteel:  50    # [BALANCING] Startreserve Titanstahl.
+
+
+# ═══════════════════════════════════════════════════════════════════
+# BERGBAU (economy2) — Minen-Fertigungsparameter
+# ═══════════════════════════════════════════════════════════════════
+mine:
+  base_rate: 5.0
+  # [KALIBRIERUNG] Basis-Förderrate einer Mine Lv1 in Einheiten/Tick.
+  # Actual output per tick = base_rate × level_multiplier[level-1].
+
+  level_multiplier:
+    - 0.5   # Lv1 — Grundabbau
+    - 1.0   # Lv2 — [BALANCING] Bergbautechnik I
+    - 2.0   # Lv3 — [BALANCING] Bergbautechnik II
+    - 3.5   # Lv4 — [BALANCING] Tiefenbohrung
+    - 5.5   # Lv5 — [BALANCING] Tiefenbohrung II
+    - 8.0   # Lv6 — [BALANCING] Automatisierter Abbau
+    - 10.0  # Lv7 — [BALANCING] Vollautomatisierung
+
+# ═══════════════════════════════════════════════════════════════════
+# SPIELSTART-KIT (economy2_bootstrap)
+# ═══════════════════════════════════════════════════════════════════
+economy2_bootstrap:
+  stock:
+    iron_ore:       200.0
+    silicates:      100.0
+    titan:           50.0
+    rare_earths:     30.0
+    he3:             40.0
+    hydrogen:        60.0
+    steel:          150.0
+    base_component:  20.0
+
+  facilities:
+    - factory_type: mine
+      deposit_good_id: iron_ore
+    - factory_type: mine
+      deposit_good_id: silicates
+    - factory_type: mine
+      deposit_good_id: he3
+    - factory_type: smelter

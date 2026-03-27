@@ -103,6 +103,7 @@ func main() {
 
 	// Neues Economy2-System
 	engine.Register(economy2.SchedulerHandler(pool, recipes))
+	engine.Register(economy2.BuildTickHandler(pool))
 	engine.Register(economy2.ProductionHandler(pool, recipes, mineParams))
 	engine.Register(economy2.ShipTickHandler(pool))
 
@@ -116,11 +117,11 @@ func main() {
 	// ── HTTP Server ───────────────────────────────────────────────────────────
 	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, bus, engine, recipes, bootstrapCfg)
 	srv := &http.Server{
-		Addr:         *addr,
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:        *addr,
+		Handler:     router,
+		ReadTimeout: 15 * time.Second,
+		WriteTimeout: 0, // 0 = kein Limit — nötig für SSE-Streams (planet gen, economy events)
+		IdleTimeout: 60 * time.Second,
 	}
 
 	// Graceful shutdown on SIGINT / SIGTERM

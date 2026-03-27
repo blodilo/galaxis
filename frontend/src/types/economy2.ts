@@ -37,13 +37,24 @@ export interface RecipeInput {
   amount: number
 }
 
+export interface Recipe {
+  recipe_id: string
+  product_id: string
+  factory_type: string
+  inputs: RecipeInput[]
+  base_yield: number
+  ticks: number
+  efficiency: number
+  geological_input?: string
+}
+
 export interface Order {
   id: string
   player_id: string
   star_id: string
   node_id: string
   facility_id: string | null
-  order_type: 'batch' | 'continuous'
+  order_type: 'batch' | 'continuous' | 'build'
   status: 'pending' | 'waiting' | 'ready' | 'running' | 'completed' | 'cancelled' | 'paused_depleted'
   recipe_id: string
   product_id: string
@@ -65,4 +76,15 @@ export interface Route {
   capacity_per_tick: number
   min_continuous_share: number
   status: 'active' | 'suspended'
+}
+
+export interface MyNodeEntry {
+  node_id: string
+  star_id: string
+  planet_id: string | null
+  level: string
+  star_type: string
+  x: number
+  y: number
+  facility_count: number
 }

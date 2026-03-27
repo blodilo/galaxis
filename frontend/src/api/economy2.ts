@@ -1,6 +1,6 @@
-import type { Node, ItemStock, Facility, Order, Route } from '../types/economy2'
+import type { ItemStock, Facility, Order, Route, Recipe } from '../types/economy2'
 
-const BASE = '/api/v2'
+const BASE = '/api/v2/econ2'
 const PLAYER_ID = '00000000-0000-0000-0000-000000000001'
 
 const HEADERS: HeadersInit = {
@@ -30,14 +30,19 @@ async function del(url: string): Promise<void> {
 }
 
 // Nodes
-export async function createNode(starId: string, planetId?: string): Promise<Node> {
-  return post<Node>(`${BASE}/nodes`, { star_id: starId, planet_id: planetId ?? null })
+export async function createNode(starId: string, planetId?: string): Promise<{ node_id: string }> {
+  return post<{ node_id: string }>(`${BASE}/nodes`, { star_id: starId, planet_id: planetId ?? null })
 }
 
 // Stock
 export async function getStock(nodeId: string): Promise<ItemStock[]> {
-  const data = await get<{ items: ItemStock[] } | ItemStock[]>(`${BASE}/nodes/${nodeId}/stock`)
-  return Array.isArray(data) ? data : (data as { items: ItemStock[] }).items ?? []
+  const data = await get<{ stock: Record<string, { total: number; allocated: number }> }>(`${BASE}/stock?node_id=${nodeId}`)
+  return Object.entries(data.stock ?? {}).map(([item_id, s]) => ({
+    item_id,
+    total: s.total,
+    allocated: s.allocated,
+    available: s.total - s.allocated,
+  }))
 }
 
 // Facilities
@@ -66,11 +71,17 @@ export async function createOrder(data: {
   star_id: string
   factory_type: string
   product_id: string
-  order_type: 'batch' | 'continuous'
+  order_type: 'batch' | 'continuous' | 'build'
   target_qty: number
   priority?: number
 }): Promise<Order> {
   return post<Order>(`${BASE}/orders`, data)
+}
+
+// Recipes
+export async function listRecipes(): Promise<Recipe[]> {
+  const data = await get<{ recipes: Recipe[] }>(`${BASE}/recipes`)
+  return data.recipes ?? []
 }
 
 export async function listOrders(nodeId: string): Promise<Order[]> {
@@ -105,5 +116,22 @@ export interface BootstrapResult {
 }
 
 export async function bootstrap(starId: string): Promise<BootstrapResult> {
-  return post<BootstrapResult>(`${BASE}/econ2/bootstrap`, { star_id: starId })
+  return post<BootstrapResult>(`${BASE}/bootstrap`, { star_id: starId })
+}
+
+// My nodes
+export interface MyNodeEntry {
+  node_id: string
+  star_id: string
+  planet_id: string | null
+  level: string
+  star_type: string
+  x: number
+  y: number
+  facility_count: number
+}
+
+export async function listMyNodes(): Promise<MyNodeEntry[]> {
+  const data = await get<{ nodes: MyNodeEntry[] }>(`${BASE}/my-nodes`)
+  return data.nodes ?? []
 }

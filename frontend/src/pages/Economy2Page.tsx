@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { ItemStock, Facility, Order, Route } from '../types/economy2'
+import type { ItemStock, Facility, Order, Route, Recipe, MyNodeEntry } from '../types/economy2'
 import {
   getStock,
-  createFacility,
   listFacilities,
   destroyFacility,
   createOrder,
@@ -10,33 +9,48 @@ import {
   cancelOrder,
   createRoute,
   listRoutes,
+  listRecipes,
   bootstrap,
+  listMyNodes,
 } from '../api/economy2'
 
-// ── Facility catalog ──────────────────────────────────────────────────────────
+// ── Labels ────────────────────────────────────────────────────────────────────
 
-const FACTORY_TYPES = [
-  { id: 'mine',          label: 'Mine',               description: 'Abbau geologischer Rohstoffe aus Planetenlagerstätten' },
-  { id: 'smelter',       label: 'Schmelze',            description: 'Verhüttung: Eisenerz → Stahl und Titanstahl' },
-  { id: 'refinery',      label: 'Raffinerie',          description: 'Veredelung zu Halbleitern und Fusionskraftstoff' },
-  { id: 'precision_fab', label: 'Präzisionsfertigung', description: 'Hochpräzise Bauteile und Navigationscomputer' },
-]
+const ITEM_LABELS: Record<string, string> = {
+  steel: 'Stahl', titansteel: 'Titanstahl',
+  semiconductor_wafer: 'Halbleiter-Wafer', fusion_fuel: 'Fusionskraftstoff',
+  base_component: 'Basisbauteil', nav_computer: 'Navigationscomputer',
+  iron_ore: 'Eisenerz', silicates: 'Silikate', titan: 'Titan',
+  rare_earths: 'Seltene Erden', he3: 'Helium-3', hydrogen: 'Wasserstoff',
+}
 
-const MINE_GOODS = [
-  { id: 'iron_ore',    label: 'Eisenerz' },
-  { id: 'silicates',   label: 'Silikate' },
-  { id: 'titan',       label: 'Titan' },
-  { id: 'rare_earths', label: 'Seltene Erden' },
-  { id: 'he3',         label: 'Helium-3' },
-  { id: 'hydrogen',    label: 'Wasserstoff' },
-]
+const FACILITY_TYPE_LABELS: Record<string, string> = {
+  mine: 'Mine', smelter: 'Schmelze', refinery: 'Raffinerie',
+  precision_fab: 'Präzisionsfertigung', construction: 'Bau',
+}
 
-// Baukosten — Platzhalter, zieht später aus game-params YAML
-const BUILD_COSTS: Record<string, Record<string, number>> = {
-  mine:          { steel: 10,  base_component: 2  },
-  smelter:       { steel: 25,  base_component: 5  },
-  refinery:      { titansteel: 15, semiconductor_wafer: 5,  base_component: 8  },
-  precision_fab: { titansteel: 20, semiconductor_wafer: 10, base_component: 15 },
+const PRODUCT_LABELS: Record<string, string> = {
+  ...ITEM_LABELS,
+  facility_mine_iron_ore: 'Mine: Eisenerz',
+  facility_mine_silicates: 'Mine: Silikate',
+  facility_mine_titan: 'Mine: Titan',
+  facility_mine_rare_earths: 'Mine: Seltene Erden',
+  facility_mine_he3: 'Mine: Helium-3',
+  facility_mine_hydrogen: 'Mine: Wasserstoff',
+  facility_smelter: 'Schmelze',
+  facility_refinery: 'Raffinerie',
+  facility_precision_fab: 'Präzisionsfertigung',
+}
+
+function recipeLabel(r: Recipe): string {
+  const base = PRODUCT_LABELS[r.product_id] ?? r.product_id
+  if (r.factory_type === 'construction') return `${base} bauen`
+  const ft = FACILITY_TYPE_LABELS[r.factory_type] ?? r.factory_type
+  return `${base} (${ft})`
+}
+
+function itemLabel(id: string): string {
+  return ITEM_LABELS[id] ?? id
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -221,28 +235,6 @@ function Select({
   )
 }
 
-function Stepper({ value, onChange, min = 1, max = 10 }: {
-  value: number; onChange: (v: number) => void; min?: number; max?: number
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={() => onChange(Math.max(min, value - 1))}
-        disabled={value <= min}
-        className="w-6 h-6 flex items-center justify-center rounded border border-slate-700
-                   text-slate-400 hover:border-slate-500 disabled:opacity-30 transition-colors text-sm"
-      >−</button>
-      <span className="text-sm text-slate-200 w-6 text-center font-mono">{value}</span>
-      <button
-        onClick={() => onChange(Math.min(max, value + 1))}
-        disabled={value >= max}
-        className="w-6 h-6 flex items-center justify-center rounded border border-slate-700
-                   text-slate-400 hover:border-slate-500 disabled:opacity-30 transition-colors text-sm"
-      >+</button>
-    </div>
-  )
-}
-
 // ── Left column: LAGER ────────────────────────────────────────────────────────
 
 function LagerPanel({ stock, loading }: { stock: ItemStock[]; loading: boolean }) {
@@ -305,37 +297,48 @@ interface AnlagenPanelProps {
   onRefresh: () => void
 }
 
-function AnlagenPanel({ facilities, orders, stock, loading, starId, onRefresh }: AnlagenPanelProps) {
-  const [showForm, setShowForm] = useState(false)
-  const [factoryType, setFactoryType] = useState(FACTORY_TYPES[0].id)
-  const [depositGoodId, setDepositGoodId] = useState(MINE_GOODS[0].id)
-  const [qty, setQty] = useState(1)
+function AnlagenPanel({ facilities, orders, stock, loading, starId, nodeId, onRefresh }: AnlagenPanelProps) {
+  const [showForm, setShowForm]     = useState(false)
+  const [buildRecipes, setBuildRecipes] = useState<Recipe[]>([])
+  const [selectedRecipeId, setSelectedRecipeId] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]           = useState('')
+
+  useEffect(() => {
+    listRecipes()
+      .then(rs => {
+        const brs = rs.filter(r => r.factory_type === 'construction')
+        setBuildRecipes(brs)
+        if (brs.length > 0) setSelectedRecipeId(brs[0].recipe_id)
+      })
+      .catch(() => {})
+  }, [])
 
   const orderByFacility = orders.reduce<Record<string, Order>>((acc, o) => {
     if (o.facility_id) acc[o.facility_id] = o
     return acc
   }, {})
 
-  const stockMap = Object.fromEntries(stock.map(s => [s.item_id, s.available]))
-  const costs = BUILD_COSTS[factoryType] ?? {}
-  const costEntries = Object.entries(costs)
-  const selectedFacilityDef = FACTORY_TYPES.find(f => f.id === factoryType)
+  const buildOrders = orders.filter(o => o.factory_type === 'construction' &&
+    !['completed', 'cancelled'].includes(o.status))
 
-  async function handleCreate() {
+  const stockMap = Object.fromEntries(stock.map(s => [s.item_id, s.available]))
+  const selectedRecipe = buildRecipes.find(r => r.recipe_id === selectedRecipeId)
+
+  async function handleBuild() {
+    if (!selectedRecipe) return
     setSubmitting(true)
     setError('')
     try {
-      for (let i = 0; i < qty; i++) {
-        await createFacility({
-          star_id: starId,
-          factory_type: factoryType,
-          ...(factoryType === 'mine' ? { deposit_good_id: depositGoodId } : {}),
-        })
-      }
+      await createOrder({
+        node_id: nodeId,
+        star_id: starId,
+        factory_type: 'construction',
+        product_id: selectedRecipe.product_id,
+        order_type: 'build',
+        target_qty: 1,
+      })
       setShowForm(false)
-      setQty(1)
       onRefresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Anlegen')
@@ -357,18 +360,21 @@ function AnlagenPanel({ facilities, orders, stock, loading, starId, onRefresh }:
     <div>
       <SectionTitle>Anlagen</SectionTitle>
       {loading && <div className="flex justify-center py-4"><Spinner /></div>}
-      {!loading && facilities.length === 0 && (
+      {!loading && facilities.length === 0 && buildOrders.length === 0 && (
         <p className="text-xs text-slate-600 italic mb-2">Keine Anlagen</p>
       )}
+
+      {/* Existing facilities */}
       {!loading && facilities.map(f => {
         const activeOrder = f.current_order_id ? orderByFacility[f.id] ?? null : null
-        const label = FACTORY_TYPES.find(ft => ft.id === f.factory_type)?.label ?? f.factory_type
+        const label = FACILITY_TYPE_LABELS[f.factory_type] ?? f.factory_type
+        const depositLabel = f.config.deposit_good_id ? ` — ${itemLabel(f.config.deposit_good_id)}` : ''
         return (
           <Card key={f.id}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs font-mono font-bold text-slate-300 uppercase truncate">
-                  {label}
+                  {label}{depositLabel}
                 </span>
                 <StatusBadge status={f.status} colors={FACILITY_STATUS_COLORS} />
               </div>
@@ -376,83 +382,85 @@ function AnlagenPanel({ facilities, orders, stock, loading, starId, onRefresh }:
             </div>
             {f.status === 'running' && f.current_order_id && (
               <p className="text-xs text-slate-500 mt-0.5">
-                ↳ {activeOrder ? activeOrder.product_id : short(f.current_order_id)}
+                ↳ {activeOrder ? (PRODUCT_LABELS[activeOrder.product_id] ?? activeOrder.product_id) : short(f.current_order_id)}
               </p>
             )}
           </Card>
         )
       })}
 
+      {/* In-progress build orders */}
+      {!loading && buildOrders.map(o => {
+        const pct = o.recipe_ticks > 0 ? Math.min(o.produced_qty / o.recipe_ticks, 1) : 0
+        return (
+          <Card key={o.id} className="border-blue-900/50">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs text-blue-400 font-bold">
+                {PRODUCT_LABELS[o.product_id] ?? o.product_id} — im Bau
+              </span>
+              <StatusBadge status={o.status} colors={ORDER_STATUS_COLORS} />
+            </div>
+            <div className="flex justify-between text-xs text-slate-600 mb-0.5">
+              <span>Fortschritt</span>
+              <span>{Math.round(o.produced_qty)}/{o.recipe_ticks} Ticks</span>
+            </div>
+            <div className="h-1 bg-slate-800 rounded overflow-hidden">
+              <div
+                className="h-full bg-blue-600 rounded transition-all"
+                style={{ width: `${pct * 100}%` }}
+              />
+            </div>
+          </Card>
+        )
+      })}
+
+      {/* Build form */}
       {!showForm && (
         <PrimaryButton onClick={() => setShowForm(true)}>+ Anlage bauen</PrimaryButton>
       )}
       {showForm && (
         <FormWrapper>
-          {/* Anlagentyp */}
-          <label className="text-xs text-slate-500">Anlagentyp</label>
-          <Select value={factoryType} onChange={v => { setFactoryType(v); setQty(1) }}>
-            {FACTORY_TYPES.map(ft => (
-              <option key={ft.id} value={ft.id}>{ft.label}</option>
+          <label className="text-xs text-slate-500">Anlage</label>
+          <Select value={selectedRecipeId} onChange={setSelectedRecipeId}>
+            {buildRecipes.map(r => (
+              <option key={r.recipe_id} value={r.recipe_id}>{recipeLabel(r)}</option>
             ))}
           </Select>
-          {selectedFacilityDef && (
-            <p className="text-xs text-slate-600 italic -mt-1">{selectedFacilityDef.description}</p>
-          )}
 
-          {/* Mine: Lagerstätte wählen */}
-          {factoryType === 'mine' && (
-            <>
-              <label className="text-xs text-slate-500">Lagerstätte</label>
-              <Select value={depositGoodId} onChange={setDepositGoodId}>
-                {MINE_GOODS.map(g => (
-                  <option key={g.id} value={g.id}>{g.label}</option>
-                ))}
-              </Select>
-            </>
-          )}
-
-          {/* Anzahl */}
-          <label className="text-xs text-slate-500">Anzahl</label>
-          <Stepper value={qty} onChange={setQty} min={1} max={10} />
-
-          {/* Baukosten */}
-          {costEntries.length > 0 && (
+          {selectedRecipe && selectedRecipe.inputs.length > 0 && (
             <div className="mt-1">
               <div className="grid grid-cols-3 gap-x-2 text-xs text-slate-600 mb-1">
                 <span>Ressource</span>
-                <span className="text-right">pro Stück</span>
-                <span className="text-right">Gesamt</span>
+                <span className="text-right">Menge</span>
+                <span className="text-right">Lager</span>
               </div>
-              {costEntries.map(([res, amt]) => {
-                const total = amt * qty
-                const have = stockMap[res] ?? 0
-                const ok = have >= total
+              {selectedRecipe.inputs.map(inp => {
+                const have = stockMap[inp.item_id] ?? 0
+                const ok = have >= inp.amount
                 return (
-                  <div key={res} className="grid grid-cols-3 gap-x-2 text-xs py-0.5">
-                    <span className="text-slate-400 font-mono truncate">{res}</span>
-                    <span className="text-right text-slate-500">{amt}</span>
+                  <div key={inp.item_id} className="grid grid-cols-3 gap-x-2 text-xs py-0.5">
+                    <span className="text-slate-400 truncate">{itemLabel(inp.item_id)}</span>
+                    <span className="text-right text-slate-500">{inp.amount}</span>
                     <span className={`text-right font-mono ${ok ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {total}
-                      {!ok && (
-                        <span className="text-red-600 ml-1">−{(total - have).toFixed(0)}</span>
-                      )}
+                      {have.toFixed(0)}
+                      {!ok && <span className="text-red-600 ml-1">−{(inp.amount - have).toFixed(0)}</span>}
                     </span>
                   </div>
                 )
               })}
+              <p className="text-xs text-slate-600 mt-1">
+                Baudauer: {selectedRecipe.ticks} Tick{selectedRecipe.ticks !== 1 ? 's' : ''}
+              </p>
             </div>
           )}
 
           {error && <p className="text-xs text-red-400">{error}</p>}
           <div className="flex gap-2 mt-1">
-            <PrimaryButton onClick={handleCreate} disabled={submitting || !starId}>
-              {submitting ? '…' : qty > 1 ? `${qty}× Anlegen` : 'Anlegen'}
+            <PrimaryButton onClick={handleBuild} disabled={submitting || !selectedRecipe}>
+              {submitting ? '…' : 'Bau starten'}
             </PrimaryButton>
-            <CancelButton onClick={() => { setShowForm(false); setQty(1) }}>Abbrechen</CancelButton>
+            <CancelButton onClick={() => setShowForm(false)}>Abbrechen</CancelButton>
           </div>
-          {!starId && (
-            <p className="text-xs text-orange-400">Star-ID erforderlich</p>
-          )}
         </FormWrapper>
       )}
     </div>
@@ -468,31 +476,44 @@ interface AuftraegePanelProps {
 }
 
 function AuftraegePanel({ orders, loading, nodeId, starId, onRefresh }: AuftraegePanelProps) {
-  const [showForm, setShowForm] = useState(false)
-  const [productId, setProductId] = useState('')
-  const [factoryType, setFactoryType] = useState('')
-  const [orderType, setOrderType] = useState<'batch' | 'continuous'>('batch')
-  const [targetQty, setTargetQty] = useState('100')
-  const [priority, setPriority] = useState('5')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [showForm, setShowForm]         = useState(false)
+  const [prodRecipes, setProdRecipes]   = useState<Recipe[]>([])
+  const [selectedRecipeId, setSelectedRecipeId] = useState('')
+  const [orderType, setOrderType]       = useState<'batch' | 'continuous'>('batch')
+  const [targetQty, setTargetQty]       = useState('100')
+  const [priority, setPriority]         = useState('5')
+  const [submitting, setSubmitting]     = useState(false)
+  const [error, setError]               = useState('')
+
+  useEffect(() => {
+    listRecipes()
+      .then(rs => {
+        const prs = rs.filter(r => r.factory_type !== 'construction')
+        setProdRecipes(prs)
+        if (prs.length > 0) setSelectedRecipeId(prs[0].recipe_id)
+      })
+      .catch(() => {})
+  }, [])
+
+  const selectedRecipe = prodRecipes.find(r => r.recipe_id === selectedRecipeId)
+
+  // Show only non-construction production orders
+  const prodOrders = orders.filter(o => o.factory_type !== 'construction')
 
   async function handleCreate() {
-    if (!productId.trim() || !factoryType.trim()) return
+    if (!selectedRecipe) return
     setSubmitting(true)
     setError('')
     try {
       await createOrder({
         node_id: nodeId,
         star_id: starId,
-        factory_type: factoryType.trim(),
-        product_id: productId.trim(),
+        factory_type: selectedRecipe.factory_type,
+        product_id: selectedRecipe.product_id,
         order_type: orderType,
         target_qty: parseFloat(targetQty) || 100,
         priority: parseInt(priority) || 5,
       })
-      setProductId('')
-      setFactoryType('')
       setOrderType('batch')
       setTargetQty('100')
       setPriority('5')
@@ -518,17 +539,19 @@ function AuftraegePanel({ orders, loading, nodeId, starId, onRefresh }: Auftraeg
     <div>
       <SectionTitle>Aufträge</SectionTitle>
       {loading && <div className="flex justify-center py-4"><Spinner /></div>}
-      {!loading && orders.length === 0 && (
+      {!loading && prodOrders.length === 0 && (
         <p className="text-xs text-slate-600 italic mb-2">Keine Aufträge</p>
       )}
-      {!loading && orders.map(o => {
+      {!loading && prodOrders.map(o => {
         const progress = o.target_qty > 0 ? Math.min(o.produced_qty / o.target_qty, 1) : 0
         const isTerminal = TERMINAL_ORDER_STATUSES.has(o.status)
         return (
           <Card key={o.id}>
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-mono text-slate-200 truncate">{o.product_id}</span>
+                <span className="text-xs font-mono text-slate-200 truncate">
+                  {PRODUCT_LABELS[o.product_id] ?? o.product_id}
+                </span>
                 <span className="text-xs px-1 py-0.5 rounded border border-slate-700 text-slate-500 font-bold">
                   {o.order_type === 'batch' ? 'BATCH' : 'CONT'}
                 </span>
@@ -569,7 +592,7 @@ function AuftraegePanel({ orders, loading, nodeId, starId, onRefresh }: Auftraeg
                       key={inp.item_id}
                       className={`text-xs ${ok ? 'text-emerald-400' : 'text-red-400'}`}
                     >
-                      {inp.item_id}: {ok ? '✓' : '✗'}
+                      {itemLabel(inp.item_id)}: {ok ? '✓' : '✗'}
                     </span>
                   )
                 })}
@@ -584,10 +607,20 @@ function AuftraegePanel({ orders, loading, nodeId, starId, onRefresh }: Auftraeg
       )}
       {showForm && (
         <FormWrapper>
-          <label className="text-xs text-slate-500">Produkt ID</label>
-          <TextInput value={productId} onChange={setProductId} placeholder="iron_ingot …" />
-          <label className="text-xs text-slate-500">Anlagentyp</label>
-          <TextInput value={factoryType} onChange={setFactoryType} placeholder="smelter …" />
+          <label className="text-xs text-slate-500">Rezept</label>
+          <Select value={selectedRecipeId} onChange={setSelectedRecipeId}>
+            {prodRecipes.map(r => (
+              <option key={r.recipe_id} value={r.recipe_id}>{recipeLabel(r)}</option>
+            ))}
+          </Select>
+
+          {selectedRecipe && (
+            <p className="text-xs text-slate-600 -mt-1">
+              {selectedRecipe.inputs.map(i => `${i.amount}× ${itemLabel(i.item_id)}`).join(', ')}
+              {' → '}{selectedRecipe.ticks} Tick{selectedRecipe.ticks !== 1 ? 's' : ''}
+            </p>
+          )}
+
           <label className="text-xs text-slate-500">Auftragstyp</label>
           <div className="flex gap-3">
             {(['batch', 'continuous'] as const).map(t => (
@@ -613,7 +646,7 @@ function AuftraegePanel({ orders, loading, nodeId, starId, onRefresh }: Auftraeg
           <NumberInput value={priority} onChange={setPriority} min={1} max={10} />
           {error && <p className="text-xs text-red-400">{error}</p>}
           <div className="flex gap-2">
-            <PrimaryButton onClick={handleCreate} disabled={submitting}>
+            <PrimaryButton onClick={handleCreate} disabled={submitting || !selectedRecipe}>
               {submitting ? '…' : 'Erteilen'}
             </PrimaryButton>
             <CancelButton onClick={() => setShowForm(false)}>Abbrechen</CancelButton>
@@ -721,6 +754,157 @@ function TransportPanel({ routes, loading, onRefresh }: TransportPanelProps) {
   )
 }
 
+// ── Tick Generator ────────────────────────────────────────────────────────────
+
+const TICK_MIN = 0.1
+const TICK_MAX = 100
+
+function TickGenerator() {
+  const [speed, setSpeed]           = useState(1)        // ticks/sec
+  const [running, setRunning]       = useState(false)
+  const [currentTick, setCurrentTick] = useState<number | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Fetch initial tick on mount
+  useEffect(() => {
+    fetch('/api/v2/admin/tick/current')
+      .then(r => r.json())
+      .then(d => setCurrentTick(d.tick))
+      .catch(() => {})
+  }, [])
+
+  // Drive interval whenever running or speed changes
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    if (!running) return
+    const ms = Math.round(1000 / speed)
+    intervalRef.current = setInterval(() => {
+      fetch('/api/v2/admin/tick/advance', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => setCurrentTick(d.tick))
+        .catch(() => {})
+    }, ms)
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [running, speed])
+
+  function faster() { setSpeed(s => Math.min(TICK_MAX, +(s * 10).toPrecision(4))) }
+  function slower() { setSpeed(s => Math.max(TICK_MIN, +(s / 10).toPrecision(4))) }
+
+  const speedLabel = speed < 1 ? speed.toFixed(1) : speed >= 10 ? speed.toFixed(0) : speed.toString()
+
+  return (
+    <div className="flex items-center gap-1.5 ml-auto text-xs font-mono select-none">
+      <span className="text-slate-600">Tick</span>
+      <span className="text-slate-400 w-8 text-right">
+        {currentTick !== null ? `#${currentTick}` : '—'}
+      </span>
+      <span className="text-slate-700 mx-0.5">|</span>
+      <button
+        onClick={slower}
+        disabled={speed <= TICK_MIN}
+        className="px-1.5 py-0.5 rounded border border-slate-700 text-slate-400
+                   hover:border-slate-500 disabled:opacity-30 transition-colors"
+        title="Langsamer"
+      >/10</button>
+      <span className="text-slate-300 w-12 text-center">{speedLabel}/s</span>
+      <button
+        onClick={faster}
+        disabled={speed >= TICK_MAX}
+        className="px-1.5 py-0.5 rounded border border-slate-700 text-slate-400
+                   hover:border-slate-500 disabled:opacity-30 transition-colors"
+        title="Schneller"
+      >×10</button>
+      <button
+        onClick={() => setRunning(r => !r)}
+        className={`px-2 py-0.5 rounded border font-bold transition-colors ${
+          running
+            ? 'border-orange-700 text-orange-400 hover:bg-orange-900/30'
+            : 'border-emerald-700 text-emerald-400 hover:bg-emerald-900/30'
+        }`}
+      >{running ? '⏹' : '▶'}</button>
+    </div>
+  )
+}
+
+// ── Star type labels ──────────────────────────────────────────────────────────
+
+const STAR_TYPE_LABELS: Record<string, string> = {
+  O:'O-Stern', B:'B-Stern', A:'A-Stern', F:'F-Stern', G:'G-Stern', K:'K-Stern',
+  M:'M-Stern', WR:'Wolf-Rayet', RStar:'Roter Überriese', SStar:'S-Stern',
+  Pulsar:'Pulsar', StellarBH:'Schwarzes Loch', SMBH:'SMBH',
+}
+
+// ── Meine Assets Übersicht ────────────────────────────────────────────────────
+
+function MyAssetsView({ onSelect }: { onSelect: (node: MyNodeEntry) => void }) {
+  const [nodes, setNodes] = useState<MyNodeEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    listMyNodes()
+      .then(setNodes)
+      .catch(e => setError(e instanceof Error ? e.message : 'Ladefehler'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return (
+    <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
+      Lade Assets…
+    </div>
+  )
+
+  if (error) return (
+    <div className="flex-1 flex items-center justify-center text-red-400 text-sm">{error}</div>
+  )
+
+  if (nodes.length === 0) return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-500">
+      <span className="text-2xl">⬡</span>
+      <p className="text-sm">Keine Kolonien vorhanden.</p>
+      <p className="text-xs text-slate-600">
+        God Mode → Stern auswählen → Planet → "Heimatplaneten anlegen"
+      </p>
+    </div>
+  )
+
+  return (
+    <div className="flex-1 overflow-y-auto p-6">
+      <h2 className="text-xs font-bold tracking-widest text-slate-500 uppercase mb-4">
+        Meine Assets — {nodes.length} Kolonie{nodes.length !== 1 ? 'n' : ''}
+      </h2>
+      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+        {nodes.map(n => (
+          <button
+            key={n.node_id}
+            onClick={() => onSelect(n)}
+            className="text-left p-3 rounded border border-slate-800 bg-black/40
+                       hover:border-emerald-700 hover:bg-emerald-900/10 transition-colors group"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">
+                {STAR_TYPE_LABELS[n.star_type] ?? n.star_type}
+              </span>
+              <span className="text-xs text-slate-500 uppercase">{n.level}</span>
+            </div>
+            <div className="text-xs text-slate-600 font-mono mb-2">
+              {n.star_id.slice(0, 8)}…
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <span className={n.facility_count > 0 ? 'text-emerald-500' : 'text-slate-600'}>
+                {n.facility_count} Anlage{n.facility_count !== 1 ? 'n' : ''}
+              </span>
+              <span className="text-slate-700">
+                ({Math.round(n.x / 1000)}k, {Math.round(n.y / 1000)}k ly)
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 const AUTO_REFRESH_SEC = 10
@@ -737,6 +921,7 @@ export function Economy2Page() {
   const [countdown, setCountdown] = useState(AUTO_REFRESH_SEC)
   const [bootstrapping, setBootstrapping] = useState(false)
   const [bootstrapMsg, setBootstrapMsg]   = useState('')
+  const [starType, setStarType]           = useState('')
 
   const loadData = useCallback(async (nid: string, sid: string) => {
     if (!nid) return
@@ -803,26 +988,34 @@ export function Economy2Page() {
     }
   }
 
+  if (!nodeId) {
+    return (
+      <div className="absolute inset-0 top-0 flex flex-col font-mono bg-slate-950">
+        <div className="flex items-center gap-3 px-4 py-2 bg-black/70 border-b border-slate-800 flex-shrink-0">
+          <span className="text-xs font-bold tracking-widest text-emerald-500 uppercase">Meine Assets</span>
+          <TickGenerator />
+        </div>
+        <MyAssetsView onSelect={n => { setStarId(n.star_id); setNodeId(n.node_id); setStarType(n.star_type); loadData(n.node_id, n.star_id) }} />
+      </div>
+    )
+  }
+
   return (
     <div className="absolute inset-0 top-0 flex flex-col font-mono">
       {/* Page top bar */}
       <div className="flex items-center gap-3 px-4 py-2 bg-black/70 border-b border-slate-800 backdrop-blur-sm flex-shrink-0">
-        <span className="text-xs text-slate-500 uppercase tracking-widest">Node:</span>
-        <input
-          type="text"
-          value={nodeId}
-          onChange={e => setNodeId(e.target.value)}
-          placeholder="Node UUID …"
-          className="bg-black border border-slate-700 rounded px-2 py-1 text-xs text-slate-300 w-72"
-        />
-        <span className="text-xs text-slate-500 uppercase tracking-widest">Star:</span>
-        <input
-          type="text"
-          value={starId}
-          onChange={e => setStarId(e.target.value)}
-          placeholder="Star UUID …"
-          className="bg-black border border-slate-700 rounded px-2 py-1 text-xs text-slate-300 w-72"
-        />
+        <button
+          onClick={() => { setNodeId(''); setStarId('') }}
+          className="text-xs text-slate-500 hover:text-slate-300 transition-colors mr-1"
+          title="Zurück zur Übersicht"
+        >
+          ← Assets
+        </button>
+        <span className="text-xs text-slate-700">|</span>
+        <span className="text-xs text-slate-400 font-mono">
+          {starType ? (STAR_TYPE_LABELS[starType] ?? starType) : 'Stern'} · {starId.slice(0, 8)}…
+        </span>
+        <TickGenerator />
         <button
           onClick={handleBootstrap}
           disabled={bootstrapping || !starId.trim()}
@@ -835,12 +1028,12 @@ export function Economy2Page() {
           Aktualisieren
         </PrimaryButton>
         {nodeId && (
-          <span className="text-xs text-slate-600 ml-2">
+          <span className="text-xs text-slate-600">
             Auto-Refresh in {countdown}s
           </span>
         )}
-        {bootstrapMsg && <span className="text-xs text-blue-400 ml-2">{bootstrapMsg}</span>}
-        {error && <span className="text-xs text-red-400 ml-2">{error}</span>}
+        {bootstrapMsg && <span className="text-xs text-blue-400">{bootstrapMsg}</span>}
+        {error && <span className="text-xs text-red-400">{error}</span>}
       </div>
 
       {/* Three-column layout */}

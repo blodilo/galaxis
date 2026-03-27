@@ -15,6 +15,7 @@ type OrderType string
 const (
 	OrderTypeBatch      OrderType = "batch"
 	OrderTypeContinuous OrderType = "continuous"
+	OrderTypeBuild      OrderType = "build"
 )
 
 // OrderStatus is the lifecycle state of an order.
@@ -31,27 +32,27 @@ const (
 
 // ProductionOrder is the in-memory representation of an econ2_orders row.
 type ProductionOrder struct {
-	ID         uuid.UUID
-	PlayerID   uuid.UUID
-	StarID     uuid.UUID
-	NodeID     uuid.UUID
-	FacilityID *uuid.UUID
-	OrderType  OrderType
-	Status     OrderStatus
+	ID         uuid.UUID  `json:"id"`
+	PlayerID   uuid.UUID  `json:"player_id"`
+	StarID     uuid.UUID  `json:"star_id"`
+	NodeID     uuid.UUID  `json:"node_id"`
+	FacilityID *uuid.UUID `json:"facility_id"`
+	OrderType  OrderType  `json:"order_type"`
+	Status     OrderStatus `json:"status"`
 
 	// Snapshot — copied from recipe at creation, never modified.
-	RecipeID    string
-	ProductID   string
-	FactoryType string
-	Inputs      []RecipeInput
-	BaseYield   float64
-	RecipeTicks int
-	Efficiency  float64
+	RecipeID    string        `json:"recipe_id"`
+	ProductID   string        `json:"product_id"`
+	FactoryType string        `json:"factory_type"`
+	Inputs      []RecipeInput `json:"inputs"`
+	BaseYield   float64       `json:"base_yield"`
+	RecipeTicks int           `json:"recipe_ticks"`
+	Efficiency  float64       `json:"efficiency"`
 
-	TargetQty       float64
-	AllocatedInputs map[string]float64
-	ProducedQty     float64
-	Priority        int
+	TargetQty       float64            `json:"target_qty"`
+	AllocatedInputs map[string]float64 `json:"allocated_inputs"`
+	ProducedQty     float64            `json:"produced_qty"`
+	Priority        int                `json:"priority"`
 }
 
 // TransportNeedPerTick returns the total input units needed per tick to sustain production.

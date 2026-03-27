@@ -16,19 +16,28 @@ type RecipeInput struct {
 
 // Recipe describes a single production recipe.
 type Recipe struct {
-	RecipeID        string        `yaml:"recipe_id"`
-	ProductID       string        `yaml:"product_id"`
-	FactoryType     string        `yaml:"factory_type"`
-	Inputs          []RecipeInput `yaml:"inputs"`
-	BaseYield       float64       `yaml:"base_yield"`
-	Ticks           int           `yaml:"ticks"`
-	Efficiency      float64       `yaml:"efficiency"`       // base η (0–1)
-	GeologicalInput string        `yaml:"geological_input"` // non-empty → mine recipe; good drawn from planet_deposits
+	RecipeID        string        `json:"recipe_id"                  yaml:"recipe_id"`
+	ProductID       string        `json:"product_id"                 yaml:"product_id"`
+	FactoryType     string        `json:"factory_type"               yaml:"factory_type"`
+	Inputs          []RecipeInput `json:"inputs"                     yaml:"inputs"`
+	BaseYield       float64       `json:"base_yield"                 yaml:"base_yield"`
+	Ticks           int           `json:"ticks"                      yaml:"ticks"`
+	Efficiency      float64       `json:"efficiency"                 yaml:"efficiency"`       // base η (0–1)
+	GeologicalInput string        `json:"geological_input,omitempty" yaml:"geological_input"` // non-empty → mine recipe; good drawn from planet_deposits
 }
 
 // IsMine reports whether this recipe draws from a geological deposit
 // rather than from goods storage.
 func (r *Recipe) IsMine() bool { return r.GeologicalInput != "" }
+
+// All returns all recipes in the book as an unsorted slice.
+func (rb RecipeBook) All() []*Recipe {
+	out := make([]*Recipe, 0, len(rb))
+	for _, r := range rb {
+		out = append(out, r)
+	}
+	return out
+}
 
 // RecipeKey identifies a recipe by what it produces and which factory makes it.
 type RecipeKey struct {

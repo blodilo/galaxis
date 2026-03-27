@@ -130,3 +130,120 @@ recipes:
     base_yield: 1.0
     ticks: 10
     efficiency: 0.85
+
+  # ── Construction (build) recipes ──────────────────────────────────────────────
+  # factory_type: construction — processed by BuildTickHandler (no physical facility needed).
+  # product_id encodes facility type and, for mines, the deposit good.
+  # Inputs sourced from BUILD_COSTS (game-params). Ticks = build duration.
+
+  - recipe_id: build_mine_iron_ore
+    product_id: facility_mine_iron_ore
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_silicates
+    product_id: facility_mine_silicates
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_titan
+    product_id: facility_mine_titan
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_rare_earths
+    product_id: facility_mine_rare_earths
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_he3
+    product_id: facility_mine_he3
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_hydrogen
+    product_id: facility_mine_hydrogen
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_smelter
+    product_id: facility_smelter
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 25.0
+      - item_id: base_component
+        amount: 5.0
+    base_yield: 1.0
+    ticks: 5
+    efficiency: 1.0
+
+  - recipe_id: build_refinery
+    product_id: facility_refinery
+    factory_type: construction
+    inputs:
+      - item_id: titansteel
+        amount: 15.0
+      - item_id: semiconductor_wafer
+        amount: 5.0
+      - item_id: base_component
+        amount: 8.0
+    base_yield: 1.0
+    ticks: 8
+    efficiency: 1.0
+
+  - recipe_id: build_precision_fab
+    product_id: facility_precision_fab
+    factory_type: construction
+    inputs:
+      - item_id: titansteel
+        amount: 20.0
+      - item_id: semiconductor_wafer
+        amount: 10.0
+      - item_id: base_component
+        amount: 15.0
+    base_yield: 1.0
+    ticks: 10
+    efficiency: 1.0

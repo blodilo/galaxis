@@ -59,9 +59,16 @@ func (e *Engine) Stop() {
 // Advance fires one manual tick immediately, incrementing the shared tick counter.
 // Used by POST /admin/tick/advance in the MVP to drive production without
 // waiting for the real-time timer. Safe to call concurrently with the timer loop.
-func (e *Engine) Advance(ctx context.Context) {
+// Returns the new tick number.
+func (e *Engine) Advance(ctx context.Context) int64 {
 	n := e.tickCounter.Add(1)
 	e.fireTick(ctx, n, time.Now())
+	return n
+}
+
+// Current returns the current tick counter value without firing a tick.
+func (e *Engine) Current() int64 {
+	return e.tickCounter.Load()
 }
 
 func (e *Engine) run(ctx context.Context) {

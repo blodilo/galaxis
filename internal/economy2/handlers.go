@@ -44,8 +44,20 @@ func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook, bootstra
 
 	r.Get("/econ2/stock", getStockHandler(db))
 	r.Post("/econ2/nodes", getOrCreateNodeHandler(db))
+	r.Get("/econ2/my-nodes", listMyNodesHandler(db))
 
 	r.Post("/econ2/bootstrap", bootstrapHandler(db, bootstrapCfg))
+
+	r.Get("/econ2/recipes", listRecipesHandler(recipes))
+}
+
+// --- GET /econ2/recipes ---
+
+func listRecipesHandler(recipes RecipeBook) http.HandlerFunc {
+	all := recipes.All()
+	return func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{"recipes": all})
+	}
 }
 
 // --- POST /econ2/facilities ---
@@ -553,5 +565,61 @@ func getOrCreateNodeHandler(db *pgxpool.Pool) http.HandlerFunc {
 		}
 
 		writeJSON(w, http.StatusOK, map[string]any{"node_id": nodeID})
+	}
+}
+
+// --- GET /econ2/my-nodes ---
+
+type myNodeEntry struct {
+	NodeID        uuid.UUID  `json:"node_id"`
+	StarID        uuid.UUID  `json:"star_id"`
+	PlanetID      *uuid.UUID `json:"planet_id"`
+	Level         string     `json:"level"`
+	StarType      string     `json:"star_type"`
+	X             float64    `json:"x"`
+	Y             float64    `json:"y"`
+	FacilityCount int        `json:"facility_count"`
+}
+
+func listMyNodesHandler(db *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		playerID := playerIDFromRequest(r)
+		if playerID == uuid.Nil {
+			writeError(w, http.StatusUnauthorized, "missing player id")
+			return
+		}
+
+		rows, err := db.Query(r.Context(), `
+			SELECT
+				n.id, n.star_id, n.planet_id, n.level,
+				s.star_type, s.x, s.y,
+				COUNT(f.id) AS facility_count
+			FROM econ2_nodes n
+			JOIN stars s ON s.id = n.star_id
+			LEFT JOIN econ2_facilities f ON f.node_id = n.id AND f.status != 'destroyed'
+			WHERE n.player_id = $1
+			GROUP BY n.id, s.star_type, s.x, s.y
+			ORDER BY n.created_at ASC
+		`, playerID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		defer rows.Close()
+
+		var nodes []myNodeEntry
+		for rows.Next() {
+			var e myNodeEntry
+			if err := rows.Scan(&e.NodeID, &e.StarID, &e.PlanetID, &e.Level,
+				&e.StarType, &e.X, &e.Y, &e.FacilityCount); err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			nodes = append(nodes, e)
+		}
+		if nodes == nil {
+			nodes = []myNodeEntry{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"nodes": nodes})
 	}
 }

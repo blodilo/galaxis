@@ -21,15 +21,15 @@ type FacilityConfig struct {
 
 // Facility is the in-memory representation of an econ2_facilities row.
 type Facility struct {
-	ID             uuid.UUID
-	PlayerID       uuid.UUID
-	StarID         uuid.UUID
-	PlanetID       *uuid.UUID
-	NodeID         uuid.UUID
-	FactoryType    string
-	Status         string
-	Config         FacilityConfig
-	CurrentOrderID *uuid.UUID
+	ID             uuid.UUID  `json:"id"`
+	PlayerID       uuid.UUID  `json:"player_id"`
+	StarID         uuid.UUID  `json:"star_id"`
+	PlanetID       *uuid.UUID `json:"planet_id"`
+	NodeID         uuid.UUID  `json:"node_id"`
+	FactoryType    string     `json:"factory_type"`
+	Status         string     `json:"status"`
+	Config         FacilityConfig `json:"config"`
+	CurrentOrderID *uuid.UUID `json:"current_order_id"`
 }
 
 // Destroy cancels all orders, wipes node stock, suspends incoming routes, and marks facility destroyed.

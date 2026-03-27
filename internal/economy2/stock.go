@@ -12,8 +12,8 @@ import (
 
 // ItemStock tracks physical and allocated quantity for one item in one node.
 type ItemStock struct {
-	Total     float64
-	Allocated float64
+	Total     float64 `json:"total"`
+	Allocated float64 `json:"allocated"`
 }
 
 // Available returns quantity free to allocate.

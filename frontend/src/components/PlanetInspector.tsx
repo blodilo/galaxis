@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { Planet, Moon } from '../types/galaxy'
 import { setupHomePlanet } from '../api/economy'
+import { bootstrap } from '../api/economy2'
 
 const TYPE_LABELS: Record<string, string> = {
   rocky:         'Gesteinsplanet',
@@ -85,6 +86,8 @@ export function PlanetInspector({ planet, starId }: Props) {
     setMsg(null)
     try {
       const res = await setupHomePlanet(starId, planet.id)
+      // Auch Economy2-Bootstrap auslösen, damit der Node in "Meine Assets" erscheint
+      await bootstrap(starId).catch(() => { /* ignorieren wenn bereits vorhanden */ })
       setMsg(`✓ Heimatplanet eingerichtet (${res.deposits} Vorkommen, Anlagen gebaut, Lager befüllt)`)
     } catch (e) {
       setMsg(`Fehler: ${e instanceof Error ? e.message : String(e)}`)
