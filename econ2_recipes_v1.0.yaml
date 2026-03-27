@@ -1,0 +1,70 @@
+recipes:
+  - recipe_id: smelter_steel
+    product_id: steel
+    factory_type: smelter
+    inputs:
+      - item_id: iron_ore
+        amount: 5.0
+    base_yield: 5.0
+    ticks: 1
+    efficiency: 0.90
+
+  - recipe_id: smelter_titansteel
+    product_id: titansteel
+    factory_type: smelter
+    inputs:
+      - item_id: iron_ore
+        amount: 3.0
+      - item_id: titan
+        amount: 1.0
+    base_yield: 3.0
+    ticks: 1
+    efficiency: 0.90
+
+  - recipe_id: refinery_wafer
+    product_id: semiconductor_wafer
+    factory_type: refinery
+    inputs:
+      - item_id: silicates
+        amount: 1.0
+      - item_id: rare_earths
+        amount: 1.0
+    base_yield: 2.0
+    ticks: 3
+    efficiency: 0.85
+
+  - recipe_id: refinery_fuelstoff
+    product_id: fusion_fuel
+    factory_type: refinery
+    inputs:
+      - item_id: he3
+        amount: 2.0
+      - item_id: hydrogen
+        amount: 3.0
+    base_yield: 4.0
+    ticks: 1
+    efficiency: 0.92
+
+  - recipe_id: precision_basis
+    product_id: base_component
+    factory_type: precision_fab
+    inputs:
+      - item_id: titansteel
+        amount: 2.0
+      - item_id: semiconductor_wafer
+        amount: 1.0
+    base_yield: 3.0
+    ticks: 4
+    efficiency: 0.88
+
+  - recipe_id: precision_navcomp
+    product_id: nav_computer
+    factory_type: precision_fab
+    inputs:
+      - item_id: semiconductor_wafer
+        amount: 6.0
+      - item_id: platinum_group
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 10
+    efficiency: 0.85

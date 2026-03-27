@@ -9,6 +9,7 @@ import (
 	"galaxis/internal/auth"
 	"galaxis/internal/config"
 	"galaxis/internal/economy"
+	"galaxis/internal/economy2"
 	"galaxis/internal/jobs"
 	"galaxis/internal/tick"
 
@@ -27,13 +28,14 @@ func NewRouter(
 	reg *economy.Registries,
 	bus *economy.Broadcaster,
 	eng *tick.Engine,
+	recipes economy2.RecipeBook,
 ) http.Handler {
 	// JWT validator — nil when KEYCLOAK_JWKS_URL is not set (dev without Keycloak)
 	var validate auth.ValidateFunc
 	if cfg.KeycloakJWKSURL != "" && cfg.KeycloakIssuer != "" {
 		validate = auth.NewJWKSValidator(cfg.KeycloakJWKSURL, cfg.KeycloakIssuer)
 	}
-	_ = auth.NewPermissionClient(cfg.PermissionServiceURL) // available for handlers via closure
+	_ = auth.NewPermissionClient(cfg.PermissionServiceURL)
 
 	r := chi.NewRouter()
 
@@ -71,6 +73,10 @@ func NewRouter(
 		})
 	})
 
+	r.Route("/api/v2", func(r chi.Router) {
+		economy2.RegisterRoutes(r, db, recipes)
+	})
+
 	return r
 }
 
@@ -83,8 +89,6 @@ func registerGenerateRoutes(r chi.Router, pool *pgxpool.Pool, cfg *config.Config
 	r.Post("/generate", triggerGenerate(pool, cfg, store))
 	r.Post("/generate/step1", triggerStep1(pool, cfg, store, assetsDir, catalogPath))
 	r.Get("/generate/{jobID}/status", getGenerateStatus(store))
-	// SSE endpoint: the handler itself bypasses the global 60s timeout via a
-	// deadline-free context that still tracks client disconnects.
 	r.Get("/generate/{jobID}/progress", getGenerateProgress(store))
 }
 

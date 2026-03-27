@@ -16,8 +16,10 @@ import (
 	"galaxis/internal/config"
 	"galaxis/internal/db"
 	"galaxis/internal/economy"
+	"galaxis/internal/economy2"
 	"galaxis/internal/jobs"
 	"galaxis/internal/tick"
+
 )
 
 func main() {
@@ -26,6 +28,7 @@ func main() {
 	addr        := flag.String("addr",         ":8080",                                 "HTTP listen address")
 	assetsDir   := flag.String("assets-dir",   "assets",                                "Directory to serve under /assets/")
 	catalogPath := flag.String("catalog",      "galaxy_morphology_catalog_v1.0.yaml",   "Path to morphology catalog YAML")
+	recipesPath := flag.String("recipes",      "econ2_recipes_v1.0.yaml",               "Path to economy2 recipes YAML")
 	flag.Parse()
 
 	cfg, err := config.Load(*configPath)
@@ -58,25 +61,35 @@ func main() {
 	defer pool.Close()
 	log.Println("database: connected")
 
-	// ── Economy Registries ────────────────────────────────────────────────────
-	recipesPath := "recipes_v1.1.yaml"
-	reg, err := economy.LoadRegistries(recipesPath, cfg)
+	// ── Economy Registries (altes System) ────────────────────────────────────
+	reg, err := economy.LoadRegistries("recipes_v1.1.yaml", cfg)
 	if err != nil {
 		log.Fatalf("economy registries: %v", err)
 	}
 	log.Printf("economy: loaded %d recipes", len(reg.Recipes))
 
+	// ── Economy2 Recipes (neues System) ──────────────────────────────────────
+	recipes, err := economy2.LoadRecipes(*recipesPath)
+	if err != nil {
+		log.Fatalf("economy2: load recipes: %v", err)
+	}
+	log.Printf("economy2: loaded %d recipes", len(recipes))
+
 	// ── Tick Engine ───────────────────────────────────────────────────────────
 	tickDuration := time.Duration(cfg.Time.StrategyTickMinutes) * time.Minute
 	engine := tick.NewEngine(tickDuration)
 
-	// SSE broadcast bus for tick events.
+	// SSE broadcast bus for tick events (altes System).
 	bus := economy.NewBroadcaster()
 
-	// Register tick handlers. Scheduler runs first to assign idle facilities,
-	// then Production advances the newly assigned (and already-running) facilities.
+	// Altes Economy-System
 	engine.Register(economy.SchedulerHandler(pool, reg))
 	engine.Register(economy.ProductionHandler(pool, reg))
+
+	// Neues Economy2-System
+	engine.Register(economy2.SchedulerHandler(pool, recipes))
+	engine.Register(economy2.ProductionHandler(pool, recipes))
+	engine.Register(economy2.ShipTickHandler(pool))
 
 	engine.Start(ctx)
 	defer engine.Stop()
@@ -86,7 +99,7 @@ func main() {
 	jobStore := jobs.NewStore()
 
 	// ── HTTP Server ───────────────────────────────────────────────────────────
-	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, bus, engine)
+	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, bus, engine, recipes)
 	srv := &http.Server{
 		Addr:         *addr,
 		Handler:      router,
@@ -116,3 +129,4 @@ func main() {
 	}
 	log.Println("server: stopped")
 }
+
