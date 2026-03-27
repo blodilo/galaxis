@@ -237,7 +237,14 @@ func dbPassword() string {
 }
 
 func runShell(c *component, args ...string) error {
+	return runShellEnv(c, nil, args...)
+}
+
+func runShellEnv(c *component, env []string, args ...string) error {
 	cmd := exec.Command(args[0], args[1:]...)
+	if len(env) > 0 {
+		cmd.Env = env
+	}
 	out, err := cmd.CombinedOutput()
 	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		if line != "" {
@@ -277,6 +284,12 @@ func makeGalaxisAPI() *component {
 		}
 		c.buf.add("[devctl] Build ok")
 		dbURL := "postgres://galaxis:" + dbPassword() + "@localhost:5432/galaxis?sslmode=disable"
+		c.buf.add("[devctl] Migrate …")
+		dbEnv := append(os.Environ(), "DATABASE_URL="+dbURL)
+		if err := runShellEnv(c, dbEnv, "./bin/galaxis-api", "--migrate-only"); err != nil {
+			return fmt.Errorf("migrate: %w", err)
+		}
+		c.buf.add("[devctl] Migration ok")
 		cmd := exec.Command("./bin/galaxis-api", "--config", "game-params_v1.8.yaml")
 		cmd.Env = append(os.Environ(), "DATABASE_URL="+dbURL)
 		stdout, _ := cmd.StdoutPipe()
