@@ -30,7 +30,7 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 }
 
 // RegisterRoutes mounts all economy2 REST endpoints on the given router.
-func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook) {
+func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook, bootstrapCfg BootstrapConfig) {
 	r.Post("/econ2/facilities", createFacilityHandler(db))
 	r.Get("/econ2/facilities", listFacilitiesHandler(db))
 	r.Delete("/econ2/facilities/{id}", destroyFacilityHandler(db))
@@ -44,15 +44,18 @@ func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook) {
 
 	r.Get("/econ2/stock", getStockHandler(db))
 	r.Post("/econ2/nodes", getOrCreateNodeHandler(db))
+
+	r.Post("/econ2/bootstrap", bootstrapHandler(db, bootstrapCfg))
 }
 
 // --- POST /econ2/facilities ---
 
 type createFacilityRequest struct {
-	StarID      string  `json:"star_id"`
-	PlanetID    *string `json:"planet_id"`
-	FactoryType string  `json:"factory_type"`
-	Level       int     `json:"level"`
+	StarID        string  `json:"star_id"`
+	PlanetID      *string `json:"planet_id"`
+	FactoryType   string  `json:"factory_type"`
+	Level         int     `json:"level"`
+	DepositGoodID string  `json:"deposit_good_id"`
 }
 
 func createFacilityHandler(db *pgxpool.Pool) http.HandlerFunc {
@@ -98,7 +101,7 @@ func createFacilityHandler(db *pgxpool.Pool) http.HandlerFunc {
 			NodeID:      nodeID,
 			FactoryType: req.FactoryType,
 			Status:      "idle",
-			Config:      FacilityConfig{Level: req.Level},
+			Config:      FacilityConfig{Level: req.Level, DepositGoodID: req.DepositGoodID},
 		}
 
 		if err := CreateFacility(r.Context(), db, f); err != nil {
@@ -470,6 +473,39 @@ func getStockHandler(db *pgxpool.Pool) http.HandlerFunc {
 		}
 
 		writeJSON(w, http.StatusOK, map[string]any{"stock": stock})
+	}
+}
+
+// --- POST /econ2/bootstrap ---
+
+func bootstrapHandler(db *pgxpool.Pool, cfg BootstrapConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		playerID := playerIDFromRequest(r)
+		if playerID == uuid.Nil {
+			writeError(w, http.StatusUnauthorized, "missing player id")
+			return
+		}
+
+		var req struct {
+			StarID string `json:"star_id"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+		starID, err := uuid.Parse(req.StarID)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid star_id")
+			return
+		}
+
+		result, err := RunBootstrap(r.Context(), db, playerID, starID, cfg)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, result)
 	}
 }
 

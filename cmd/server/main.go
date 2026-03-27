@@ -83,6 +83,13 @@ func main() {
 	}
 	log.Printf("economy2: mine base_rate=%.1f levels=%d", mineParams.BaseRate, len(mineParams.LevelMultiplier))
 
+	// ── Economy2 Bootstrap Config ─────────────────────────────────────────────
+	bootstrapCfg, err := loadBootstrapConfig(*configPath)
+	if err != nil {
+		log.Fatalf("economy2: load bootstrap config: %v", err)
+	}
+	log.Printf("economy2: bootstrap kit: %d items, %d facilities", len(bootstrapCfg.Stock), len(bootstrapCfg.Facilities))
+
 	// ── Tick Engine ───────────────────────────────────────────────────────────
 	tickDuration := time.Duration(cfg.Time.StrategyTickMinutes) * time.Minute
 	engine := tick.NewEngine(tickDuration)
@@ -107,7 +114,7 @@ func main() {
 	jobStore := jobs.NewStore()
 
 	// ── HTTP Server ───────────────────────────────────────────────────────────
-	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, bus, engine, recipes)
+	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, bus, engine, recipes, bootstrapCfg)
 	srv := &http.Server{
 		Addr:         *addr,
 		Handler:      router,
@@ -136,6 +143,21 @@ func main() {
 		log.Fatalf("server: forced shutdown: %v", err)
 	}
 	log.Println("server: stopped")
+}
+
+// loadBootstrapConfig reads the economy2_bootstrap: section from the game-params YAML file.
+func loadBootstrapConfig(path string) (economy2.BootstrapConfig, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return economy2.BootstrapConfig{}, fmt.Errorf("read %s: %w", path, err)
+	}
+	var cfg struct {
+		Bootstrap economy2.BootstrapConfig `yaml:"economy2_bootstrap"`
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return economy2.BootstrapConfig{}, fmt.Errorf("parse bootstrap config: %w", err)
+	}
+	return cfg.Bootstrap, nil
 }
 
 // loadMineParams reads the mine: section from the game-params YAML file.

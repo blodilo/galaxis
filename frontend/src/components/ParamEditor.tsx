@@ -139,7 +139,7 @@ export function ParamEditor({ params, onChange }: Props) {
   const srv = params.server
 
   return (
-    <div className="flex flex-col gap-2 overflow-y-auto">
+    <div className="flex flex-col gap-2">
       <span className="text-xs text-slate-400 uppercase tracking-widest">Parameter</span>
 
       {/* 1. Galaxie */}

@@ -10,9 +10,36 @@ import {
   cancelOrder,
   createRoute,
   listRoutes,
+  bootstrap,
 } from '../api/economy2'
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Facility catalog ──────────────────────────────────────────────────────────
+
+const FACTORY_TYPES = [
+  { id: 'mine',          label: 'Mine',               description: 'Abbau geologischer Rohstoffe aus Planetenlagerstätten' },
+  { id: 'smelter',       label: 'Schmelze',            description: 'Verhüttung: Eisenerz → Stahl und Titanstahl' },
+  { id: 'refinery',      label: 'Raffinerie',          description: 'Veredelung zu Halbleitern und Fusionskraftstoff' },
+  { id: 'precision_fab', label: 'Präzisionsfertigung', description: 'Hochpräzise Bauteile und Navigationscomputer' },
+]
+
+const MINE_GOODS = [
+  { id: 'iron_ore',    label: 'Eisenerz' },
+  { id: 'silicates',   label: 'Silikate' },
+  { id: 'titan',       label: 'Titan' },
+  { id: 'rare_earths', label: 'Seltene Erden' },
+  { id: 'he3',         label: 'Helium-3' },
+  { id: 'hydrogen',    label: 'Wasserstoff' },
+]
+
+// Baukosten — Platzhalter, zieht später aus game-params YAML
+const BUILD_COSTS: Record<string, Record<string, number>> = {
+  mine:          { steel: 10,  base_component: 2  },
+  smelter:       { steel: 25,  base_component: 5  },
+  refinery:      { titansteel: 15, semiconductor_wafer: 5,  base_component: 8  },
+  precision_fab: { titansteel: 20, semiconductor_wafer: 10, base_component: 15 },
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function short(uuid: string): string {
   return uuid.slice(0, 8)
@@ -175,6 +202,47 @@ function FormWrapper({ children }: { children: React.ReactNode }) {
   )
 }
 
+function Select({
+  value, onChange, children,
+}: {
+  value: string
+  onChange: (v: string) => void
+  children: React.ReactNode
+}) {
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className="bg-black border border-slate-700 rounded px-2 py-1 text-xs text-slate-300 w-full
+                 focus:outline-none focus:border-emerald-600"
+    >
+      {children}
+    </select>
+  )
+}
+
+function Stepper({ value, onChange, min = 1, max = 10 }: {
+  value: number; onChange: (v: number) => void; min?: number; max?: number
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => onChange(Math.max(min, value - 1))}
+        disabled={value <= min}
+        className="w-6 h-6 flex items-center justify-center rounded border border-slate-700
+                   text-slate-400 hover:border-slate-500 disabled:opacity-30 transition-colors text-sm"
+      >−</button>
+      <span className="text-sm text-slate-200 w-6 text-center font-mono">{value}</span>
+      <button
+        onClick={() => onChange(Math.min(max, value + 1))}
+        disabled={value >= max}
+        className="w-6 h-6 flex items-center justify-center rounded border border-slate-700
+                   text-slate-400 hover:border-slate-500 disabled:opacity-30 transition-colors text-sm"
+      >+</button>
+    </div>
+  )
+}
+
 // ── Left column: LAGER ────────────────────────────────────────────────────────
 
 function LagerPanel({ stock, loading }: { stock: ItemStock[]; loading: boolean }) {
@@ -230,16 +298,18 @@ function LagerPanel({ stock, loading }: { stock: ItemStock[]; loading: boolean }
 interface AnlagenPanelProps {
   facilities: Facility[]
   orders: Order[]
+  stock: ItemStock[]
   loading: boolean
   starId: string
   nodeId: string
   onRefresh: () => void
 }
 
-function AnlagenPanel({ facilities, orders, loading, starId, onRefresh }: AnlagenPanelProps) {
+function AnlagenPanel({ facilities, orders, stock, loading, starId, onRefresh }: AnlagenPanelProps) {
   const [showForm, setShowForm] = useState(false)
-  const [factoryType, setFactoryType] = useState('')
-  const [depositGoodId, setDepositGoodId] = useState('')
+  const [factoryType, setFactoryType] = useState(FACTORY_TYPES[0].id)
+  const [depositGoodId, setDepositGoodId] = useState(MINE_GOODS[0].id)
+  const [qty, setQty] = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -248,22 +318,24 @@ function AnlagenPanel({ facilities, orders, loading, starId, onRefresh }: Anlage
     return acc
   }, {})
 
+  const stockMap = Object.fromEntries(stock.map(s => [s.item_id, s.available]))
+  const costs = BUILD_COSTS[factoryType] ?? {}
+  const costEntries = Object.entries(costs)
+  const selectedFacilityDef = FACTORY_TYPES.find(f => f.id === factoryType)
 
   async function handleCreate() {
-    if (!factoryType.trim()) return
     setSubmitting(true)
     setError('')
     try {
-      await createFacility({
-        star_id: starId,
-        factory_type: factoryType.trim(),
-        ...(factoryType.trim() === 'mine' && depositGoodId.trim()
-          ? { deposit_good_id: depositGoodId.trim() }
-          : {}),
-      })
-      setFactoryType('')
-      setDepositGoodId('')
+      for (let i = 0; i < qty; i++) {
+        await createFacility({
+          star_id: starId,
+          factory_type: factoryType,
+          ...(factoryType === 'mine' ? { deposit_good_id: depositGoodId } : {}),
+        })
+      }
       setShowForm(false)
+      setQty(1)
       onRefresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Anlegen')
@@ -277,7 +349,7 @@ function AnlagenPanel({ facilities, orders, loading, starId, onRefresh }: Anlage
       await destroyFacility(id)
       onRefresh()
     } catch {
-      // silently ignore — could show toast in a real app
+      // silently ignore
     }
   }
 
@@ -290,12 +362,13 @@ function AnlagenPanel({ facilities, orders, loading, starId, onRefresh }: Anlage
       )}
       {!loading && facilities.map(f => {
         const activeOrder = f.current_order_id ? orderByFacility[f.id] ?? null : null
+        const label = FACTORY_TYPES.find(ft => ft.id === f.factory_type)?.label ?? f.factory_type
         return (
           <Card key={f.id}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs font-mono font-bold text-slate-300 uppercase truncate">
-                  {f.factory_type}
+                  {label}
                 </span>
                 <StatusBadge status={f.status} colors={FACILITY_STATUS_COLORS} />
               </div>
@@ -303,10 +376,7 @@ function AnlagenPanel({ facilities, orders, loading, starId, onRefresh }: Anlage
             </div>
             {f.status === 'running' && f.current_order_id && (
               <p className="text-xs text-slate-500 mt-0.5">
-                ↳{' '}
-                {activeOrder
-                  ? activeOrder.product_id
-                  : short(f.current_order_id)}
+                ↳ {activeOrder ? activeOrder.product_id : short(f.current_order_id)}
               </p>
             )}
           </Card>
@@ -318,29 +388,71 @@ function AnlagenPanel({ facilities, orders, loading, starId, onRefresh }: Anlage
       )}
       {showForm && (
         <FormWrapper>
+          {/* Anlagentyp */}
           <label className="text-xs text-slate-500">Anlagentyp</label>
-          <TextInput
-            value={factoryType}
-            onChange={setFactoryType}
-            placeholder="mine, smelter, refinery …"
-          />
-          {factoryType.trim() === 'mine' && (
+          <Select value={factoryType} onChange={v => { setFactoryType(v); setQty(1) }}>
+            {FACTORY_TYPES.map(ft => (
+              <option key={ft.id} value={ft.id}>{ft.label}</option>
+            ))}
+          </Select>
+          {selectedFacilityDef && (
+            <p className="text-xs text-slate-600 italic -mt-1">{selectedFacilityDef.description}</p>
+          )}
+
+          {/* Mine: Lagerstätte wählen */}
+          {factoryType === 'mine' && (
             <>
-              <label className="text-xs text-slate-500">Deposit Good ID</label>
-              <TextInput
-                value={depositGoodId}
-                onChange={setDepositGoodId}
-                placeholder="iron_ore …"
-              />
+              <label className="text-xs text-slate-500">Lagerstätte</label>
+              <Select value={depositGoodId} onChange={setDepositGoodId}>
+                {MINE_GOODS.map(g => (
+                  <option key={g.id} value={g.id}>{g.label}</option>
+                ))}
+              </Select>
             </>
           )}
+
+          {/* Anzahl */}
+          <label className="text-xs text-slate-500">Anzahl</label>
+          <Stepper value={qty} onChange={setQty} min={1} max={10} />
+
+          {/* Baukosten */}
+          {costEntries.length > 0 && (
+            <div className="mt-1">
+              <div className="grid grid-cols-3 gap-x-2 text-xs text-slate-600 mb-1">
+                <span>Ressource</span>
+                <span className="text-right">pro Stück</span>
+                <span className="text-right">Gesamt</span>
+              </div>
+              {costEntries.map(([res, amt]) => {
+                const total = amt * qty
+                const have = stockMap[res] ?? 0
+                const ok = have >= total
+                return (
+                  <div key={res} className="grid grid-cols-3 gap-x-2 text-xs py-0.5">
+                    <span className="text-slate-400 font-mono truncate">{res}</span>
+                    <span className="text-right text-slate-500">{amt}</span>
+                    <span className={`text-right font-mono ${ok ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {total}
+                      {!ok && (
+                        <span className="text-red-600 ml-1">−{(total - have).toFixed(0)}</span>
+                      )}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           {error && <p className="text-xs text-red-400">{error}</p>}
-          <div className="flex gap-2">
-            <PrimaryButton onClick={handleCreate} disabled={submitting}>
-              {submitting ? '…' : 'Anlegen'}
+          <div className="flex gap-2 mt-1">
+            <PrimaryButton onClick={handleCreate} disabled={submitting || !starId}>
+              {submitting ? '…' : qty > 1 ? `${qty}× Anlegen` : 'Anlegen'}
             </PrimaryButton>
-            <CancelButton onClick={() => setShowForm(false)}>Abbrechen</CancelButton>
+            <CancelButton onClick={() => { setShowForm(false); setQty(1) }}>Abbrechen</CancelButton>
           </div>
+          {!starId && (
+            <p className="text-xs text-orange-400">Star-ID erforderlich</p>
+          )}
         </FormWrapper>
       )}
     </div>
@@ -623,6 +735,8 @@ export function Economy2Page() {
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')
   const [countdown, setCountdown] = useState(AUTO_REFRESH_SEC)
+  const [bootstrapping, setBootstrapping] = useState(false)
+  const [bootstrapMsg, setBootstrapMsg]   = useState('')
 
   const loadData = useCallback(async (nid: string, sid: string) => {
     if (!nid) return
@@ -672,6 +786,23 @@ export function Economy2Page() {
     loadData(nodeId, starId)
   }
 
+  async function handleBootstrap() {
+    if (!starId.trim()) return
+    setBootstrapping(true)
+    setBootstrapMsg('')
+    setError('')
+    try {
+      const result = await bootstrap(starId.trim())
+      setNodeId(result.node_id)
+      setBootstrapMsg(`Kit gesetzt: ${result.seeded_facilities} Anlagen, ${Object.keys(result.seeded_stock).length} Güter`)
+      await loadData(result.node_id, starId.trim())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Bootstrap fehlgeschlagen')
+    } finally {
+      setBootstrapping(false)
+    }
+  }
+
   return (
     <div className="absolute inset-0 top-0 flex flex-col font-mono">
       {/* Page top bar */}
@@ -692,6 +823,14 @@ export function Economy2Page() {
           placeholder="Star UUID …"
           className="bg-black border border-slate-700 rounded px-2 py-1 text-xs text-slate-300 w-72"
         />
+        <button
+          onClick={handleBootstrap}
+          disabled={bootstrapping || !starId.trim()}
+          className="text-xs px-2 py-0.5 rounded border border-blue-700 text-blue-400
+                     hover:bg-blue-900/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {bootstrapping ? '…' : '⬡ Spielstart-Kit'}
+        </button>
         <PrimaryButton onClick={handleRefresh} disabled={!nodeId}>
           Aktualisieren
         </PrimaryButton>
@@ -700,6 +839,7 @@ export function Economy2Page() {
             Auto-Refresh in {countdown}s
           </span>
         )}
+        {bootstrapMsg && <span className="text-xs text-blue-400 ml-2">{bootstrapMsg}</span>}
         {error && <span className="text-xs text-red-400 ml-2">{error}</span>}
       </div>
 
@@ -715,6 +855,7 @@ export function Economy2Page() {
           <AnlagenPanel
             facilities={facilities}
             orders={orders}
+            stock={stock}
             loading={loading}
             starId={starId}
             nodeId={nodeId}

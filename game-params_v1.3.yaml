@@ -318,3 +318,51 @@ rendering:
   # [KALIBRIERUNG] Anzahl FBM-Oktaven für die Nebeldichte-Funktion.
   # Muss identisch mit dem Wert im Server-Octree (ADR-010, ADR-011) sein.
   # 6 Oktaven entsprechen den 6 Dichtestufen (0.1–10.000 /m³).
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 11. BERGBAU (economy2)
+# ═══════════════════════════════════════════════════════════════════
+mine:
+  base_rate: 5.0
+  # [KALIBRIERUNG] Basis-Förderrate einer Mine Lv1 in Einheiten/Tick.
+  # Actual output per tick = base_rate × level_multiplier[level-1].
+  # Wird zusätzlich durch deposit.max_rate (= max_mines) begrenzt via Slot-Check.
+
+  level_multiplier:
+    - 0.5   # Lv1 — Grundabbau (per Kolonieschiff freigeschaltet)
+    - 1.0   # Lv2 — [BALANCING] Forschung: Bergbautechnik I
+    - 2.0   # Lv3 — [BALANCING] Forschung: Bergbautechnik II
+    - 3.5   # Lv4 — [BALANCING] Forschung: Tiefenbohrung
+    - 5.5   # Lv5 — [BALANCING] Forschung: Tiefenbohrung II
+    - 8.0   # Lv6 — [BALANCING] Forschung: Automatisierter Abbau
+    - 10.0  # Lv7 — [BALANCING] Forschung: Vollautomatisierung
+  # Höhere Level werden durch Technologieforschung freigeschaltet (MVP: nur Lv1).
+  # Einheit: dimensionsloser Multiplikator auf base_rate.
+
+# ═══════════════════════════════════════════════════════════════════
+# 12. SPIELSTART-KIT (economy2_bootstrap)
+# ═══════════════════════════════════════════════════════════════════
+economy2_bootstrap:
+  # Anfangsbestand an Gütern, der beim ersten Kolonisieren eines Sterns
+  # auf den Node gebucht wird. [BALANCING]
+  stock:
+    iron_ore:       200.0   # Roheisenvorrat für erste Schmelzdurchgänge
+    silicates:      100.0   # Silikat-Startvorrat für Halbleiter
+    titan:           50.0   # Titan für Titanstahl
+    rare_earths:     30.0   # Seltene Erden
+    he3:             40.0   # Helium-3 für Fusionskraftstoff
+    hydrogen:        60.0   # Wasserstoff
+    steel:          150.0   # Stahl für erste Anlagenbauten
+    base_component:  20.0   # Basiskomponenten für erste Produktionsanlagen
+
+  # Anlagen, die beim Spielstart sofort im Status 'idle' bereitstehen.
+  # Die ersten Minen decken die Grundressourcen ab. [BALANCING]
+  facilities:
+    - factory_type: mine
+      deposit_good_id: iron_ore
+    - factory_type: mine
+      deposit_good_id: silicates
+    - factory_type: mine
+      deposit_good_id: he3
+    - factory_type: smelter

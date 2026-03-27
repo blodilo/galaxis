@@ -29,6 +29,7 @@ func NewRouter(
 	bus *economy.Broadcaster,
 	eng *tick.Engine,
 	recipes economy2.RecipeBook,
+	bootstrapCfg economy2.BootstrapConfig,
 ) http.Handler {
 	// JWT validator — nil when KEYCLOAK_JWKS_URL is not set (dev without Keycloak)
 	var validate auth.ValidateFunc
@@ -74,7 +75,7 @@ func NewRouter(
 	})
 
 	r.Route("/api/v2", func(r chi.Router) {
-		economy2.RegisterRoutes(r, db, recipes)
+		economy2.RegisterRoutes(r, db, recipes, bootstrapCfg)
 	})
 
 	return r

@@ -85,9 +85,8 @@ function AppInner() {
     fetchGalaxies()
       .then(gs => {
         setGalaxies(gs)
-        if (gs.length > 0 && gs[0].status === 'ready') {
-          loadGalaxy(gs[0])
-        }
+        const ready = gs.find(g => g.status === 'ready')
+        if (ready) loadGalaxy(ready)
       })
       .catch(() => setLoadState('error'))
   }, [])

@@ -96,3 +96,14 @@ export async function listRoutes(): Promise<Route[]> {
   const data = await get<{ routes: Route[] } | Route[]>(`${BASE}/routes`)
   return Array.isArray(data) ? data : (data as { routes: Route[] }).routes ?? []
 }
+
+// Bootstrap
+export interface BootstrapResult {
+  node_id: string
+  seeded_stock: Record<string, number>
+  seeded_facilities: number
+}
+
+export async function bootstrap(starId: string): Promise<BootstrapResult> {
+  return post<BootstrapResult>(`${BASE}/econ2/bootstrap`, { star_id: starId })
+}
