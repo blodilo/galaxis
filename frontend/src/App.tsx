@@ -11,8 +11,7 @@ import { SystemTree } from './components/SystemTree'
 import { VisualTuner } from './components/VisualTuner'
 import { GeneratorPage } from './pages/GeneratorPage'
 import { HudDevPage } from './pages/HudDevPage'
-import { EconomyPage } from './pages/EconomyPage'
-import { MySystemsPicker } from './pages/MySystemsPicker'
+import { Economy2Page } from './pages/Economy2Page'
 import { VisualParamsProvider } from './context/VisualParamsContext'
 import { fetchGalaxies, fetchAllStars, fetchNebulae, fetchSystem } from './api/galaxy'
 import type { Galaxy, Star, Nebula, StarFilter, Planet } from './types/galaxy'
@@ -50,8 +49,6 @@ function AppInner() {
   const [resumeGalaxy, setResumeGalaxy] = useState<Galaxy | null>(null)
   // Moon system view (BL-24: Doppelklick Planet → Mondsystem)
   const [moonPlanet, setMoonPlanet] = useState<Planet | null>(null)
-  // Economy: aktives System (unabhängig vom GOD MODE Stern)
-  const [economyStarId, setEconomyStarId] = useState<string | null>(null)
   // Visual tuner panel
   const [tunerOpen, setTunerOpen] = useState(false)
 
@@ -186,10 +183,7 @@ function AppInner() {
           HUD DEV
         </button>
         <button
-          onClick={() => {
-            if (systemStar) setEconomyStarId(systemStar.id)
-            setView('economy')
-          }}
+          onClick={() => setView('economy')}
           className={`text-xs font-bold tracking-widest px-2 py-0.5 rounded transition-colors
             ${view === 'economy' ? 'text-emerald-400' : 'text-slate-600 hover:text-slate-400'}`}
         >
@@ -427,14 +421,7 @@ function AppInner() {
       {/* ── ECONOMY ── */}
       {view === 'economy' && (
         <div className="absolute inset-0 top-10 bg-slate-950">
-          {economyStarId ? (
-            <EconomyPage
-              starId={economyStarId}
-              onBack={() => setEconomyStarId(null)}
-            />
-          ) : (
-            <MySystemsPicker onSelect={setEconomyStarId} />
-          )}
+          <Economy2Page />
         </div>
       )}
 
@@ -455,6 +442,7 @@ function AppInner() {
           </p>
         </div>
       )}
+
 
     </div>
   )
