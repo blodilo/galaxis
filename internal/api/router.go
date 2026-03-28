@@ -31,6 +31,7 @@ func NewRouter(
 	recipes economy2.RecipeBook,
 	bootstrapCfg economy2.BootstrapConfig,
 	mineParams economy2.MineParams,
+	natsWsURL string,
 ) http.Handler {
 	// JWT validator — nil when KEYCLOAK_JWKS_URL is not set (dev without Keycloak)
 	var validate auth.ValidateFunc
@@ -65,6 +66,7 @@ func NewRouter(
 	r.Route("/api/v1", func(r chi.Router) {
 		// Public endpoints — no auth required
 		registerCatalogRoutes(r, cfg, catalogPath)
+		registerNatsRoutes(r, natsWsURL)
 
 		// Authenticated endpoints — require valid Keycloak JWT
 		r.Group(func(r chi.Router) {
@@ -89,6 +91,24 @@ func NewRouter(
 	})
 
 	return r
+}
+
+func registerNatsRoutes(r chi.Router, natsWsURL string) {
+	// POST /api/v1/auth/nats-token
+	// Returns NATS WebSocket connection config.
+	// In dev: no credentials required (nats-server runs without auth).
+	// In production: will return a scoped NKey JWT (AP3 / auth not yet implemented).
+	r.Post("/auth/nats-token", func(w http.ResponseWriter, _ *http.Request) {
+		url := natsWsURL
+		if url == "" {
+			url = "ws://localhost:4223"
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"url":           url,
+			"auth_required": false,
+			"expires_in":    3600,
+		})
+	})
 }
 
 func registerCatalogRoutes(r chi.Router, cfg *config.Config, catalogPath string) {

@@ -13,6 +13,9 @@ import (
 	"time"
 
 	"galaxis/internal/api"
+	"galaxis/internal/bus"
+	"galaxis/internal/bus/inprocbus"
+	"galaxis/internal/bus/natsbus"
 	"galaxis/internal/config"
 	"galaxis/internal/db"
 	"galaxis/internal/economy"
@@ -30,6 +33,8 @@ func main() {
 	assetsDir   := flag.String("assets-dir",   "assets",                                "Directory to serve under /assets/")
 	catalogPath := flag.String("catalog",      "galaxy_morphology_catalog_v1.0.yaml",   "Path to morphology catalog YAML")
 	recipesPath := flag.String("recipes",      "econ2_recipes_v1.0.yaml",               "Path to economy2 recipes YAML")
+	natsURL     := flag.String("nats",         "",                                       "NATS URL (e.g. nats://localhost:4222); empty = in-process bus")
+	natsWsURL   := flag.String("nats-ws",      "ws://localhost:4223",                    "NATS WebSocket URL returned by /api/v1/auth/nats-token")
 	flag.Parse()
 
 	cfg, err := config.Load(*configPath)
@@ -90,12 +95,40 @@ func main() {
 	}
 	log.Printf("economy2: bootstrap kit: %d items, %d facilities", len(bootstrapCfg.Stock), len(bootstrapCfg.Facilities))
 
+	// ── Message Bus ───────────────────────────────────────────────────────────
+	var msgBus bus.Bus
+	if *natsURL != "" {
+		nb, err := natsbus.New(*natsURL)
+		if err != nil {
+			log.Fatalf("nats: %v", err)
+		}
+		defer nb.Close()
+		log.Printf("nats: connected to %s", *natsURL)
+		msgBus = nb
+	} else {
+		msgBus = inprocbus.New()
+		log.Println("nats: no URL given — using in-process bus")
+	}
+
+	// Ensure JetStream streams (idempotent — safe to run on every start)
+	streamDefs := []bus.StreamConfig{
+		{Name: "TICK",    Subjects: []string{"galaxis.tick.>"}, MaxAge: 7 * 24 * time.Hour},
+		{Name: "ECONOMY", Subjects: []string{"galaxis.economy.>"}, MaxAge: 7 * 24 * time.Hour},
+		{Name: "COMBAT",  Subjects: []string{"galaxis.combat.*.state"}, MaxAge: 24 * time.Hour},
+		{Name: "PLAYER",  Subjects: []string{"galaxis.player.>"}, MaxAge: 30 * 24 * time.Hour},
+	}
+	for _, sc := range streamDefs {
+		if err := msgBus.EnsureStream(ctx, sc); err != nil {
+			log.Printf("bus: EnsureStream %s: %v (inprocbus silently ignores unknown streams for Tier-1)", sc.Name, err)
+		}
+	}
+
 	// ── Tick Engine ───────────────────────────────────────────────────────────
 	tickDuration := time.Duration(cfg.Time.StrategyTickMinutes) * time.Minute
 	engine := tick.NewEngine(tickDuration)
 
-	// SSE broadcast bus for tick events (altes System).
-	bus := economy.NewBroadcaster()
+	// SSE broadcast bus for tick events (altes System — bleibt bis Frontend auf NATS migriert).
+	sseBus := economy.NewBroadcaster()
 
 	// Altes Economy-System
 	engine.Register(economy.SchedulerHandler(pool, reg))
@@ -107,6 +140,9 @@ func main() {
 	engine.Register(economy2.ProductionHandler(pool, recipes, mineParams))
 	engine.Register(economy2.ShipTickHandler(pool))
 
+	// Tick-Event auf Bus publizieren (letzter Handler — nach allen Economy-Updates)
+	engine.Register(tickAdvancePublisher(msgBus))
+
 	engine.Start(ctx)
 	defer engine.Stop()
 	log.Printf("tick engine: started (tick = %v)", tickDuration)
@@ -115,7 +151,7 @@ func main() {
 	jobStore := jobs.NewStore()
 
 	// ── HTTP Server ───────────────────────────────────────────────────────────
-	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, bus, engine, recipes, bootstrapCfg, mineParams)
+	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, sseBus, engine, recipes, bootstrapCfg, mineParams, *natsWsURL)
 	srv := &http.Server{
 		Addr:        *addr,
 		Handler:     router,
@@ -144,6 +180,19 @@ func main() {
 		log.Fatalf("server: forced shutdown: %v", err)
 	}
 	log.Println("server: stopped")
+}
+
+// tickAdvancePublisher returns a tick.Handler that publishes galaxis.tick.advance (Tier 2).
+func tickAdvancePublisher(b bus.Bus) tick.Handler {
+	return func(ctx context.Context, tickN int64) {
+		payload := fmt.Appendf(nil, `{"tick":%d,"ts":"%s"}`, tickN, time.Now().UTC().Format(time.RFC3339))
+		if err := b.PublishDurable(ctx, "TICK", bus.Message{
+			Subject: "galaxis.tick.advance",
+			Payload: payload,
+		}); err != nil {
+			log.Printf("bus: publish tick.advance #%d: %v", tickN, err)
+		}
+	}
 }
 
 // loadBootstrapConfig reads the economy2_bootstrap: section from the game-params YAML file.
