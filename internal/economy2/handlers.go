@@ -30,7 +30,7 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 }
 
 // RegisterRoutes mounts all economy2 REST endpoints on the given router.
-func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook, bootstrapCfg BootstrapConfig) {
+func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook, bootstrapCfg BootstrapConfig, mineParams MineParams) {
 	r.Post("/econ2/facilities", createFacilityHandler(db))
 	r.Get("/econ2/facilities", listFacilitiesHandler(db))
 	r.Delete("/econ2/facilities/{id}", destroyFacilityHandler(db))
@@ -46,10 +46,10 @@ func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook, bootstra
 	r.Post("/econ2/nodes", getOrCreateNodeHandler(db))
 	r.Get("/econ2/my-nodes", listMyNodesHandler(db))
 
-	r.Post("/econ2/bootstrap", bootstrapHandler(db, bootstrapCfg))
+	r.Post("/econ2/bootstrap", bootstrapHandler(db, bootstrapCfg, recipes))
 
 	r.Get("/econ2/recipes", listRecipesHandler(recipes))
-	r.Get("/econ2/deposits", depositsHandler(db))
+	r.Get("/econ2/deposits", depositsHandler(db, mineParams))
 }
 
 // --- GET /econ2/recipes ---
@@ -499,7 +499,7 @@ func getStockHandler(db *pgxpool.Pool) http.HandlerFunc {
 
 // --- POST /econ2/bootstrap ---
 
-func bootstrapHandler(db *pgxpool.Pool, cfg BootstrapConfig) http.HandlerFunc {
+func bootstrapHandler(db *pgxpool.Pool, cfg BootstrapConfig, recipes RecipeBook) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		playerID := playerIDFromRequest(r)
 		if playerID == uuid.Nil {
@@ -520,7 +520,7 @@ func bootstrapHandler(db *pgxpool.Pool, cfg BootstrapConfig) http.HandlerFunc {
 			return
 		}
 
-		result, err := RunBootstrap(r.Context(), db, playerID, starID, cfg)
+		result, err := RunBootstrap(r.Context(), db, playerID, starID, cfg, recipes)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -636,7 +636,8 @@ func listMyNodesHandler(db *pgxpool.Pool) http.HandlerFunc {
 // --- GET /econ2/deposits?star_id=... ---
 // Returns planet_deposits state for the star's home planet (first by orbit_index).
 
-func depositsHandler(db *pgxpool.Pool) http.HandlerFunc {
+func depositsHandler(db *pgxpool.Pool, mineParams MineParams) http.HandlerFunc {
+	rateLv1 := mineParams.RateForLevel(1)
 	return func(w http.ResponseWriter, r *http.Request) {
 		starIDStr := r.URL.Query().Get("star_id")
 		if starIDStr == "" {
@@ -662,8 +663,9 @@ func depositsHandler(db *pgxpool.Pool) http.HandlerFunc {
 		}
 
 		writeJSON(w, http.StatusOK, map[string]any{
-			"planet_id": planetID,
-			"deposits":  deposits,
+			"planet_id":     planetID,
+			"deposits":      deposits,
+			"mine_rate_lv1": rateLv1,
 		})
 	}
 }

@@ -120,8 +120,8 @@ export async function bootstrap(starId: string): Promise<BootstrapResult> {
 }
 
 // Deposits
-export async function getDeposits(starId: string): Promise<{ planet_id: string; deposits: Record<string, DepositEntry> }> {
-  return get<{ planet_id: string; deposits: Record<string, DepositEntry> }>(`${BASE}/deposits?star_id=${starId}`)
+export async function getDeposits(starId: string): Promise<{ planet_id: string; deposits: Record<string, DepositEntry>; mine_rate_lv1: number }> {
+  return get<{ planet_id: string; deposits: Record<string, DepositEntry>; mine_rate_lv1: number }>(`${BASE}/deposits?star_id=${starId}`)
 }
 
 // My nodes

@@ -3,6 +3,7 @@ package economy2
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -29,13 +30,9 @@ type BootstrapResult struct {
 }
 
 // RunBootstrap seeds a new node with the configured starting stock and facilities.
-// All facilities are placed on a planet-level node on the star's home planet,
-// so mines sit on the body whose deposits they deplete.
-// planet_deposits is lazily initialised from the planet's resource_deposits quality map.
-// It is additive — calling it twice gives twice the stock. Idempotency guard belongs
-// at the game-logic layer (player state), not here.
-func RunBootstrap(ctx context.Context, db *pgxpool.Pool, playerID, starID uuid.UUID, cfg BootstrapConfig) (*BootstrapResult, error) {
-	// Find the home planet (first by orbit_index) and ensure deposits exist.
+// For mine facilities it also auto-creates a continuous mine order so that mines
+// start producing immediately without manual order creation.
+func RunBootstrap(ctx context.Context, db *pgxpool.Pool, playerID, starID uuid.UUID, cfg BootstrapConfig, recipes RecipeBook) (*BootstrapResult, error) {
 	homePlanetID, err := FindHomePlanet(ctx, db, starID)
 	if err != nil {
 		return nil, fmt.Errorf("bootstrap: home planet: %w", err)
@@ -44,7 +41,6 @@ func RunBootstrap(ctx context.Context, db *pgxpool.Pool, playerID, starID uuid.U
 		return nil, fmt.Errorf("bootstrap: ensure deposits: %w", err)
 	}
 
-	// All bootstrap facilities share one planet-level node on the home planet.
 	nodeID, err := GetOrCreateNode(ctx, db, playerID, starID, homePlanetID)
 	if err != nil {
 		return nil, fmt.Errorf("bootstrap: get/create planet node: %w", err)
@@ -68,6 +64,13 @@ func RunBootstrap(ctx context.Context, db *pgxpool.Pool, playerID, starID uuid.U
 		if err := CreateFacility(ctx, db, f); err != nil {
 			return nil, fmt.Errorf("bootstrap: seed facility %s: %w", fac.FactoryType, err)
 		}
+
+		// Auto-create continuous mine order so the mine starts working immediately.
+		if fac.FactoryType == "mine" && fac.DepositGoodID != "" {
+			if err := createMineOrder(ctx, db, playerID, starID, nodeID, fac.DepositGoodID, recipes); err != nil {
+				log.Printf("economy2: bootstrap auto-order for %s: %v", fac.DepositGoodID, err)
+			}
+		}
 	}
 
 	return &BootstrapResult{
@@ -75,4 +78,38 @@ func RunBootstrap(ctx context.Context, db *pgxpool.Pool, playerID, starID uuid.U
 		SeededStock:      cfg.Stock,
 		SeededFacilities: len(cfg.Facilities),
 	}, nil
+}
+
+// createMineOrder creates a continuous mine production order for the given deposit good.
+// Mine orders have no goods-storage inputs, so AllocateOrder makes them ready immediately.
+// Used by both bootstrap and finishBuildOrder to ensure newly created mines start working.
+func createMineOrder(ctx context.Context, db *pgxpool.Pool, playerID, starID, nodeID uuid.UUID, goodID string, recipes RecipeBook) error {
+	key := RecipeKey{ProductID: goodID, FactoryType: "mine"}
+	recipe, ok := recipes[key]
+	if !ok {
+		return fmt.Errorf("economy2: no mine recipe for good %q", goodID)
+	}
+	order := &ProductionOrder{
+		PlayerID:        playerID,
+		StarID:          starID,
+		NodeID:          nodeID,
+		OrderType:       OrderTypeContinuous,
+		Status:          OrderStatusPending,
+		RecipeID:        recipe.RecipeID,
+		ProductID:       recipe.ProductID,
+		FactoryType:     recipe.FactoryType,
+		Inputs:          recipe.Inputs,
+		BaseYield:       recipe.BaseYield,
+		RecipeTicks:     recipe.Ticks,
+		Efficiency:      recipe.Efficiency,
+		TargetQty:       999_999,
+		AllocatedInputs: map[string]float64{},
+		Priority:        8,
+	}
+	if err := CreateOrder(ctx, db, order); err != nil {
+		return err
+	}
+	// Mine orders have no inputs → immediate allocation → status becomes ready.
+	_ = AllocateOrder(ctx, db, nodeID, order, map[string]float64{})
+	return nil
 }

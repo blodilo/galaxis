@@ -98,6 +98,21 @@ function Spinner() {
   )
 }
 
+function StatusLamp({ status }: { status: string }) {
+  const cls: Record<string, string> = {
+    running:         'bg-emerald-500',
+    paused_depleted: 'bg-orange-500',
+    paused_input:    'bg-yellow-500',
+    idle:            'bg-slate-600',
+  }
+  return (
+    <span
+      className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${cls[status] ?? 'bg-slate-700'}`}
+      title={status}
+    />
+  )
+}
+
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <h3 className="text-xs tracking-widest text-slate-500 uppercase mb-2">{children}</h3>
@@ -286,6 +301,209 @@ function LagerPanel({ stock, loading }: { stock: ItemStock[]; loading: boolean }
   )
 }
 
+// ── Minen-Übersicht ───────────────────────────────────────────────────────────
+
+interface MinenPanelProps {
+  facilities: Facility[]
+  orders: Order[]
+  deposits: Record<string, DepositEntry>
+  mineRateLv1: number
+  nodeId: string
+  starId: string
+  loading: boolean
+  onRefresh: () => void
+}
+
+function MinenPanel({
+  facilities, orders, deposits, mineRateLv1,
+  nodeId, starId, loading, onRefresh,
+}: MinenPanelProps) {
+  const [activating, setActivating] = useState<Record<string, boolean>>({})
+  const [building, setBuilding]     = useState<Record<string, boolean>>({})
+  const [errors, setErrors]         = useState<Record<string, string>>({})
+  const [buildRecipes, setBuildRecipes] = useState<Recipe[]>([])
+
+  useEffect(() => {
+    listRecipes()
+      .then(rs => setBuildRecipes(rs.filter(r => r.factory_type === 'construction')))
+      .catch(() => {})
+  }, [])
+
+  const mines = facilities.filter(f => f.factory_type === 'mine' && f.status !== 'destroyed')
+  const mineOrders = orders.filter(o =>
+    o.factory_type === 'mine' && !TERMINAL_ORDER_STATUSES.has(o.status)
+  )
+  const mineBuildOrders = orders.filter(o =>
+    o.factory_type === 'construction' &&
+    o.product_id.startsWith('facility_mine_') &&
+    !TERMINAL_ORDER_STATUSES.has(o.status)
+  )
+
+  const goodIds = Array.from(new Set([
+    ...Object.keys(deposits).filter(g => (deposits[g]?.remaining ?? 0) > 0),
+    ...mines.map(f => f.config.deposit_good_id ?? '').filter(Boolean),
+  ])).sort()
+
+  const minesByGood = new Map<string, Facility[]>()
+  for (const f of mines) {
+    const g = f.config.deposit_good_id ?? ''
+    if (!g) continue
+    if (!minesByGood.has(g)) minesByGood.set(g, [])
+    minesByGood.get(g)!.push(f)
+  }
+
+  const buildsByGood = new Map<string, Order[]>()
+  for (const o of mineBuildOrders) {
+    const g = o.product_id.replace('facility_mine_', '')
+    if (!buildsByGood.has(g)) buildsByGood.set(g, [])
+    buildsByGood.get(g)!.push(o)
+  }
+
+  const ordersByGood = new Map<string, Order[]>()
+  for (const o of mineOrders) {
+    if (!ordersByGood.has(o.product_id)) ordersByGood.set(o.product_id, [])
+    ordersByGood.get(o.product_id)!.push(o)
+  }
+
+  async function handleActivate(goodId: string) {
+    setActivating(a => ({ ...a, [goodId]: true }))
+    setErrors(e => ({ ...e, [goodId]: '' }))
+    try {
+      await createOrder({
+        node_id: nodeId, star_id: starId,
+        factory_type: 'mine', product_id: goodId,
+        order_type: 'continuous', target_qty: 999_999, priority: 8,
+      })
+      onRefresh()
+    } catch (err) {
+      setErrors(e => ({ ...e, [goodId]: err instanceof Error ? err.message : 'Fehler' }))
+    } finally {
+      setActivating(a => ({ ...a, [goodId]: false }))
+    }
+  }
+
+  async function handleBuild(goodId: string) {
+    const recipe = buildRecipes.find(r => r.product_id === `facility_mine_${goodId}`)
+    if (!recipe) return
+    setBuilding(b => ({ ...b, [goodId]: true }))
+    setErrors(e => ({ ...e, [goodId]: '' }))
+    try {
+      await createOrder({
+        node_id: nodeId, star_id: starId,
+        factory_type: 'construction', product_id: recipe.product_id,
+        order_type: 'build', target_qty: 1,
+      })
+      onRefresh()
+    } catch (err) {
+      setErrors(e => ({ ...e, [goodId]: err instanceof Error ? err.message : 'Fehler' }))
+    } finally {
+      setBuilding(b => ({ ...b, [goodId]: false }))
+    }
+  }
+
+  return (
+    <div>
+      <SectionTitle>Minen & Vorkommen</SectionTitle>
+      {loading && <div className="flex justify-center py-2"><Spinner /></div>}
+      {!loading && goodIds.length === 0 && (
+        <p className="text-xs text-slate-600 italic mb-2">Keine Vorkommen</p>
+      )}
+      {!loading && goodIds.map(goodId => {
+        const mineFacs  = minesByGood.get(goodId) ?? []
+        const deposit   = deposits[goodId]
+        const builds    = buildsByGood.get(goodId) ?? []
+        const activeOrders = ordersByGood.get(goodId) ?? []
+
+        const runningCount  = mineFacs.filter(m => m.status === 'running').length
+        const idleNoOrder   = mineFacs.filter(m => m.status === 'idle' && m.current_order_id === null)
+        const needsActivate = idleNoOrder.length > activeOrders.filter(o => o.status !== 'running').length
+        const totalRate     = runningCount * mineRateLv1
+        const maxSlots      = deposit?.max_rate ?? 0
+
+        const initial  = deposit ? Math.max(deposit.max_rate * 10_000, deposit.remaining) : 0
+        const pct      = initial > 0 && deposit ? Math.min(100, (deposit.remaining / initial) * 100) : 0
+        const barColor = pct > 50 ? 'bg-amber-700/70' : pct > 20 ? 'bg-orange-700/70' : 'bg-red-700/70'
+        const hasBuildRecipe = buildRecipes.some(r => r.product_id === `facility_mine_${goodId}`)
+
+        return (
+          <Card key={goodId}>
+            {/* Header: lamps + name + capacity + rate */}
+            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+              <div className="flex gap-1 items-center">
+                {mineFacs.map(m => <StatusLamp key={m.id} status={m.status} />)}
+                {builds.map(o => (
+                  <span key={o.id} className="inline-block w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" title="Im Bau" />
+                ))}
+              </div>
+              <span className="text-xs font-bold text-slate-200">{itemLabel(goodId)}</span>
+              {mineFacs.length > 0 && maxSlots > 0 && (
+                <span className="text-xs text-slate-600">
+                  {mineFacs.length}/{Math.floor(maxSlots)} Minen
+                </span>
+              )}
+              {totalRate > 0 && (
+                <span className="ml-auto text-xs font-mono text-emerald-500">
+                  {totalRate.toFixed(1)} u/Tick
+                </span>
+              )}
+            </div>
+
+            {/* Deposit bar */}
+            {deposit && (
+              <div className="mb-1.5">
+                <div className="flex justify-between text-xs text-slate-600 mb-0.5">
+                  <span>Vorkommen</span>
+                  <span className="tabular-nums">{deposit.remaining.toFixed(0)}</span>
+                </div>
+                <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            )}
+
+            {/* In-progress build orders */}
+            {builds.map(o => {
+              const bPct = o.recipe_ticks > 0 ? Math.min((o.produced_qty / o.recipe_ticks) * 100, 100) : 0
+              return (
+                <div key={o.id} className="mb-1.5">
+                  <div className="flex justify-between text-xs text-blue-400 mb-0.5">
+                    <span>+1 Mine im Bau</span>
+                    <span>{Math.round(o.produced_qty)}/{o.recipe_ticks} Ticks</span>
+                  </div>
+                  <div className="h-1 bg-slate-800 rounded overflow-hidden">
+                    <div className="h-full bg-blue-700 rounded" style={{ width: `${bPct}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Actions */}
+            <div className="flex gap-1.5 mt-1 flex-wrap">
+              {needsActivate && (
+                <PrimaryButton onClick={() => handleActivate(goodId)} disabled={activating[goodId]}>
+                  {activating[goodId] ? '…' : 'Mine starten'}
+                </PrimaryButton>
+              )}
+              {hasBuildRecipe && (
+                <button
+                  onClick={() => handleBuild(goodId)}
+                  disabled={building[goodId]}
+                  className="text-xs px-2 py-0.5 rounded border border-slate-700 text-slate-400
+                             hover:border-slate-500 disabled:opacity-40 transition-colors"
+                >
+                  {building[goodId] ? '…' : '+ Mine bauen'}
+                </button>
+              )}
+            </div>
+
+            {errors[goodId] && <p className="text-xs text-red-400 mt-0.5">{errors[goodId]}</p>}
+          </Card>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Center column: ANLAGEN + AUFTRÄGE ─────────────────────────────────────────
 
 interface AnlagenPanelProps {
@@ -320,8 +538,11 @@ function AnlagenPanel({ facilities, orders, stock, loading, starId, nodeId, onRe
     return acc
   }, {})
 
-  const buildOrders = orders.filter(o => o.factory_type === 'construction' &&
-    !['completed', 'cancelled'].includes(o.status))
+  const buildOrders = orders.filter(o =>
+    o.factory_type === 'construction' &&
+    !o.product_id.startsWith('facility_mine_') &&
+    !['completed', 'cancelled'].includes(o.status)
+  )
 
   const stockMap = Object.fromEntries(stock.map(s => [s.item_id, s.available]))
   const selectedRecipe = buildRecipes.find(r => r.recipe_id === selectedRecipeId)
@@ -365,8 +586,8 @@ function AnlagenPanel({ facilities, orders, stock, loading, starId, nodeId, onRe
         <p className="text-xs text-slate-600 italic mb-2">Keine Anlagen</p>
       )}
 
-      {/* Existing facilities */}
-      {!loading && facilities.map(f => {
+      {/* Existing facilities (mines handled by MinenPanel) */}
+      {!loading && facilities.filter(f => f.factory_type !== 'mine').map(f => {
         const activeOrder = f.current_order_id ? orderByFacility[f.id] ?? null : null
         const label = FACILITY_TYPE_LABELS[f.factory_type] ?? f.factory_type
         const depositLabel = f.config.deposit_good_id ? ` — ${itemLabel(f.config.deposit_good_id)}` : ''
@@ -489,7 +710,7 @@ function AuftraegePanel({ orders, loading, nodeId, starId, onRefresh }: Auftraeg
   useEffect(() => {
     listRecipes()
       .then(rs => {
-        const prs = rs.filter(r => r.factory_type !== 'construction')
+        const prs = rs.filter(r => r.factory_type !== 'construction' && r.factory_type !== 'mine')
         setProdRecipes(prs)
         if (prs.length > 0) setSelectedRecipeId(prs[0].recipe_id)
       })
@@ -498,8 +719,8 @@ function AuftraegePanel({ orders, loading, nodeId, starId, onRefresh }: Auftraeg
 
   const selectedRecipe = prodRecipes.find(r => r.recipe_id === selectedRecipeId)
 
-  // Show only non-construction production orders
-  const prodOrders = orders.filter(o => o.factory_type !== 'construction')
+  // Show only non-construction, non-mine production orders
+  const prodOrders = orders.filter(o => o.factory_type !== 'construction' && o.factory_type !== 'mine')
 
   async function handleCreate() {
     if (!selectedRecipe) return
@@ -937,6 +1158,7 @@ export function Economy2Page() {
   const [orders, setOrders]       = useState<Order[]>([])
   const [routes, setRoutes]       = useState<Route[]>([])
   const [deposits, setDeposits]   = useState<Record<string, DepositEntry>>({})
+  const [mineRateLv1, setMineRateLv1] = useState(2.5)
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')
   const [countdown, setCountdown] = useState(AUTO_REFRESH_SEC)
@@ -977,7 +1199,7 @@ export function Economy2Page() {
         sid ? listFacilities(sid) : Promise.resolve([]),
         listOrders(nid),
         listRoutes(),
-        sid ? getDeposits(sid).then(res => res.deposits ?? {}).catch(() => ({})) : Promise.resolve({}),
+        sid ? getDeposits(sid).then(res => { if (res.mine_rate_lv1) setMineRateLv1(res.mine_rate_lv1); return res.deposits ?? {} }).catch(() => ({})) : Promise.resolve({}),
       ])
       setStock(s)
       setFacilities(f)
@@ -1088,16 +1310,21 @@ export function Economy2Page() {
           {/* Left — LAGER + VORKOMMEN */}
           <div className="w-56 flex-shrink-0 bg-black/70 border-r border-slate-800 backdrop-blur-sm overflow-y-auto p-3 space-y-4">
             <LagerPanel stock={stock} loading={loading} />
-            {Object.keys(deposits).length > 0 && (
-              <>
-                <div className="border-t border-slate-800" />
-                <VorkommenPanel deposits={deposits} />
-              </>
-            )}
           </div>
 
-          {/* Center — ANLAGEN + AUFTRÄGE */}
+          {/* Center — MINEN + ANLAGEN + AUFTRÄGE */}
           <div className="flex-1 overflow-y-auto p-3 space-y-4">
+            <MinenPanel
+              facilities={facilities}
+              orders={orders}
+              deposits={deposits}
+              mineRateLv1={mineRateLv1}
+              nodeId={nodeId}
+              starId={starId}
+              loading={loading}
+              onRefresh={handleRefresh}
+            />
+            <div className="border-t border-slate-800" />
             <AnlagenPanel
               facilities={facilities}
               orders={orders}

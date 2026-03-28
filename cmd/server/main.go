@@ -103,7 +103,7 @@ func main() {
 
 	// Neues Economy2-System
 	engine.Register(economy2.SchedulerHandler(pool, recipes))
-	engine.Register(economy2.BuildTickHandler(pool))
+	engine.Register(economy2.BuildTickHandler(pool, recipes))
 	engine.Register(economy2.ProductionHandler(pool, recipes, mineParams))
 	engine.Register(economy2.ShipTickHandler(pool))
 
@@ -115,7 +115,7 @@ func main() {
 	jobStore := jobs.NewStore()
 
 	// ── HTTP Server ───────────────────────────────────────────────────────────
-	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, bus, engine, recipes, bootstrapCfg)
+	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, bus, engine, recipes, bootstrapCfg, mineParams)
 	srv := &http.Server{
 		Addr:        *addr,
 		Handler:     router,

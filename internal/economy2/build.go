@@ -11,18 +11,16 @@ import (
 )
 
 // BuildTickHandler processes construction orders each tick.
-// Construction orders (factory_type='construction') do not require a physical facility.
-// Each tick, produced_qty is incremented as a progress counter.
-// When produced_qty reaches recipe_ticks, the facility is created and the order completed.
-func BuildTickHandler(db *pgxpool.Pool) func(ctx context.Context, tickN int64) {
+// When a mine facility is completed, it automatically creates a continuous mine order.
+func BuildTickHandler(db *pgxpool.Pool, recipes RecipeBook) func(ctx context.Context, tickN int64) {
 	return func(ctx context.Context, tickN int64) {
-		if err := runBuildTick(ctx, db); err != nil {
+		if err := runBuildTick(ctx, db, recipes); err != nil {
 			log.Printf("economy2: build tick %d: %v", tickN, err)
 		}
 	}
 }
 
-func runBuildTick(ctx context.Context, db *pgxpool.Pool) error {
+func runBuildTick(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook) error {
 	// Move ready construction orders to running (no facility assignment step needed).
 	if _, err := db.Exec(ctx, `
 		UPDATE econ2_orders
@@ -85,7 +83,7 @@ func runBuildTick(ctx context.Context, db *pgxpool.Pool) error {
 		newQty := co.producedQty + 1
 		if int(newQty) >= co.recipeTicks {
 			if err := finishBuildOrder(ctx, db, co.id, co.playerID, co.starID, co.nodeID, co.planetID,
-				co.productID, co.inputs, co.allocatedInputs); err != nil {
+				co.productID, co.inputs, co.allocatedInputs, recipes); err != nil {
 				log.Printf("economy2: finish build order %s: %v", co.id, err)
 			}
 		} else {
@@ -104,6 +102,7 @@ func finishBuildOrder(
 	ctx context.Context, db *pgxpool.Pool,
 	orderID, playerID, starID, nodeID uuid.UUID, planetID *uuid.UUID,
 	productID string, inputs []RecipeInput, allocated map[string]float64,
+	recipes RecipeBook,
 ) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
@@ -130,10 +129,8 @@ func finishBuildOrder(
 	factoryType, depositGoodID := parseBuildProductID(productID)
 
 	// For mine facilities: ensure the node's planet has deposits initialised.
-	// The mine's physical location = the node's planet (planetID comes from node join in runBuildTick).
 	if factoryType == "mine" {
 		if planetID == nil {
-			// Fallback: node is star-level; find home planet.
 			pid, err := FindHomePlanet(ctx, db, starID)
 			if err == nil {
 				planetID = pid
@@ -144,18 +141,16 @@ func finishBuildOrder(
 		}
 	}
 
-	// Create the facility on the node — location is encoded in the node, not the facility.
+	// Create the facility on the node.
 	cfg := FacilityConfig{Level: 1, DepositGoodID: depositGoodID}
 	cfgRaw, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
-	var facilityID uuid.UUID
-	if err := tx.QueryRow(ctx, `
+	if _, err := tx.Exec(ctx, `
 		INSERT INTO econ2_facilities (player_id, star_id, node_id, factory_type, status, config)
 		VALUES ($1,$2,$3,$4,'idle',$5)
-		RETURNING id
-	`, playerID, starID, nodeID, factoryType, cfgRaw).Scan(&facilityID); err != nil {
+	`, playerID, starID, nodeID, factoryType, cfgRaw); err != nil {
 		return err
 	}
 
@@ -168,7 +163,17 @@ func finishBuildOrder(
 		return err
 	}
 
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+
+	// Auto-create continuous mine order so the newly built mine starts immediately.
+	if factoryType == "mine" && depositGoodID != "" {
+		if err := createMineOrder(ctx, db, playerID, starID, nodeID, depositGoodID, recipes); err != nil {
+			log.Printf("economy2: auto-order after build for %s: %v", depositGoodID, err)
+		}
+	}
+	return nil
 }
 
 // parseBuildProductID extracts factory_type and deposit_good_id from a construction order product_id.
