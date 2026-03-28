@@ -62,7 +62,7 @@ func InsertPlanets(ctx context.Context, pool *pgxpool.Pool, planets []model.Plan
 		)
 	}
 	results := pool.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 	for range planets {
 		if _, err := results.Exec(); err != nil {
 			return fmt.Errorf("db: insert planet: %w", err)
@@ -91,7 +91,7 @@ func InsertMoons(ctx context.Context, pool *pgxpool.Pool, moons []model.Moon) er
 		)
 	}
 	results := pool.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 	for range moons {
 		if _, err := results.Exec(); err != nil {
 			return fmt.Errorf("db: insert moon: %w", err)

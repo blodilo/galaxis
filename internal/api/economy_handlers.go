@@ -461,7 +461,7 @@ func streamTickEvents(bus *economy.Broadcaster) http.HandlerFunc {
 					continue // filter to this system
 				}
 				data, _ := json.Marshal(ev)
-				fmt.Fprintf(w, "data: %s\n\n", data)
+				_, _ = fmt.Fprintf(w, "data: %s\n\n", data)
 				flusher.Flush()
 			case <-sseCtx.Done():
 				return
@@ -1002,18 +1002,4 @@ func loadOrdersForSystem(
 		result = []orderDTO{}
 	}
 	return result, rows.Err()
-}
-
-// sseTimeout replaces the router's global 60s timeout for SSE handlers.
-// It returns a deadline-free context that cancels when the client disconnects.
-func sseTimeout(r *http.Request) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		select {
-		case <-r.Context().Done():
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
-	return ctx, cancel
 }

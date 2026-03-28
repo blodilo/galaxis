@@ -21,7 +21,7 @@ func TestPublishSubscribe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer sub.Unsubscribe()
+	defer func() { _ = sub.Unsubscribe() }()
 
 	_ = a.Publish(ctx, bus.Message{Subject: "galaxis.tick.advance", Payload: []byte(`{"tick":1}`)})
 

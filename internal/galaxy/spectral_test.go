@@ -175,17 +175,6 @@ func TestBuildStarProps_SMBH(t *testing.T) {
 
 func TestBuildStarProps_MassLuminosityRelation(t *testing.T) {
 	// Main sequence: more massive → more luminous (L ∝ M^3.5)
-	types := []StarType{StarTypeM, StarTypeK, StarTypeG, StarTypeF, StarTypeA, StarTypeB, StarTypeO}
-	prevLum := 0.0
-	for _, typ := range types {
-		rng := rand.New(rand.NewPCG(100, 0))
-		p := buildStarProps(rng, typ, 0)
-		if p.Luminosity <= prevLum && prevLum > 0 {
-			// Allow some noise tolerance — just check order of magnitude
-			// M < K < G < F < A < B < O holds at median
-		}
-		prevLum = p.Luminosity
-	}
 	// Spot check: O-star must be significantly brighter than M-dwarf
 	rngO := rand.New(rand.NewPCG(50, 0))
 	rngM := rand.New(rand.NewPCG(50, 0))

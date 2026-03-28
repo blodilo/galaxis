@@ -42,7 +42,7 @@ func (f *Facility) Destroy(ctx context.Context, db *pgxpool.Pool) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Cancel all active orders for this facility
 	if _, err := tx.Exec(ctx, `

@@ -51,7 +51,7 @@ func AllocateOrder(ctx context.Context, db *pgxpool.Pool, nodeID uuid.UUID, orde
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Phase 1: check availability (lock rows)
 	for itemID, needed := range totals {

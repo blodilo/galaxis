@@ -126,7 +126,7 @@ func setupFixtures(t *testing.T) itFixtures {
 	t.Cleanup(func() {
 		// ON DELETE CASCADE zieht stars, planets, econ2_nodes, econ2_facilities,
 		// econ2_orders, econ2_item_stock, planet_deposits mit hoch.
-		itDB.Exec(itCtx, `DELETE FROM galaxies WHERE id = $1`, fx.galaxyID)
+		_, _ = itDB.Exec(itCtx, `DELETE FROM galaxies WHERE id = $1`, fx.galaxyID)
 	})
 
 	return fx
@@ -354,14 +354,14 @@ func TestEconomyBuildOrderConsumesResources(t *testing.T) {
 
 	// Auftragsstatus prüfen
 	var status string
-	itDB.QueryRow(itCtx, `SELECT status FROM econ2_orders WHERE id=$1`, order.ID).Scan(&status)
+	_ = itDB.QueryRow(itCtx, `SELECT status FROM econ2_orders WHERE id=$1`, order.ID).Scan(&status)
 	if status != "completed" {
 		t.Errorf("Auftragsstatus = %q, want completed", status)
 	}
 
 	// Anlage muss erstellt worden sein
 	var facilityCount int
-	itDB.QueryRow(itCtx,
+	_ = itDB.QueryRow(itCtx,
 		`SELECT COUNT(*) FROM econ2_facilities
 		 WHERE player_id=$1 AND factory_type='smelter' AND node_id=$2`,
 		fx.playerID, nodeID,

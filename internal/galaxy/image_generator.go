@@ -102,7 +102,7 @@ func analyzeImage(imagePath string) (*imageAnalysis, error) {
 	if err != nil {
 		return nil, fmt.Errorf("analyzeImage: open %s: %w", imagePath, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	img, _, err := image.Decode(f)
 	if err != nil {
@@ -327,24 +327,6 @@ func applySpectralCascade(stars []Star, smbhMassSolar float64, galaxySeed int64)
 			stars[idx].ColorHex = props.ColorHex
 		}
 	}
-}
-
-// findBrightnessCentroid returns the luminance-weighted centroid as pixel coordinates.
-func findBrightnessCentroid(a *imageAnalysis) (cx, cy float64) {
-	var sumX, sumY, sumW float64
-	w := a.width
-	for idx, lum := range a.intensities {
-		x := float64(idx % w)
-		y := float64(idx / w)
-		weight := float64(lum)
-		sumX += x * weight
-		sumY += y * weight
-		sumW += weight
-	}
-	if sumW == 0 {
-		return float64(a.width) / 2, float64(a.height) / 2
-	}
-	return sumX / sumW, sumY / sumW
 }
 
 // placeExotics generates exotic stars and the SMBH from the image.

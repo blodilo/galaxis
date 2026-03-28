@@ -170,7 +170,7 @@ func (a *NATSAdapter) SubscribeDurable(ctx context.Context, streamName, consumer
 }
 
 func (a *NATSAdapter) Close() error {
-	a.nc.Drain()
+	_ = a.nc.Drain()
 	return nil
 }
 

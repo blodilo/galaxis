@@ -91,7 +91,8 @@ func (d *densityField) arms_(R, x, y float64) float64 {
 		armBoost := math.Exp(-dTheta*dTheta / (2 * sigma * sigma))
 
 		// Radial envelope: arm strength peaks at mid-radius and fades at edges
-		radialEnv := math.Exp(-math.Pow((R-d.barRadius*3)/(d.barRadius*4), 2))
+		radialEnvArg := (R - d.barRadius*3) / (d.barRadius * 4)
+		radialEnv := math.Exp(-(radialEnvArg * radialEnvArg))
 		boost += armBoost * radialEnv
 	}
 

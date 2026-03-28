@@ -395,7 +395,7 @@ func writeJSON(w http.ResponseWriter, v any) {
 func (m *manager) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, uiHTML)
+		_, _ = fmt.Fprint(w, uiHTML)
 	})
 
 	mux.HandleFunc("GET /api/status", func(w http.ResponseWriter, _ *http.Request) {
@@ -451,7 +451,7 @@ func (m *manager) register(mux *http.ServeMux) {
 
 		sendLine := func(line string) {
 			b, _ := json.Marshal(line)
-			fmt.Fprintf(w, "data: %s\n\n", b)
+			_, _ = fmt.Fprintf(w, "data: %s\n\n", b)
 			if canFlush {
 				flusher.Flush()
 			}

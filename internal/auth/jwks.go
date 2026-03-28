@@ -61,7 +61,7 @@ func NewJWKSValidator(jwksURL, issuer string) ValidateFunc {
 		if err != nil {
 			return fmt.Errorf("fetch jwks: %w", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		var raw struct {
 			Keys []json.RawMessage `json:"keys"`

@@ -108,7 +108,7 @@ func finishBuildOrder(
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Consume allocated inputs from stock.
 	for _, inp := range inputs {

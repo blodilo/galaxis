@@ -73,7 +73,7 @@ func (c *PermissionClient) Check(
 	if err != nil {
 		return false, fmt.Errorf("permission service: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("permission service: status %d", resp.StatusCode)

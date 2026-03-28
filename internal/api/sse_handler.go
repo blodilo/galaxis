@@ -60,7 +60,7 @@ func getGenerateProgress(store *jobs.Store) http.HandlerFunc {
 		lastSent := afterSeq
 		writeEv := func(ev jobs.ProgressEvent) {
 			data, _ := json.Marshal(ev)
-			fmt.Fprintf(w, "id: %d\ndata: %s\n\n", ev.Seq, data)
+			_, _ = fmt.Fprintf(w, "id: %d\ndata: %s\n\n", ev.Seq, data)
 			flusher.Flush()
 			lastSent = ev.Seq
 		}
@@ -76,7 +76,7 @@ func getGenerateProgress(store *jobs.Store) http.HandlerFunc {
 			case ev, open := <-live:
 				if !open {
 					// Channel closed = job done or error.
-					fmt.Fprintf(w, "event: done\ndata: {}\n\n")
+					_, _ = fmt.Fprintf(w, "event: done\ndata: {}\n\n")
 					flusher.Flush()
 					return
 				}

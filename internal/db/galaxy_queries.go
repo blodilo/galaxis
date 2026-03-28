@@ -57,7 +57,7 @@ func InsertStars(ctx context.Context, pool *pgxpool.Pool, stars []model.Star) er
 		)
 	}
 	results := pool.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 	for range stars {
 		if _, err := results.Exec(); err != nil {
 			return fmt.Errorf("db: insert star: %w", err)
@@ -82,7 +82,7 @@ func InsertNebulae(ctx context.Context, pool *pgxpool.Pool, nebulae []model.Nebu
 		)
 	}
 	results := pool.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 	for range nebulae {
 		if _, err := results.Exec(); err != nil {
 			return fmt.Errorf("db: insert nebula: %w", err)
@@ -106,7 +106,7 @@ func InsertFTLWChunkSlice(ctx context.Context, pool *pgxpool.Pool, galaxyID uuid
 		)
 	}
 	results := pool.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 	for range chunks {
 		if _, err := results.Exec(); err != nil {
 			return fmt.Errorf("db: insert ftlw chunk: %w", err)
@@ -308,11 +308,11 @@ func BulkUpdateStarTypes(ctx context.Context, pool *pgxpool.Pool, updates []Star
 		results := pool.SendBatch(ctx, batch)
 		for range chunk {
 			if _, err := results.Exec(); err != nil {
-				results.Close()
+				_ = results.Close()
 				return fmt.Errorf("db: update star type: %w", err)
 			}
 		}
-		results.Close()
+		_ = results.Close()
 	}
 	return nil
 }

@@ -102,7 +102,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("nats: %v", err)
 		}
-		defer nb.Close()
+		defer func() { _ = nb.Close() }()
 		log.Printf("nats: connected to %s", *natsURL)
 		msgBus = nb
 	} else {

@@ -16,9 +16,11 @@ if ! go vet ./... 2>&1; then
   FAILED=1
 fi
 
-if command -v golangci-lint &>/dev/null; then
+GOLANGCI="$(go env GOPATH)/bin/golangci-lint"
+command -v golangci-lint &>/dev/null && GOLANGCI="golangci-lint"
+if [ -x "$GOLANGCI" ]; then
   echo "pre-commit: golangci-lint …"
-  if ! golangci-lint run ./... 2>&1; then
+  if ! "$GOLANGCI" run ./... 2>&1; then
     FAILED=1
   fi
 else
