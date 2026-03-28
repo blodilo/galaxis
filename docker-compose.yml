@@ -16,24 +16,23 @@ services:
       timeout: 5s
       retries: 10
 
-  redis:
-    image: redis:7-alpine
+  nats:
+    image: nats:2.10-alpine
     restart: unless-stopped
-    command: >
-      redis-server
-      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
-      --save 60 1
-      --loglevel warning
+    command: ["-c", "/etc/nats/nats-server.conf"]
     ports:
-      - "6379:6379"
+      - "4222:4222"   # Go-Services
+      - "4223:4223"   # Browser WebSocket (nats.ws)
+      - "8222:8222"   # HTTP Monitoring
     volumes:
-      - redis_data:/data
+      - ./nats-server.conf:/etc/nats/nats-server.conf:ro
+      - nats_data:/data/nats
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8222/healthz || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 10
 
 volumes:
   postgres_data:
-  redis_data:
+  nats_data:
