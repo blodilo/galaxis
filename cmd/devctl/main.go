@@ -278,6 +278,28 @@ func makePostgres() *component {
 	return c
 }
 
+func makeNATS() *component {
+	c := &component{id: "nats", display: "NATS", port: 4222}
+	c.fnHealth = func() bool { return tcpAlive(4222) }
+	c.fnStart = func(c *component) error {
+		if tcpAlive(4222) {
+			c.buf.add("[devctl] NATS läuft bereits")
+			return nil
+		}
+		return runShell(c, "docker", "compose", "up", "-d", "nats")
+	}
+	c.fnStop = func(c *component) {
+		_ = runShell(c, "docker", "compose", "stop", "nats")
+	}
+	if tcpAlive(4222) {
+		c.st = stRunning
+		c.startedAt = time.Now()
+	} else {
+		c.st = stStopped
+	}
+	return c
+}
+
 func makeGalaxisAPI() *component {
 	c := &component{id: "galaxis-api", display: "Galaxis API", port: 8080}
 	c.fnHealth = func() bool { return httpAlive("http://localhost:8080/health") }
@@ -294,7 +316,10 @@ func makeGalaxisAPI() *component {
 			return fmt.Errorf("migrate: %w", err)
 		}
 		c.buf.add("[devctl] Migration ok")
-		cmd := exec.Command("./bin/galaxis-api", "--config", "game-params_v1.8.yaml")
+		cmd := exec.Command("./bin/galaxis-api",
+			"--config", "game-params_v1.8.yaml",
+			"--nats", "nats://localhost:4222",
+		)
 		cmd.Env = append(os.Environ(), "DATABASE_URL="+dbURL)
 		stdout, _ := cmd.StdoutPipe()
 		stderr, _ := cmd.StderrPipe()
@@ -354,7 +379,7 @@ type manager struct {
 }
 
 func newManager() *manager {
-	list := []*component{makePostgres(), makeGalaxisAPI(), makeFrontend()}
+	list := []*component{makePostgres(), makeNATS(), makeGalaxisAPI(), makeFrontend()}
 	m := &manager{comps: list, byID: map[string]*component{}}
 	for _, c := range list {
 		m.byID[c.id] = c
