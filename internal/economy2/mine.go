@@ -43,11 +43,21 @@ func processMine(
 	recipe *Recipe,
 	params MineParams,
 ) error {
+	// Fallback: orbit nodes have no planet_id — resolve via home planet.
 	if f.PlanetID == nil {
-		return fmt.Errorf("economy2: mine facility %s has no planet_id", f.ID)
+		pid, err := FindHomePlanet(ctx, db, f.StarID)
+		if err != nil {
+			return fmt.Errorf("economy2: mine facility missing planet_id: %w", err)
+		}
+		f.PlanetID = pid
 	}
 
 	goodID := recipe.GeologicalInput
+
+	// Lazily initialise planet_deposits if the planet was just colonised.
+	if err := EnsureDeposits(ctx, db, *f.PlanetID); err != nil {
+		return fmt.Errorf("economy2: mine ensure deposits: %w", err)
+	}
 
 	ds, err := readDeposit(ctx, db, *f.PlanetID, goodID)
 	if err != nil {

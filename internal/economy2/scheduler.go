@@ -103,7 +103,7 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 	// JOIN with econ2_nodes to get the node's planet_id (mine slot check needs it).
 	rows, err := db.Query(ctx, `
 		SELECT
-		    f.id, f.factory_type, n.planet_id,
+		    f.id, f.factory_type, f.star_id, n.planet_id,
 		    o.id, o.recipe_id, o.recipe_ticks, o.product_id
 		FROM econ2_facilities f
 		JOIN econ2_nodes n ON n.id = f.node_id
@@ -127,6 +127,7 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 	type assignment struct {
 		facilityID  uuid.UUID
 		factoryType string
+		starID      uuid.UUID
 		planetID    *uuid.UUID
 		orderID     uuid.UUID
 		recipeID    string
@@ -138,7 +139,7 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 	for rows.Next() {
 		var a assignment
 		if err := rows.Scan(
-			&a.facilityID, &a.factoryType, &a.planetID,
+			&a.facilityID, &a.factoryType, &a.starID, &a.planetID,
 			&a.orderID, &a.recipeID, &a.recipeTicks, &a.productID,
 		); err != nil {
 			return fmt.Errorf("economy2: assign scan: %w", err)
@@ -152,7 +153,7 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 	for _, a := range assignments {
 		// Mine slot enforcement: check deposit.max_rate as max_mines.
 		if a.factoryType == "mine" {
-			if ok, err := mineSlotAvailable(ctx, db, a.planetID, a.productID); err != nil {
+			if ok, err := mineSlotAvailable(ctx, db, a.starID, a.planetID, a.productID); err != nil {
 				log.Printf("economy2: mine slot check facility %s: %v", a.facilityID, err)
 				continue
 			} else if !ok {
@@ -169,9 +170,18 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 
 // mineSlotAvailable returns true when the deposit still has free mine slots.
 // max_mines is read from planet_deposits.state[goodID].max_rate.
-func mineSlotAvailable(ctx context.Context, db *pgxpool.Pool, planetID *uuid.UUID, goodID string) (bool, error) {
+// When planetID is nil (orbit node), the home planet is resolved via starID.
+func mineSlotAvailable(ctx context.Context, db *pgxpool.Pool, starID uuid.UUID, planetID *uuid.UUID, goodID string) (bool, error) {
 	if planetID == nil {
-		return false, fmt.Errorf("economy2: mine facility missing planet_id")
+		pid, err := FindHomePlanet(ctx, db, starID)
+		if err != nil {
+			return false, fmt.Errorf("economy2: mine facility missing planet_id: %w", err)
+		}
+		planetID = pid
+	}
+
+	if err := EnsureDeposits(ctx, db, *planetID); err != nil {
+		return false, fmt.Errorf("economy2: mine ensure deposits: %w", err)
 	}
 
 	ds, err := readDeposit(ctx, db, *planetID, goodID)
