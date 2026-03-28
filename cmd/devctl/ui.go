@@ -140,7 +140,7 @@ const uiHTML = `<!DOCTYPE html>
 </div>
 
 <script>
-var ORDER = ['postgres', 'galaxis-api', 'galaxis-frontend']
+var ORDER = ['postgres', 'nats', 'galaxis-api', 'galaxis-frontend']
 var state = {}
 var activeLog = null
 var logEs = null
