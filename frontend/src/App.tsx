@@ -14,6 +14,7 @@ import { HudDevPage } from './pages/HudDevPage'
 import { Economy2Page } from './pages/Economy2Page'
 import { VisualParamsProvider } from './context/VisualParamsContext'
 import { fetchGalaxies, fetchAllStars, fetchNebulae, fetchSystem } from './api/galaxy'
+import { deleteGalaxy } from './api/generate'
 import type { Galaxy, Star, Nebula, StarFilter, Planet } from './types/galaxy'
 import { DEFAULT_FILTER } from './types/galaxy'
 import './index.css'
@@ -41,6 +42,7 @@ function AppInner() {
   const [systemStar, setSystemStar]     = useState<Star | null>(null)
   const [systemPlanets, setSystemPlanets] = useState<Planet[]>([])
   const [systemLoading, setSystemLoading] = useState(false)
+  const [systemError, setSystemError]   = useState<string | null>(null)
   const [selectedPlanet, setSelectedPlanet] = useState<Planet | null>(null)
   // Galaxy picker
   const [pickerOpen, setPickerOpen]     = useState(false)
@@ -95,6 +97,7 @@ function AppInner() {
     if (!galaxy) return
     setSystemStar(star)
     setSystemPlanets([])
+    setSystemError(null)
     setSelectedPlanet(null)
     setMoonPlanet(null)
     setSystemLoading(true)
@@ -102,6 +105,8 @@ function AppInner() {
     try {
       const data = await fetchSystem(galaxy.id, star.id)
       setSystemPlanets(data.planets ?? [])
+    } catch (err) {
+      setSystemError(err instanceof Error ? err.message : String(err))
     } finally {
       setSystemLoading(false)
     }
@@ -136,6 +141,20 @@ function AppInner() {
     setResumeGalaxy(null)
     setView('generator')
   }, [])
+
+  const handleDeleteGalaxy = useCallback(async (g: Galaxy) => {
+    if (!confirm(`Galaxie „${g.name}" wirklich löschen?`)) return
+    try {
+      await deleteGalaxy(g.id)
+      setGalaxies(prev => prev.filter(x => x.id !== g.id))
+      if (galaxy?.id === g.id) {
+        setGalaxy(null)
+        setView('viewer')
+      }
+    } catch (err) {
+      alert(`Löschen fehlgeschlagen: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }, [galaxy])
 
   // Switch to generator tab — auto-resume the first in-progress galaxy if not already resuming
   const handleSwitchToGenerator = useCallback(() => {
@@ -230,6 +249,7 @@ function AppInner() {
               onSelect={(g) => { loadGalaxy(g); setView('viewer') }}
               onResume={handleResume}
               onNew={handleNewGalaxy}
+              onDelete={handleDeleteGalaxy}
               onClose={() => setPickerOpen(false)}
             />
           )}
@@ -351,6 +371,11 @@ function AppInner() {
             <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-slate-400 gap-3">
               <div className="w-8 h-8 border-2 border-slate-600 border-t-cyan-400 rounded-full animate-spin" />
               <span className="text-sm">Lade Planetensystem…</span>
+            </div>
+          ) : systemError ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-red-400 gap-2">
+              <span className="text-sm font-bold">Fehler beim Laden des Planetensystems</span>
+              <span className="text-xs text-slate-500 max-w-md text-center">{systemError}</span>
             </div>
           ) : (
             <SystemScene

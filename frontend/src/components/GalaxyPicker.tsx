@@ -7,6 +7,7 @@ interface Props {
   onSelect: (g: Galaxy) => void   // load ready/active galaxy in viewer
   onResume: (g: Galaxy) => void   // continue step-by-step generation
   onNew: () => void               // open generator for a new galaxy
+  onDelete: (g: Galaxy) => void   // delete galaxy
   onClose: () => void
 }
 
@@ -37,7 +38,7 @@ function formatDate(iso?: string): string {
   } catch { return '' }
 }
 
-export function GalaxyPicker({ galaxies, currentId, onSelect, onResume, onNew, onClose }: Props) {
+export function GalaxyPicker({ galaxies, currentId, onSelect, onResume, onNew, onDelete, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null)
 
   // Close on outside click
@@ -145,6 +146,15 @@ export function GalaxyPicker({ galaxies, currentId, onSelect, onResume, onNew, o
                   {meta.actionLabel}
                 </span>
               )}
+
+              {/* Delete button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(g) }}
+                className="shrink-0 text-[10px] text-slate-600 hover:text-red-400 transition-colors px-1"
+                title="Galaxie löschen"
+              >
+                ✕
+              </button>
             </div>
           )
         })}
