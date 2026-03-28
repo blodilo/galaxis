@@ -1,7 +1,8 @@
 // Galaxis NATS browser client — nats.ws (Apache-2.0)
 // Singleton connection: connected lazily on first use.
 
-import { connect, NatsConnection, JSONCodec, Subscription } from 'nats.ws'
+import { connect, JSONCodec } from 'nats.ws'
+import type { NatsConnection, Subscription } from 'nats.ws'
 
 export const jc = JSONCodec()
 
