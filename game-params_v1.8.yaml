@@ -711,20 +711,20 @@ mine:
 # ═══════════════════════════════════════════════════════════════════
 economy2_bootstrap:
   stock:
-    iron_ore:       200.0
-    silicates:      100.0
-    titan:           50.0
-    rare_earths:     30.0
-    he3:             40.0
+    iron:           200.0
+    silicon:        100.0
+    titanium:        50.0
+    rare_earth:      30.0
+    helium_3:        40.0
     hydrogen:        60.0
     steel:          150.0
     base_component:  20.0
 
   facilities:
     - factory_type: mine
-      deposit_good_id: iron_ore
+      deposit_good_id: iron
     - factory_type: mine
-      deposit_good_id: silicates
+      deposit_good_id: silicon
     - factory_type: mine
-      deposit_good_id: he3
+      deposit_good_id: helium_3
     - factory_type: smelter

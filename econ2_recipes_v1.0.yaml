@@ -1,50 +1,51 @@
 recipes:
   # ── Mine recipes ─────────────────────────────────────────────────────────────
   # geological_input: the good_id drawn from planet_deposits each tick.
+  # IDs match planets.resource_deposits keys (internal/planet/resources.go).
   # base_yield / efficiency: applied via accumulator (floor(acc += rate * η)).
   # Output rate per tick = MineParams.RateForLevel(facility.level).
   # inputs: [] — no goods-storage inputs; slot limit enforced by scheduler.
 
-  - recipe_id: mine_iron_ore
-    product_id: iron_ore
+  - recipe_id: mine_iron
+    product_id: iron
     factory_type: mine
-    geological_input: iron_ore
+    geological_input: iron
     inputs: []
     base_yield: 1.0
     ticks: 1
     efficiency: 1.0
 
-  - recipe_id: mine_silicates
-    product_id: silicates
+  - recipe_id: mine_silicon
+    product_id: silicon
     factory_type: mine
-    geological_input: silicates
+    geological_input: silicon
     inputs: []
     base_yield: 1.0
     ticks: 1
     efficiency: 1.0
 
-  - recipe_id: mine_titan
-    product_id: titan
+  - recipe_id: mine_titanium
+    product_id: titanium
     factory_type: mine
-    geological_input: titan
+    geological_input: titanium
     inputs: []
     base_yield: 1.0
     ticks: 1
     efficiency: 1.0
 
-  - recipe_id: mine_rare_earths
-    product_id: rare_earths
+  - recipe_id: mine_rare_earth
+    product_id: rare_earth
     factory_type: mine
-    geological_input: rare_earths
+    geological_input: rare_earth
     inputs: []
     base_yield: 1.0
     ticks: 1
     efficiency: 0.90  # [BALANCING] Seltene Erden: etwas Verlust beim Abbau
 
-  - recipe_id: mine_he3
-    product_id: he3
+  - recipe_id: mine_helium_3
+    product_id: helium_3
     factory_type: mine
-    geological_input: he3
+    geological_input: helium_3
     inputs: []
     base_yield: 1.0
     ticks: 1
@@ -59,13 +60,175 @@ recipes:
     ticks: 1
     efficiency: 0.98
 
+  - recipe_id: mine_nickel
+    product_id: nickel
+    factory_type: mine
+    geological_input: nickel
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: mine_tungsten
+    product_id: tungsten
+    factory_type: mine
+    geological_input: tungsten
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: mine_molybdenum
+    product_id: molybdenum
+    factory_type: mine
+    geological_input: molybdenum
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: mine_uranium
+    product_id: uranium
+    factory_type: mine
+    geological_input: uranium
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.95  # [BALANCING] radioaktives Material, leichte Abbau-Verluste
+
+  - recipe_id: mine_thorium
+    product_id: thorium
+    factory_type: mine
+    geological_input: thorium
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.95
+
+  - recipe_id: mine_aluminum
+    product_id: aluminum
+    factory_type: mine
+    geological_input: aluminum
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: mine_phosphorus
+    product_id: phosphorus
+    factory_type: mine
+    geological_input: phosphorus
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: mine_sulfur
+    product_id: sulfur
+    factory_type: mine
+    geological_input: sulfur
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: mine_carbon
+    product_id: carbon
+    factory_type: mine
+    geological_input: carbon
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: mine_water_ice
+    product_id: water_ice
+    factory_type: mine
+    geological_input: water_ice
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.98
+
+  - recipe_id: mine_ammonia_ice
+    product_id: ammonia_ice
+    factory_type: mine
+    geological_input: ammonia_ice
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.97
+
+  - recipe_id: mine_methane_ice
+    product_id: methane_ice
+    factory_type: mine
+    geological_input: methane_ice
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.97
+
+  - recipe_id: mine_co2_ice
+    product_id: co2_ice
+    factory_type: mine
+    geological_input: co2_ice
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.98
+
+  - recipe_id: mine_nitrogen
+    product_id: nitrogen
+    factory_type: mine
+    geological_input: nitrogen
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.98
+
+  - recipe_id: mine_helium
+    product_id: helium
+    factory_type: mine
+    geological_input: helium
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.97
+
+  - recipe_id: mine_organics
+    product_id: organics
+    factory_type: mine
+    geological_input: organics
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.95
+
+  - recipe_id: mine_antimatter
+    product_id: antimatter
+    factory_type: mine
+    geological_input: antimatter
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.80  # [BALANCING] Hochenergetisch, hohe Abbau-Verluste
+
+  - recipe_id: mine_exotic_matter
+    product_id: exotic_matter
+    factory_type: mine
+    geological_input: exotic_matter
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.70  # [BALANCING] Extrem selten, starke Abbau-Verluste
+
   # ── Smelter recipes ───────────────────────────────────────────────────────────
 
   - recipe_id: smelter_steel
     product_id: steel
     factory_type: smelter
     inputs:
-      - item_id: iron_ore
+      - item_id: iron
         amount: 5.0
     base_yield: 5.0
     ticks: 1
@@ -75,9 +238,9 @@ recipes:
     product_id: titansteel
     factory_type: smelter
     inputs:
-      - item_id: iron_ore
+      - item_id: iron
         amount: 3.0
-      - item_id: titan
+      - item_id: titanium
         amount: 1.0
     base_yield: 3.0
     ticks: 1
@@ -87,9 +250,9 @@ recipes:
     product_id: semiconductor_wafer
     factory_type: refinery
     inputs:
-      - item_id: silicates
+      - item_id: silicon
         amount: 1.0
-      - item_id: rare_earths
+      - item_id: rare_earth
         amount: 1.0
     base_yield: 2.0
     ticks: 3
@@ -99,7 +262,7 @@ recipes:
     product_id: fusion_fuel
     factory_type: refinery
     inputs:
-      - item_id: he3
+      - item_id: helium_3
         amount: 2.0
       - item_id: hydrogen
         amount: 3.0
@@ -136,8 +299,8 @@ recipes:
   # product_id encodes facility type and, for mines, the deposit good.
   # Inputs sourced from BUILD_COSTS (game-params). Ticks = build duration.
 
-  - recipe_id: build_mine_iron_ore
-    product_id: facility_mine_iron_ore
+  - recipe_id: build_mine_iron
+    product_id: facility_mine_iron
     factory_type: construction
     inputs:
       - item_id: steel
@@ -148,8 +311,8 @@ recipes:
     ticks: 1
     efficiency: 1.0
 
-  - recipe_id: build_mine_silicates
-    product_id: facility_mine_silicates
+  - recipe_id: build_mine_silicon
+    product_id: facility_mine_silicon
     factory_type: construction
     inputs:
       - item_id: steel
@@ -160,8 +323,8 @@ recipes:
     ticks: 1
     efficiency: 1.0
 
-  - recipe_id: build_mine_titan
-    product_id: facility_mine_titan
+  - recipe_id: build_mine_titanium
+    product_id: facility_mine_titanium
     factory_type: construction
     inputs:
       - item_id: steel
@@ -172,8 +335,8 @@ recipes:
     ticks: 1
     efficiency: 1.0
 
-  - recipe_id: build_mine_rare_earths
-    product_id: facility_mine_rare_earths
+  - recipe_id: build_mine_rare_earth
+    product_id: facility_mine_rare_earth
     factory_type: construction
     inputs:
       - item_id: steel
@@ -184,8 +347,8 @@ recipes:
     ticks: 1
     efficiency: 1.0
 
-  - recipe_id: build_mine_he3
-    product_id: facility_mine_he3
+  - recipe_id: build_mine_helium_3
+    product_id: facility_mine_helium_3
     factory_type: construction
     inputs:
       - item_id: steel
@@ -206,6 +369,222 @@ recipes:
         amount: 2.0
     base_yield: 1.0
     ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_nickel
+    product_id: facility_mine_nickel
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_tungsten
+    product_id: facility_mine_tungsten
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_molybdenum
+    product_id: facility_mine_molybdenum
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_uranium
+    product_id: facility_mine_uranium
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_thorium
+    product_id: facility_mine_thorium
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_aluminum
+    product_id: facility_mine_aluminum
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_phosphorus
+    product_id: facility_mine_phosphorus
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_sulfur
+    product_id: facility_mine_sulfur
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_carbon
+    product_id: facility_mine_carbon
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_water_ice
+    product_id: facility_mine_water_ice
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_ammonia_ice
+    product_id: facility_mine_ammonia_ice
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_methane_ice
+    product_id: facility_mine_methane_ice
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_co2_ice
+    product_id: facility_mine_co2_ice
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_nitrogen
+    product_id: facility_mine_nitrogen
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_helium
+    product_id: facility_mine_helium
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_organics
+    product_id: facility_mine_organics
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: build_mine_antimatter
+    product_id: facility_mine_antimatter
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 25.0
+      - item_id: base_component
+        amount: 10.0
+    base_yield: 1.0
+    ticks: 5
+    efficiency: 1.0
+
+  - recipe_id: build_mine_exotic_matter
+    product_id: facility_mine_exotic_matter
+    factory_type: construction
+    inputs:
+      - item_id: steel
+        amount: 25.0
+      - item_id: base_component
+        amount: 10.0
+    base_yield: 1.0
+    ticks: 5
     efficiency: 1.0
 
   - recipe_id: build_smelter
