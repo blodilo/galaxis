@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNatsTick } from '../hooks/useNatsTick'
 import type { ItemStock, Facility, Order, Route, Recipe, MyNodeEntry, DepositEntry } from '../types/economy2'
 import {
   getStock,
@@ -1148,8 +1149,6 @@ function VorkommenPanel({ deposits }: { deposits: Record<string, DepositEntry> }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-const AUTO_REFRESH_SEC = 10
-
 export function Economy2Page() {
   const [nodeId, setNodeId]       = useState('')
   const [starId, setStarId]       = useState('')
@@ -1161,7 +1160,6 @@ export function Economy2Page() {
   const [mineRateLv1, setMineRateLv1] = useState(2.5)
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')
-  const [countdown, setCountdown] = useState(AUTO_REFRESH_SEC)
   const [bootstrapping, setBootstrapping] = useState(false)
   const [bootstrapMsg, setBootstrapMsg]   = useState('')
   const [starType, setStarType]           = useState('')
@@ -1189,6 +1187,11 @@ export function Economy2Page() {
     return () => { if (tickIntervalRef.current) { clearInterval(tickIntervalRef.current); tickIntervalRef.current = null } }
   }, [tickRunning, tickSpeed])
 
+  const nodeIdRef = useRef(nodeId)
+  const starIdRef = useRef(starId)
+  nodeIdRef.current = nodeId
+  starIdRef.current = starId
+
   const loadData = useCallback(async (nid: string, sid: string) => {
     if (!nid) return
     setLoading(true)
@@ -1213,29 +1216,15 @@ export function Economy2Page() {
     }
   }, [])
 
-  // Auto-refresh countdown
-  const countdownRef = useRef(AUTO_REFRESH_SEC)
-  useEffect(() => {
-    if (!nodeId) return
-    countdownRef.current = AUTO_REFRESH_SEC
-    setCountdown(AUTO_REFRESH_SEC)
-
-    const tick = setInterval(() => {
-      countdownRef.current -= 1
-      setCountdown(countdownRef.current)
-      if (countdownRef.current <= 0) {
-        countdownRef.current = AUTO_REFRESH_SEC
-        setCountdown(AUTO_REFRESH_SEC)
-        loadData(nodeId, starId)
-      }
-    }, 1000)
-
-    return () => clearInterval(tick)
-  }, [nodeId, starId, loadData])
+  // ── NATS Live-Updates — reload on every server tick ───────────────────────
+  const natsStatus = useNatsTick((tickN) => {
+    setCurrentTick(tickN)
+    if (nodeIdRef.current) {
+      loadData(nodeIdRef.current, starIdRef.current)
+    }
+  })
 
   function handleRefresh() {
-    countdownRef.current = AUTO_REFRESH_SEC
-    setCountdown(AUTO_REFRESH_SEC)
     loadData(nodeId, starId)
   }
 
@@ -1294,8 +1283,12 @@ export function Economy2Page() {
             >
               {bootstrapping ? '…' : '⬡ Spielstart-Kit'}
             </button>
-            <PrimaryButton onClick={handleRefresh}>Aktualisieren</PrimaryButton>
-            <span className="text-xs text-slate-600">Auto-Refresh in {countdown}s</span>
+            {natsStatus === 'live'
+              ? <span className="text-xs text-emerald-600">● Live</span>
+              : natsStatus === 'connecting'
+                ? <span className="text-xs text-slate-600">○ Verbinde…</span>
+                : <span className="text-xs text-amber-600" title="NATS nicht erreichbar — kein Auto-Update">⚠ Offline</span>
+            }
           </>
         )}
         {bootstrapMsg && <span className="text-xs text-blue-400">{bootstrapMsg}</span>}
