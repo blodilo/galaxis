@@ -9,6 +9,9 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
   plugins: [react()],
+  optimizeDeps: {
+    include: ['nats.ws'],
+  },
   server: {
     port: 5175,
     proxy: {
