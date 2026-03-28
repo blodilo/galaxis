@@ -1,4 +1,4 @@
-.PHONY: build run-server run-gen db-up db-down migrate lint test dev
+.PHONY: build run-server run-gen db-up db-down migrate lint test dev install-hooks
 
 # .env automatisch laden (falls vorhanden)
 -include .env
@@ -6,8 +6,9 @@ export
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 build:
-	go build -o bin/server   ./cmd/server
-	go build -o bin/galaxy-gen ./cmd/galaxy-gen
+	go build -o bin/galaxis-server  ./cmd/server
+	go build -o bin/galaxis-devctl  ./cmd/devctl
+	go build -o bin/galaxy-gen      ./cmd/galaxy-gen
 
 # ── Run ────────────────────────────────────────────────────────────────────────
 run-server:
@@ -44,3 +45,9 @@ frontend-dev:
 
 frontend-build:
 	cd frontend && $(NPM) run build
+
+# ── Hooks ───────────────────────────────────────────────────────────────────
+install-hooks:
+	@ln -sf ../../scripts/hooks/pre-commit  .git/hooks/pre-commit
+	@ln -sf ../../scripts/hooks/post-commit .git/hooks/post-commit
+	@echo "Git-Hooks installiert (pre-commit, post-commit)"

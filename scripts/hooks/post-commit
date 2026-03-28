@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# scripts/hooks/post-commit — Galaxis Auto-Build & Deploy
+# Startet Build + Service-Neustart im Hintergrund.
+# Terminal wird sofort freigegeben.
+
+PROJECT_DIR="$(git rev-parse --show-toplevel)"
+LOGFILE="$HOME/.galaxis-build.log"
+
+(
+  set -euo pipefail
+  cd "$PROJECT_DIR"
+
+  NPM="$HOME/.nvm/versions/node/v22.22.0/bin/npm"
+  [ ! -x "$NPM" ] && NPM="npm"
+
+  DEVCTL_URL="http://localhost:9191"
+  DEVCTL_BIN="$PROJECT_DIR/bin/galaxis-devctl"
+
+  log()  { echo "[$(date '+%H:%M:%S')] $*"; }
+  fail() { log "ERROR: $*"; exit 1; }
+
+  http_alive() { curl -s --max-time 1 "$1" &>/dev/null; }
+
+  log "──── Build $(git log -1 --format='%h %s') ────"
+
+  # ── 1. Checksum devctl vor Build ────────────────────────────────────────────
+  OLD_SUM=""
+  [ -f "$DEVCTL_BIN" ] && OLD_SUM="$(sha256sum "$DEVCTL_BIN" | cut -d' ' -f1)"
+
+  # ── 2. Go-Binaries bauen ────────────────────────────────────────────────────
+  mkdir -p bin
+  log "go build galaxis-server …"
+  go build -o bin/galaxis-server ./cmd/server   || fail "go build server"
+
+  log "go build galaxis-devctl …"
+  go build -o bin/galaxis-devctl ./cmd/devctl   || fail "go build devctl"
+
+  log "go build galaxy-gen …"
+  go build -o bin/galaxy-gen ./cmd/galaxy-gen   || fail "go build galaxy-gen"
+
+  # ── 3. Frontend bauen ───────────────────────────────────────────────────────
+  log "npm build …"
+  cd frontend && "$NPM" run build --silent && cd "$PROJECT_DIR" || fail "npm build"
+
+  log "Build OK"
+
+  # ── 4. devctl neu starten falls Binary geändert ─────────────────────────────
+  NEW_SUM="$(sha256sum "$DEVCTL_BIN" | cut -d' ' -f1)"
+  if [ "$OLD_SUM" != "$NEW_SUM" ]; then
+    log "devctl-Binary geändert — Neustart …"
+    pkill -f "bin/galaxis-devctl" 2>/dev/null || true
+    sleep 0.5
+    nohup "$DEVCTL_BIN" >>"$HOME/.galaxis-devctl.log" 2>&1 &
+    for i in $(seq 1 20); do
+      http_alive "$DEVCTL_URL/api/status" && break
+      sleep 0.5
+      [ "$i" -eq 20 ] && fail "devctl antwortet nach Neustart nicht"
+    done
+    log "devctl neu gestartet"
+  fi
+
+  # ── 5. Services neu starten ─────────────────────────────────────────────────
+  if http_alive "$DEVCTL_URL/api/status"; then
+    for svc in galaxis-api galaxis-frontend; do
+      if curl -s -X POST "$DEVCTL_URL/api/restart/$svc" >/dev/null; then
+        log "$svc neu gestartet"
+      else
+        log "WARN: $svc Neustart fehlgeschlagen"
+      fi
+    done
+  else
+    log "WARN: devctl nicht erreichbar — Services nicht neu gestartet"
+  fi
+
+  log "Deploy abgeschlossen"
+
+) >> "$LOGFILE" 2>&1 &
+
+disown
+echo "  Build läuft im Hintergrund → tail -f ~/.galaxis-build.log"

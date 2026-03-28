@@ -348,7 +348,7 @@ func TestEconomyBuildOrderConsumesResources(t *testing.T) {
 
 	// Build-Tick ausführen (setzt ready→running, dann fertig weil produced_qty=0 ≥ recipe_ticks=1 → nein)
 	// Erster Tick: ready → running, produced_qty 0→1 → 1 ≥ 1 → finishBuildOrder
-	if err := runBuildTick(itCtx, itDB); err != nil {
+	if err := runBuildTick(itCtx, itDB, itRecipes); err != nil {
 		t.Fatalf("runBuildTick: %v", err)
 	}
 

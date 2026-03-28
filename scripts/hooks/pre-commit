@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# scripts/hooks/pre-commit — Galaxis Pre-Commit Checks
+# Blockiert den Commit bei Lint-/Vet-Fehlern.
+set -euo pipefail
+
+PROJECT_DIR="$(git rev-parse --show-toplevel)"
+cd "$PROJECT_DIR"
+
+NPM="$HOME/.nvm/versions/node/v22.22.0/bin/npm"
+[ ! -x "$NPM" ] && NPM="npm"
+
+FAILED=0
+
+echo "pre-commit: go vet …"
+if ! go vet ./... 2>&1; then
+  FAILED=1
+fi
+
+if command -v golangci-lint &>/dev/null; then
+  echo "pre-commit: golangci-lint …"
+  if ! golangci-lint run ./... 2>&1; then
+    FAILED=1
+  fi
+else
+  echo "pre-commit: golangci-lint nicht gefunden — übersprungen (make install-tools)"
+fi
+
+echo "pre-commit: npm lint …"
+if ! cd frontend && "$NPM" run lint --silent 2>&1; then
+  FAILED=1
+fi
+
+if [ "$FAILED" -ne 0 ]; then
+  echo ""
+  echo "pre-commit: Fehler gefunden — Commit abgebrochen."
+  exit 1
+fi
+
+echo "pre-commit: OK"
