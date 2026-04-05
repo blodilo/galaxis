@@ -1,0 +1,467 @@
+recipes:
+  # ── Extractor recipes ─────────────────────────────────────────────────────────
+  # geological_input: the good_id drawn from planets.resource_deposits each tick.
+  # inputs: [] — no goods-storage inputs; slot limit enforced by scheduler.
+  # Output per tick = facility.config.max_rate × deposit.quality.
+
+  - recipe_id: extract_iron
+    product_id: iron
+    factory_type: extractor
+    geological_input: iron
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: extract_silicon
+    product_id: silicon
+    factory_type: extractor
+    geological_input: silicon
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: extract_titanium
+    product_id: titanium
+    factory_type: extractor
+    geological_input: titanium
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: extract_rare_earth
+    product_id: rare_earth
+    factory_type: extractor
+    geological_input: rare_earth
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.90  # [BALANCING] Seltene Erden: leichte Abbau-Verluste
+
+  - recipe_id: extract_helium_3
+    product_id: helium_3
+    factory_type: extractor
+    geological_input: helium_3
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.95  # [BALANCING] Gas-Harvesting: leichte Verluste
+
+  - recipe_id: extract_hydrogen
+    product_id: hydrogen
+    factory_type: extractor
+    geological_input: hydrogen
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.98
+
+  - recipe_id: extract_nickel
+    product_id: nickel
+    factory_type: extractor
+    geological_input: nickel
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: extract_tungsten
+    product_id: tungsten
+    factory_type: extractor
+    geological_input: tungsten
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: extract_molybdenum
+    product_id: molybdenum
+    factory_type: extractor
+    geological_input: molybdenum
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: extract_uranium
+    product_id: uranium
+    factory_type: extractor
+    geological_input: uranium
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.95  # [BALANCING] radioaktives Material
+
+  - recipe_id: extract_thorium
+    product_id: thorium
+    factory_type: extractor
+    geological_input: thorium
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.95
+
+  - recipe_id: extract_aluminum
+    product_id: aluminum
+    factory_type: extractor
+    geological_input: aluminum
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: extract_phosphorus
+    product_id: phosphorus
+    factory_type: extractor
+    geological_input: phosphorus
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: extract_sulfur
+    product_id: sulfur
+    factory_type: extractor
+    geological_input: sulfur
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: extract_carbon
+    product_id: carbon
+    factory_type: extractor
+    geological_input: carbon
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 1.0
+
+  - recipe_id: extract_water_ice
+    product_id: water_ice
+    factory_type: extractor
+    geological_input: water_ice
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.98
+
+  - recipe_id: extract_ammonia_ice
+    product_id: ammonia_ice
+    factory_type: extractor
+    geological_input: ammonia_ice
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.97
+
+  - recipe_id: extract_methane_ice
+    product_id: methane_ice
+    factory_type: extractor
+    geological_input: methane_ice
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.97
+
+  - recipe_id: extract_co2_ice
+    product_id: co2_ice
+    factory_type: extractor
+    geological_input: co2_ice
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.98
+
+  - recipe_id: extract_nitrogen
+    product_id: nitrogen
+    factory_type: extractor
+    geological_input: nitrogen
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.98
+
+  - recipe_id: extract_helium
+    product_id: helium
+    factory_type: extractor
+    geological_input: helium
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.97
+
+  - recipe_id: extract_organics
+    product_id: organics
+    factory_type: extractor
+    geological_input: organics
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.95
+
+  - recipe_id: extract_antimatter
+    product_id: antimatter
+    factory_type: extractor
+    geological_input: antimatter
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.80  # [BALANCING] Hochenergetisch, hohe Verluste
+
+  - recipe_id: extract_exotic_matter
+    product_id: exotic_matter
+    factory_type: extractor
+    geological_input: exotic_matter
+    inputs: []
+    base_yield: 1.0
+    ticks: 1
+    efficiency: 0.70  # [BALANCING] Extrem selten, starke Verluste
+
+  # ── Refinery recipes ──────────────────────────────────────────────────────────
+  # Merges former smelter (metals) and refinery (chemicals/electronics) into one
+  # factory type. Tier-2 processing — converts raw ore into usable materials.
+
+  - recipe_id: refinery_steel
+    product_id: steel
+    factory_type: refinery
+    inputs:
+      - item_id: iron
+        amount: 5.0
+    base_yield: 5.0
+    ticks: 1
+    efficiency: 0.90
+
+  - recipe_id: refinery_titansteel
+    product_id: titansteel
+    factory_type: refinery
+    inputs:
+      - item_id: iron
+        amount: 3.0
+      - item_id: titanium
+        amount: 1.0
+    base_yield: 3.0
+    ticks: 1
+    efficiency: 0.90
+
+  - recipe_id: refinery_semiconductor_wafer
+    product_id: semiconductor_wafer
+    factory_type: refinery
+    inputs:
+      - item_id: silicon
+        amount: 1.0
+      - item_id: rare_earth
+        amount: 1.0
+    base_yield: 2.0
+    ticks: 3
+    efficiency: 0.85
+
+  - recipe_id: refinery_fusion_fuel
+    product_id: fusion_fuel
+    factory_type: refinery
+    inputs:
+      - item_id: helium_3
+        amount: 2.0
+      - item_id: hydrogen
+        amount: 3.0
+    base_yield: 4.0
+    ticks: 1
+    efficiency: 0.92
+
+  # ── Plant recipes ─────────────────────────────────────────────────────────────
+  # Tier-3 production. Produces components and Tier-1/2 factory items.
+  # Formerly precision_fab.
+
+  - recipe_id: plant_base_component
+    product_id: base_component
+    factory_type: plant
+    inputs:
+      - item_id: titansteel
+        amount: 2.0
+      - item_id: semiconductor_wafer
+        amount: 1.0
+    base_yield: 3.0
+    ticks: 4
+    efficiency: 0.88
+
+  - recipe_id: plant_nav_computer
+    product_id: nav_computer
+    factory_type: plant
+    inputs:
+      - item_id: semiconductor_wafer
+        amount: 6.0
+      - item_id: rare_earth
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 10
+    efficiency: 0.85
+
+  # Factory items produced by plant (Tier-1/2 facilities)
+  # Inputs mirror the old construction recipes; ticks reduced since no BuildTickHandler overhead.
+
+  - recipe_id: plant_fac_extractor_mk1
+    product_id: fac_extractor_iron_mk1  # canonical item; deposit-specific variants share same cost
+    factory_type: plant
+    inputs:
+      - item_id: steel
+        amount: 10.0
+      - item_id: base_component
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 3
+    efficiency: 1.0
+
+  - recipe_id: plant_fac_refinery_mk1
+    product_id: fac_refinery_mk1
+    factory_type: plant
+    inputs:
+      - item_id: titansteel
+        amount: 15.0
+      - item_id: semiconductor_wafer
+        amount: 5.0
+      - item_id: base_component
+        amount: 8.0
+    base_yield: 1.0
+    ticks: 8
+    efficiency: 1.0
+
+  # ── Assembly Plant recipes ────────────────────────────────────────────────────
+  # Tier-4 heavy assemblies. Inputs are Tier-2/3 materials and components.
+  # Also produces Tier-3 factory items (fac_plant_mk1).
+
+  - recipe_id: assembly_drive_unit
+    product_id: drive_unit
+    factory_type: assembly_plant
+    inputs:
+      - item_id: titansteel
+        amount: 10.0
+      - item_id: base_component
+        amount: 5.0
+      - item_id: fusion_fuel
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 20
+    efficiency: 0.90  # [BALANCING]
+
+  - recipe_id: assembly_reactor_module
+    product_id: reactor_module
+    factory_type: assembly_plant
+    inputs:
+      - item_id: titansteel
+        amount: 8.0
+      - item_id: uranium
+        amount: 3.0
+      - item_id: base_component
+        amount: 6.0
+    base_yield: 1.0
+    ticks: 25
+    efficiency: 0.88  # [BALANCING]
+
+  - recipe_id: assembly_structural_frame
+    product_id: structural_frame
+    factory_type: assembly_plant
+    inputs:
+      - item_id: titansteel
+        amount: 15.0
+      - item_id: base_component
+        amount: 4.0
+    base_yield: 1.0
+    ticks: 15
+    efficiency: 0.92  # [BALANCING]
+
+  - recipe_id: assembly_fac_plant_mk1
+    product_id: fac_plant_mk1
+    factory_type: assembly_plant
+    inputs:
+      - item_id: titansteel
+        amount: 20.0
+      - item_id: semiconductor_wafer
+        amount: 10.0
+      - item_id: base_component
+        amount: 15.0
+    base_yield: 1.0
+    ticks: 12
+    efficiency: 1.0
+
+  # ── Construction Yard recipes ─────────────────────────────────────────────────
+  # Tier-5 final assembly. Builds ships and top-tier factory items.
+  # Inputs are Tier-4 heavy assemblies.
+
+  - recipe_id: yard_fac_assembly_plant_mk1
+    product_id: fac_assembly_plant_mk1
+    factory_type: construction_yard
+    inputs:
+      - item_id: structural_frame
+        amount: 3.0
+      - item_id: reactor_module
+        amount: 1.0
+      - item_id: base_component
+        amount: 20.0
+    base_yield: 1.0
+    ticks: 30
+    efficiency: 1.0
+
+  - recipe_id: yard_fac_construction_yard_mk1
+    product_id: fac_construction_yard_mk1
+    factory_type: construction_yard
+    inputs:
+      - item_id: structural_frame
+        amount: 6.0
+      - item_id: reactor_module
+        amount: 2.0
+      - item_id: drive_unit
+        amount: 2.0
+      - item_id: base_component
+        amount: 40.0
+    base_yield: 1.0
+    ticks: 60
+    efficiency: 1.0
+
+  # ── Ship recipes ───────────────────────────────────────────────────────────────
+  # [BALANCING] Placeholder — ship stats and costs to be defined in balance pass.
+
+  - recipe_id: yard_scout_ship
+    product_id: ship_scout
+    factory_type: construction_yard
+    inputs:
+      - item_id: structural_frame
+        amount: 2.0
+      - item_id: drive_unit
+        amount: 1.0
+      - item_id: nav_computer
+        amount: 1.0
+    base_yield: 1.0
+    ticks: 40
+    efficiency: 1.0
+
+  - recipe_id: yard_freighter
+    product_id: ship_freighter
+    factory_type: construction_yard
+    inputs:
+      - item_id: structural_frame
+        amount: 4.0
+      - item_id: drive_unit
+        amount: 2.0
+      - item_id: nav_computer
+        amount: 1.0
+    base_yield: 1.0
+    ticks: 60
+    efficiency: 1.0
+
+  - recipe_id: yard_cruiser
+    product_id: ship_cruiser
+    factory_type: construction_yard
+    inputs:
+      - item_id: structural_frame
+        amount: 6.0
+      - item_id: drive_unit
+        amount: 3.0
+      - item_id: reactor_module
+        amount: 2.0
+      - item_id: nav_computer
+        amount: 2.0
+    base_yield: 1.0
+    ticks: 100
+    efficiency: 1.0

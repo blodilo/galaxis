@@ -99,16 +99,16 @@ func depleteDeposit(ctx context.Context, db *pgxpool.Pool, planetID uuid.UUID, g
 	return ds.Amount, depleted, err
 }
 
-// countActiveMines counts mine facilities currently active on a given deposit.
-// Used to enforce the max_mines slot limit before assigning a new mine order.
-func countActiveMines(ctx context.Context, db *pgxpool.Pool, planetID uuid.UUID, goodID string) (int, error) {
+// countActiveExtractors counts extractor facilities currently active on a given deposit.
+// Used to enforce the max_mines slot limit before assigning a new extraction order.
+func countActiveExtractors(ctx context.Context, db *pgxpool.Pool, planetID uuid.UUID, goodID string) (int, error) {
 	var count int
 	err := db.QueryRow(ctx, `
 		SELECT COUNT(*)
 		FROM econ2_facilities f
 		JOIN econ2_nodes n ON n.id = f.node_id
 		WHERE n.planet_id = $1
-		  AND f.factory_type = 'mine'
+		  AND f.factory_type = 'extractor'
 		  AND f.config->>'deposit_good_id' = $2
 		  AND f.status NOT IN ('idle','destroyed')
 	`, planetID, goodID).Scan(&count)

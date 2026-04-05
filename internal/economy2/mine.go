@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// processMine handles one production tick for a mine facility.
+// processExtractor handles one production tick for an extractor facility.
 //
 // Extraction formula: extracted_per_tick = facility.config.max_rate × deposit.quality
 //
@@ -20,18 +20,17 @@ import (
 //  4. Compute rate, deplete planets.resource_deposits.
 //  5. Apply efficiency accumulator → floor → produce into goods stock.
 //  6. Reset batch counter.
-func processMine(
+func processExtractor(
 	ctx context.Context,
 	db *pgxpool.Pool,
 	f *Facility,
 	order *ProductionOrder,
 	recipe *Recipe,
 ) error {
-	// Fallback: orbit nodes have no planet_id — resolve via home planet.
 	if f.PlanetID == nil {
 		pid, err := FindHomePlanet(ctx, db, f.StarID)
 		if err != nil {
-			return fmt.Errorf("economy2: mine facility missing planet_id: %w", err)
+			return fmt.Errorf("economy2: extractor facility missing planet_id: %w", err)
 		}
 		f.PlanetID = pid
 	}
@@ -40,10 +39,9 @@ func processMine(
 
 	ds, err := readDeposit(ctx, db, *f.PlanetID, goodID)
 	if err != nil {
-		return fmt.Errorf("economy2: mine read deposit: %w", err)
+		return fmt.Errorf("economy2: extractor read deposit: %w", err)
 	}
 
-	// Deposit exhausted → pause.
 	if ds.Amount <= 0 {
 		if _, err := db.Exec(ctx,
 			`UPDATE econ2_orders SET status='paused_depleted', updated_at=now() WHERE id=$1`,
@@ -58,20 +56,17 @@ func processMine(
 		return err
 	}
 
-	// extracted_per_tick = MaxRate × quality
 	rate := f.Config.MaxRate * ds.Quality
 	if rate <= 0 {
-		rate = 1.0 // safety floor for misconfigured facilities
+		rate = 1.0
 	}
 	actual := math.Min(rate, ds.Amount)
 
-	// Deplete planets.resource_deposits.
 	_, depleted, err := depleteDeposit(ctx, db, *f.PlanetID, goodID, actual)
 	if err != nil {
-		return fmt.Errorf("economy2: mine deplete: %w", err)
+		return fmt.Errorf("economy2: extractor deplete: %w", err)
 	}
 
-	// Efficiency accumulator → floor → produce.
 	eff := recipe.Efficiency
 	if eff <= 0 {
 		eff = 1.0
@@ -82,7 +77,7 @@ func processMine(
 
 	if produced > 0 {
 		if err := AddToStock(ctx, db, order.NodeID, recipe.ProductID, produced); err != nil {
-			log.Printf("economy2: mine add stock %s: %v", recipe.ProductID, err)
+			log.Printf("economy2: extractor add stock %s: %v", recipe.ProductID, err)
 		}
 		if _, err := db.Exec(ctx,
 			`UPDATE econ2_orders SET produced_qty = produced_qty + $1, updated_at=now() WHERE id=$2`,
@@ -92,7 +87,6 @@ func processMine(
 		}
 	}
 
-	// Deposit just became empty after this tick → pause next tick.
 	if depleted {
 		if _, err := db.Exec(ctx,
 			`UPDATE econ2_orders SET status='paused_depleted', updated_at=now() WHERE id=$1`,
@@ -107,7 +101,6 @@ func processMine(
 		return err
 	}
 
-	// Reset batch counter.
 	f.Config.TicksRemaining = recipe.Ticks
 	return saveFacilityConfig(ctx, db, f)
 }

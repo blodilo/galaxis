@@ -15,7 +15,6 @@ type OrderType string
 const (
 	OrderTypeBatch      OrderType = "batch"
 	OrderTypeContinuous OrderType = "continuous"
-	OrderTypeBuild      OrderType = "build"
 )
 
 // OrderStatus is the lifecycle state of an order.

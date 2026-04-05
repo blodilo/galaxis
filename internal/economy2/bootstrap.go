@@ -65,9 +65,9 @@ func RunBootstrap(ctx context.Context, db *pgxpool.Pool, playerID, starID uuid.U
 			return nil, fmt.Errorf("bootstrap: seed facility %s: %w", fac.FactoryType, err)
 		}
 
-		// Auto-create continuous mine order so the mine starts working immediately.
-		if fac.FactoryType == "mine" && fac.DepositGoodID != "" {
-			if err := createMineOrder(ctx, db, playerID, starID, nodeID, fac.DepositGoodID, recipes); err != nil {
+		// Auto-create continuous extraction order so the extractor starts immediately.
+		if fac.FactoryType == FactoryTypeExtractor && fac.DepositGoodID != "" {
+			if err := createExtractionOrder(ctx, db, playerID, starID, nodeID, fac.DepositGoodID, recipes); err != nil {
 				log.Printf("economy2: bootstrap auto-order for %s: %v", fac.DepositGoodID, err)
 			}
 		}
@@ -80,14 +80,14 @@ func RunBootstrap(ctx context.Context, db *pgxpool.Pool, playerID, starID uuid.U
 	}, nil
 }
 
-// createMineOrder creates a continuous mine production order for the given deposit good.
-// Mine orders have no goods-storage inputs, so AllocateOrder makes them ready immediately.
-// Used by both bootstrap and finishBuildOrder to ensure newly created mines start working.
-func createMineOrder(ctx context.Context, db *pgxpool.Pool, playerID, starID, nodeID uuid.UUID, goodID string, recipes RecipeBook) error {
-	key := RecipeKey{ProductID: goodID, FactoryType: "mine"}
+// createExtractionOrder creates a continuous extraction order for the given deposit good.
+// Extractor orders have no goods-storage inputs, so AllocateOrder makes them ready immediately.
+// Called from both bootstrap and DeployItem to ensure newly created extractors start immediately.
+func createExtractionOrder(ctx context.Context, db *pgxpool.Pool, playerID, starID, nodeID uuid.UUID, goodID string, recipes RecipeBook) error {
+	key := RecipeKey{ProductID: goodID, FactoryType: FactoryTypeExtractor}
 	recipe, ok := recipes[key]
 	if !ok {
-		return fmt.Errorf("economy2: no mine recipe for good %q", goodID)
+		return fmt.Errorf("economy2: no extractor recipe for good %q", goodID)
 	}
 	order := &ProductionOrder{
 		PlayerID:        playerID,
@@ -109,7 +109,7 @@ func createMineOrder(ctx context.Context, db *pgxpool.Pool, playerID, starID, no
 	if err := CreateOrder(ctx, db, order); err != nil {
 		return err
 	}
-	// Mine orders have no inputs → immediate allocation → status becomes ready.
+	// Extractor orders have no inputs → immediate allocation → status becomes ready.
 	_ = AllocateOrder(ctx, db, nodeID, order, map[string]float64{})
 	return nil
 }

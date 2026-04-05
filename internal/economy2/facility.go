@@ -9,6 +9,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Factory type constants — use these instead of raw strings to get compile-time safety.
+const (
+	FactoryTypeExtractor        = "extractor"
+	FactoryTypeRefinery         = "refinery"
+	FactoryTypePlant            = "plant"
+	FactoryTypeAssemblyPlant    = "assembly_plant"
+	FactoryTypeConstructionYard = "construction_yard"
+)
+
 // FacilityConfig is stored as JSONB in econ2_facilities.config.
 type FacilityConfig struct {
 	Level          int     `json:"level"`

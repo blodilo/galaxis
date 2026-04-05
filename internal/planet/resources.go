@@ -123,13 +123,23 @@ func GenerateDeposits(rng *rand.Rand, starType, planetType string, isInnerZone b
 			continue // skip trace deposits
 		}
 
-		// max_mines: normally distributed N(4, 2), clamped to [1, 10]. [BALANCING]
-		maxMines := int(math.Round(4.0 + rng.NormFloat64()*2.0))
+		// max_mines: normally distributed, mean and cap depend on planet type. [BALANCING]
+		// Gas giants and asteroid belts have more accessible surface area for orbital extractors.
+		var meanMines, maxMinesCap float64
+		switch planetType {
+		case "gas_giant":
+			meanMines, maxMinesCap = 8.0, 20.0 // orbital harvesting — many simultaneous slots
+		case "asteroid_belt":
+			meanMines, maxMinesCap = 6.0, 15.0 // distributed body — moderate-high slot count
+		default:
+			meanMines, maxMinesCap = 4.0, 10.0 // surface mining on solid planets
+		}
+		maxMines := int(math.Round(meanMines + rng.NormFloat64()*2.0))
 		if maxMines < 1 {
 			maxMines = 1
 		}
-		if maxMines > 10 {
-			maxMines = 10
+		if float64(maxMines) > maxMinesCap {
+			maxMines = int(maxMinesCap)
 		}
 
 		deposits[resID] = model.DepositEntry{

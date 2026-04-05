@@ -35,9 +35,9 @@ var (
 			"steel":    150.0,
 		},
 		Facilities: []BootstrapFacility{
-			{FactoryType: "mine", DepositGoodID: "iron"},
-			{FactoryType: "mine", DepositGoodID: "silicon"},
-			{FactoryType: "smelter"},
+			{FactoryType: FactoryTypeExtractor, DepositGoodID: "iron"},
+			{FactoryType: FactoryTypeExtractor, DepositGoodID: "silicon"},
+			{FactoryType: FactoryTypeRefinery},
 		},
 	}
 )
@@ -64,7 +64,7 @@ func TestMain(m *testing.M) {
 	defer itDB.Close()
 
 	// Rezepte laden — Pfad relativ zu diesem Paket (intern/economy2 → ../../)
-	itRecipes, err = LoadRecipes("../../econ2_recipes_v1.0.yaml")
+	itRecipes, err = LoadRecipes("../../econ2_recipes_v2.0.yaml")
 	if err != nil {
 		fmt.Println("economy2 integration: LoadRecipes failed:", err)
 		// kein itSkip — einzelne Tests können Rezepte bei Bedarf überspringen
@@ -90,7 +90,7 @@ type itFixtures struct {
 }
 
 // setupFixtures legt Galaxy → Star → Planet an und räumt nach dem Test auf.
-// Der Planet hat resource_deposits: {iron_ore:0.8, silicates:0.5, he3:0.3}.
+// Der Planet hat resource_deposits: {iron:0.8, silicates:0.5, he3:0.3}.
 func setupFixtures(t *testing.T) itFixtures {
 	t.Helper()
 	fx := itFixtures{playerID: uuid.New()}
@@ -267,110 +267,54 @@ func TestEconomyBootstrapStarterKitPresent(t *testing.T) {
 	t.Logf("Lager OK (%d Güter), Anlagen OK (%d)", len(stock), facilityCount)
 }
 
-// TestEconomyBuildOrderConsumesResources prüft, dass ein abgeschlossener
-// Bauauftrag die Lagerbestände korrekt verringert und eine Anlage erstellt.
-func TestEconomyBuildOrderConsumesResources(t *testing.T) {
+// TestDeployItemConsumesStock prüft, dass DeployItem eine Einheit aus dem Lager verbraucht
+// und dafür eine aktive Anlage erstellt.
+func TestDeployItemConsumesStock(t *testing.T) {
 	requireDB(t)
-	if itRecipes == nil {
-		t.Skip("Rezepte nicht geladen")
-	}
 	fx := setupFixtures(t)
 
-	// Schmelze-Baurezept ermitteln
-	key := RecipeKey{ProductID: "facility_smelter", FactoryType: "construction"}
-	recipe, ok := itRecipes[key]
-	if !ok {
-		t.Skip("facility_smelter construction recipe nicht gefunden")
+	const itemID = "fac_refinery_mk1"
+	catalog := ItemCatalog{
+		itemID: DeployableItemDef{FactoryType: FactoryTypeRefinery, Level: 1},
 	}
 
-	// Lager mit genug Ressourcen befüllen (mind. das Dreifache der Baukosten)
-	startStock := map[string]float64{}
-	for _, inp := range recipe.Inputs {
-		startStock[inp.ItemID] = inp.Amount * 3
-	}
-	bootstrapCfg := BootstrapConfig{Stock: startStock}
-	result, err := RunBootstrap(itCtx, itDB, fx.playerID, fx.starID, bootstrapCfg, itRecipes)
+	// Node anlegen und Item ins Lager legen
+	nodeID, err := GetOrCreateNode(itCtx, itDB, fx.playerID, fx.starID, nil)
 	if err != nil {
-		t.Fatalf("RunBootstrap: %v", err)
+		t.Fatalf("GetOrCreateNode: %v", err)
 	}
-	nodeID := result.NodeID
-
-	// Inputs allozieren (simuliert MRP)
-	for _, inp := range recipe.Inputs {
-		if _, err := itDB.Exec(itCtx,
-			`UPDATE econ2_item_stock
-			 SET allocated = allocated + $1, updated_at = now()
-			 WHERE node_id = $2 AND item_id = $3`,
-			inp.Amount, nodeID, inp.ItemID,
-		); err != nil {
-			t.Fatalf("allocate %s: %v", inp.ItemID, err)
-		}
+	if err := AddToStock(itCtx, itDB, nodeID, itemID, 2); err != nil {
+		t.Fatalf("AddToStock: %v", err)
 	}
 
-	// Bauauftrag anlegen (ready → wird in runBuildTick auf running gesetzt)
-	allocMap := map[string]float64{}
-	for _, inp := range recipe.Inputs {
-		allocMap[inp.ItemID] = inp.Amount
-	}
-	order := &ProductionOrder{
-		PlayerID:        fx.playerID,
-		StarID:          fx.starID,
-		NodeID:          nodeID,
-		OrderType:       OrderTypeBuild,
-		Status:          OrderStatusReady,
-		RecipeID:        recipe.RecipeID,
-		ProductID:       recipe.ProductID,
-		FactoryType:     recipe.FactoryType,
-		Inputs:          recipe.Inputs,
-		BaseYield:       recipe.BaseYield,
-		RecipeTicks:     1, // Fertig nach 1 Tick
-		Efficiency:      recipe.Efficiency,
-		TargetQty:       1,
-		AllocatedInputs: allocMap,
-		Priority:        5,
-	}
-	if err := CreateOrder(itCtx, itDB, order); err != nil {
-		t.Fatalf("CreateOrder: %v", err)
-	}
-
-	// Lager vor dem Tick
 	stockBefore, _ := NodeStock(itCtx, itDB, nodeID)
 
-	// Build-Tick ausführen (setzt ready→running, dann fertig weil produced_qty=0 ≥ recipe_ticks=1 → nein)
-	// Erster Tick: ready → running, produced_qty 0→1 → 1 ≥ 1 → finishBuildOrder
-	if err := runBuildTick(itCtx, itDB, itRecipes, 10.0); err != nil {
-		t.Fatalf("runBuildTick: %v", err)
+	f, err := DeployItem(itCtx, itDB, fx.playerID, fx.starID, nodeID, nil, itemID, catalog, itRecipes)
+	if err != nil {
+		t.Fatalf("DeployItem: %v", err)
+	}
+	if f.FactoryType != FactoryTypeRefinery {
+		t.Errorf("factory_type = %q, want %q", f.FactoryType, FactoryTypeRefinery)
 	}
 
-	// Auftragsstatus prüfen
-	var status string
-	_ = itDB.QueryRow(itCtx, `SELECT status FROM econ2_orders WHERE id=$1`, order.ID).Scan(&status)
-	if status != "completed" {
-		t.Errorf("Auftragsstatus = %q, want completed", status)
-	}
-
-	// Anlage muss erstellt worden sein
+	// Anlage muss in DB existieren
 	var facilityCount int
 	_ = itDB.QueryRow(itCtx,
-		`SELECT COUNT(*) FROM econ2_facilities
-		 WHERE player_id=$1 AND factory_type='smelter' AND node_id=$2`,
-		fx.playerID, nodeID,
+		`SELECT COUNT(*) FROM econ2_facilities WHERE id=$1 AND factory_type='refinery'`,
+		f.ID,
 	).Scan(&facilityCount)
-	if facilityCount < 1 {
-		t.Error("Keine Schmelze nach Abschluss des Bauauftrags gefunden")
+	if facilityCount != 1 {
+		t.Error("Anlage nicht in DB gefunden")
 	}
 
-	// Lager muss kleiner sein (Inputs verbraucht)
+	// Lager muss um 1 gesunken sein
 	stockAfter, _ := NodeStock(itCtx, itDB, nodeID)
-	for _, inp := range recipe.Inputs {
-		before := stockBefore[inp.ItemID].Total
-		after := stockAfter[inp.ItemID].Total
-		if after >= before {
-			t.Errorf("Lager[%s]: vor=%.1f, nach=%.1f — hätte abnehmen müssen",
-				inp.ItemID, before, after)
-		}
-		t.Logf("Lager[%s]: %.1f → %.1f (verbraucht %.1f)", inp.ItemID, before, after, before-after)
+	before := stockBefore[itemID].Total
+	after := stockAfter[itemID].Total
+	if after != before-1 {
+		t.Errorf("Lager[%s]: vor=%.1f, nach=%.1f — erwartet %.1f", itemID, before, after, before-1)
 	}
+	t.Logf("Lager[%s]: %.1f → %.1f ✓", itemID, before, after)
 }
 
 // TestEconomyMineIncreasesResources prüft, dass eine laufende Mine nach einem
@@ -382,11 +326,11 @@ func TestEconomyMineIncreasesResources(t *testing.T) {
 	}
 	fx := setupFixtures(t)
 
-	// Bootstrap: Mine anlegen + Deposits initialisieren
+	// Bootstrap: Extractor anlegen + Deposits initialisieren
 	bootstrapCfg := BootstrapConfig{
-		Stock: map[string]float64{"iron_ore": 0},
+		Stock: map[string]float64{"iron": 0},
 		Facilities: []BootstrapFacility{
-			{FactoryType: "mine", DepositGoodID: "iron_ore"},
+			{FactoryType: FactoryTypeExtractor, DepositGoodID: "iron"},
 		},
 	}
 	result, err := RunBootstrap(itCtx, itDB, fx.playerID, fx.starID, bootstrapCfg, itRecipes)
@@ -395,20 +339,20 @@ func TestEconomyMineIncreasesResources(t *testing.T) {
 	}
 	nodeID := result.NodeID
 
-	// Mine-Anlage ermitteln
+	// Extractor-Anlage ermitteln
 	var mineID uuid.UUID
 	if err := itDB.QueryRow(itCtx,
 		`SELECT id FROM econ2_facilities
-		 WHERE player_id=$1 AND factory_type='mine' AND config->>'deposit_good_id'='iron'`,
+		 WHERE player_id=$1 AND factory_type='extractor' AND config->>'deposit_good_id'='iron'`,
 		fx.playerID,
 	).Scan(&mineID); err != nil {
-		t.Fatalf("Mine nicht gefunden: %v", err)
+		t.Fatalf("Extractor nicht gefunden: %v", err)
 	}
 
-	// Mine-Rezept
-	recipe := itRecipes[RecipeKey{ProductID: "iron_ore", FactoryType: "mine"}]
+	// Extractor-Rezept
+	recipe := itRecipes[RecipeKey{ProductID: "iron", FactoryType: FactoryTypeExtractor}]
 	if recipe == nil {
-		t.Skip("mine_iron_ore recipe nicht gefunden")
+		t.Skip("extract_iron recipe nicht gefunden")
 	}
 
 	// Produktionsauftrag anlegen
@@ -436,7 +380,7 @@ func TestEconomyMineIncreasesResources(t *testing.T) {
 	// Mine-Anlage auf running setzen + Auftrag verknüpfen
 	cfgJSON, _ := json.Marshal(FacilityConfig{
 		Level:          1,
-		DepositGoodID:  "iron_ore",
+		DepositGoodID:  "iron",
 		TicksRemaining: 1, // produziert beim nächsten Tick
 	})
 	if _, err := itDB.Exec(itCtx,
@@ -452,7 +396,7 @@ func TestEconomyMineIncreasesResources(t *testing.T) {
 	depositsBefore, _ := ReadAllDeposits(itCtx, itDB, fx.planetID)
 	stockBefore, _ := NodeStock(itCtx, itDB, nodeID)
 	t.Logf("Vor Tick: Vorkommen=%.1f, Lager=%.1f",
-		depositsBefore["iron_ore"].Amount, stockBefore["iron_ore"].Total)
+		depositsBefore["iron"].Amount, stockBefore["iron"].Total)
 
 	// Produktions-Tick ausführen
 	if err := runProductionTick(itCtx, itDB, itRecipes); err != nil {
@@ -461,21 +405,21 @@ func TestEconomyMineIncreasesResources(t *testing.T) {
 
 	// Lager muss gestiegen sein
 	stockAfter, _ := NodeStock(itCtx, itDB, nodeID)
-	if stockAfter["iron_ore"].Total <= stockBefore["iron_ore"].Total {
+	if stockAfter["iron"].Total <= stockBefore["iron"].Total {
 		t.Errorf("Lager stieg nicht: vor=%.1f, nach=%.1f",
-			stockBefore["iron_ore"].Total, stockAfter["iron_ore"].Total)
+			stockBefore["iron"].Total, stockAfter["iron"].Total)
 	}
 
 	// Vorkommen muss gesunken sein
 	depositsAfter, _ := ReadAllDeposits(itCtx, itDB, fx.planetID)
-	if depositsAfter["iron_ore"].Amount >= depositsBefore["iron_ore"].Amount {
+	if depositsAfter["iron"].Amount >= depositsBefore["iron"].Amount {
 		t.Errorf("Vorkommen sank nicht: vor=%.1f, nach=%.1f",
-			depositsBefore["iron_ore"].Amount, depositsAfter["iron_ore"].Amount)
+			depositsBefore["iron"].Amount, depositsAfter["iron"].Amount)
 	}
 
-	extracted := depositsBefore["iron_ore"].Amount - depositsAfter["iron_ore"].Amount
-	gained := stockAfter["iron_ore"].Total - stockBefore["iron_ore"].Total
+	extracted := depositsBefore["iron"].Amount - depositsAfter["iron"].Amount
+	gained := stockAfter["iron"].Total - stockBefore["iron"].Total
 	t.Logf("Nach Tick: Vorkommen=%.1f (−%.2f), Lager=%.1f (+%.2f)",
-		depositsAfter["iron_ore"].Amount, extracted,
-		stockAfter["iron_ore"].Total, gained)
+		depositsAfter["iron"].Amount, extracted,
+		stockAfter["iron"].Total, gained)
 }

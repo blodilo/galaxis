@@ -23,12 +23,12 @@ type Recipe struct {
 	BaseYield       float64       `json:"base_yield"                 yaml:"base_yield"`
 	Ticks           int           `json:"ticks"                      yaml:"ticks"`
 	Efficiency      float64       `json:"efficiency"                 yaml:"efficiency"`       // base η (0–1)
-	GeologicalInput string        `json:"geological_input,omitempty" yaml:"geological_input"` // non-empty → mine recipe; good drawn from planet_deposits
+	GeologicalInput string        `json:"geological_input,omitempty" yaml:"geological_input"` // non-empty → extractor recipe; good drawn from planet_deposits
 }
 
-// IsMine reports whether this recipe draws from a geological deposit
+// IsExtractor reports whether this recipe draws from a geological deposit
 // rather than from goods storage.
-func (r *Recipe) IsMine() bool { return r.GeologicalInput != "" }
+func (r *Recipe) IsExtractor() bool { return r.GeologicalInput != "" }
 
 // All returns all recipes in the book as an unsorted slice.
 func (rb RecipeBook) All() []*Recipe {

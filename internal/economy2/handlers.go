@@ -30,9 +30,8 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 }
 
 // RegisterRoutes mounts all economy2 REST endpoints on the given router.
-// mineBaseRate is the starting MaxRate for newly built mine facilities (from game-params mine.base_max_rate).
-func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook, bootstrapCfg BootstrapConfig, mineBaseRate float64) {
-	r.Post("/econ2/facilities", createFacilityHandler(db, mineBaseRate))
+func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook, bootstrapCfg BootstrapConfig, catalog ItemCatalog) {
+	r.Post("/econ2/items/deploy", deployItemHandler(db, catalog, recipes))
 	r.Get("/econ2/facilities", listFacilitiesHandler(db))
 	r.Delete("/econ2/facilities/{id}", destroyFacilityHandler(db))
 
@@ -50,7 +49,7 @@ func RegisterRoutes(r chi.Router, db *pgxpool.Pool, recipes RecipeBook, bootstra
 	r.Post("/econ2/bootstrap", bootstrapHandler(db, bootstrapCfg, recipes))
 
 	r.Get("/econ2/recipes", listRecipesHandler(recipes))
-	r.Get("/econ2/deposits", depositsHandler(db, mineBaseRate))
+	r.Get("/econ2/deposits", depositsHandler(db))
 }
 
 // --- GET /econ2/recipes ---
@@ -62,17 +61,15 @@ func listRecipesHandler(recipes RecipeBook) http.HandlerFunc {
 	}
 }
 
-// --- POST /econ2/facilities ---
+// --- POST /econ2/items/deploy ---
 
-type createFacilityRequest struct {
-	StarID        string  `json:"star_id"`
-	PlanetID      *string `json:"planet_id"`
-	FactoryType   string  `json:"factory_type"`
-	Level         int     `json:"level"`
-	DepositGoodID string  `json:"deposit_good_id"`
+type deployItemRequest struct {
+	StarID string `json:"star_id"`
+	NodeID string `json:"node_id"`
+	ItemID string `json:"item_id"`
 }
 
-func createFacilityHandler(db *pgxpool.Pool, mineBaseRate float64) http.HandlerFunc {
+func deployItemHandler(db *pgxpool.Pool, catalog ItemCatalog, recipes RecipeBook) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		playerID := playerIDFromRequest(r)
 		if playerID == uuid.Nil {
@@ -80,7 +77,7 @@ func createFacilityHandler(db *pgxpool.Pool, mineBaseRate float64) http.HandlerF
 			return
 		}
 
-		var req createFacilityRequest
+		var req deployItemRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid request body")
 			return
@@ -91,39 +88,15 @@ func createFacilityHandler(db *pgxpool.Pool, mineBaseRate float64) http.HandlerF
 			writeError(w, http.StatusBadRequest, "invalid star_id")
 			return
 		}
-
-		var planetID *uuid.UUID
-		if req.PlanetID != nil {
-			pid, err := uuid.Parse(*req.PlanetID)
-			if err != nil {
-				writeError(w, http.StatusBadRequest, "invalid planet_id")
-				return
-			}
-			planetID = &pid
-		}
-
-		nodeID, err := GetOrCreateNode(r.Context(), db, playerID, starID, planetID)
+		nodeID, err := uuid.Parse(req.NodeID)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			writeError(w, http.StatusBadRequest, "invalid node_id")
 			return
 		}
 
-		maxRate := 0.0
-		if req.FactoryType == "mine" {
-			maxRate = mineBaseRate
-		}
-
-		f := &Facility{
-			PlayerID:    playerID,
-			StarID:      starID,
-			NodeID:      nodeID,
-			FactoryType: req.FactoryType,
-			Status:      "idle",
-			Config:      FacilityConfig{Level: req.Level, MaxRate: maxRate, DepositGoodID: req.DepositGoodID},
-		}
-
-		if err := CreateFacility(r.Context(), db, f); err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+		f, err := DeployItem(r.Context(), db, playerID, starID, nodeID, nil, req.ItemID, catalog, recipes)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -636,9 +609,8 @@ func listMyNodesHandler(db *pgxpool.Pool) http.HandlerFunc {
 
 // --- GET /econ2/deposits?star_id=... ---
 // Returns planets.resource_deposits for the star's home planet (first by orbit_index).
-// base_max_rate is the starting extraction rate for a Lv1 mine (before quality modifier).
 
-func depositsHandler(db *pgxpool.Pool, mineBaseRate float64) http.HandlerFunc {
+func depositsHandler(db *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		starIDStr := r.URL.Query().Get("star_id")
 		if starIDStr == "" {
@@ -664,9 +636,8 @@ func depositsHandler(db *pgxpool.Pool, mineBaseRate float64) http.HandlerFunc {
 		}
 
 		writeJSON(w, http.StatusOK, map[string]any{
-			"planet_id":     planetID,
-			"deposits":      deposits,
-			"base_max_rate": mineBaseRate,
+			"planet_id": planetID,
+			"deposits":  deposits,
 		})
 	}
 }

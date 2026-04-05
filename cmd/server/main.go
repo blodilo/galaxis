@@ -32,7 +32,8 @@ func main() {
 	addr        := flag.String("addr",         ":8080",                                 "HTTP listen address")
 	assetsDir   := flag.String("assets-dir",   "assets",                                "Directory to serve under /assets/")
 	catalogPath := flag.String("catalog",      "galaxy_morphology_catalog_v1.0.yaml",   "Path to morphology catalog YAML")
-	recipesPath := flag.String("recipes",      "econ2_recipes_v1.0.yaml",               "Path to economy2 recipes YAML")
+	recipesPath := flag.String("recipes",      "econ2_recipes_v2.0.yaml",               "Path to economy2 recipes YAML")
+	itemsPath   := flag.String("items",        "items_v1.0.json",                       "Path to economy2 item catalog JSON")
 	natsURL     := flag.String("nats",         "",                                       "NATS URL (e.g. nats://localhost:4222); empty = in-process bus")
 	natsWsURL   := flag.String("nats-ws",      "ws://localhost:4223",                    "NATS WebSocket URL returned by /api/v1/auth/nats-token")
 	flag.Parse()
@@ -81,12 +82,12 @@ func main() {
 	}
 	log.Printf("economy2: loaded %d recipes", len(recipes))
 
-	// ── Economy2 Mine Config ──────────────────────────────────────────────────
-	mineBaseRate, err := loadMineBaseRate(*configPath)
+	// ── Economy2 Item Catalog ─────────────────────────────────────────────────
+	catalog, err := economy2.LoadItemCatalog(*itemsPath)
 	if err != nil {
-		log.Fatalf("economy2: load mine base_max_rate: %v", err)
+		log.Fatalf("economy2: load item catalog: %v", err)
 	}
-	log.Printf("economy2: mine base_max_rate=%.1f", mineBaseRate)
+	log.Printf("economy2: loaded %d deployable items", len(catalog))
 
 	// ── Economy2 Bootstrap Config ─────────────────────────────────────────────
 	bootstrapCfg, err := loadBootstrapConfig(*configPath)
@@ -136,7 +137,6 @@ func main() {
 
 	// Neues Economy2-System
 	engine.Register(economy2.SchedulerHandler(pool, recipes))
-	engine.Register(economy2.BuildTickHandler(pool, recipes, mineBaseRate))
 	engine.Register(economy2.ProductionHandler(pool, recipes))
 	engine.Register(economy2.ShipTickHandler(pool))
 
@@ -151,7 +151,7 @@ func main() {
 	jobStore := jobs.NewStore()
 
 	// ── HTTP Server ───────────────────────────────────────────────────────────
-	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, sseBus, engine, recipes, bootstrapCfg, mineBaseRate, *natsWsURL)
+	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, sseBus, engine, recipes, bootstrapCfg, catalog, *natsWsURL)
 	srv := &http.Server{
 		Addr:        *addr,
 		Handler:     router,
@@ -210,22 +210,3 @@ func loadBootstrapConfig(path string) (economy2.BootstrapConfig, error) {
 	return cfg.Bootstrap, nil
 }
 
-// loadMineBaseRate reads mine.base_max_rate from the game-params YAML file.
-func loadMineBaseRate(path string) (float64, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return 0, fmt.Errorf("read %s: %w", path, err)
-	}
-	var cfg struct {
-		Mine struct {
-			BaseMaxRate float64 `yaml:"base_max_rate"`
-		} `yaml:"mine"`
-	}
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return 0, fmt.Errorf("parse mine base_max_rate: %w", err)
-	}
-	if cfg.Mine.BaseMaxRate <= 0 {
-		cfg.Mine.BaseMaxRate = 10.0 // default from game-params
-	}
-	return cfg.Mine.BaseMaxRate, nil
-}

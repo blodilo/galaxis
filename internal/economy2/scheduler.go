@@ -151,10 +151,10 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 	}
 
 	for _, a := range assignments {
-		// Mine slot enforcement: check deposit.max_rate as max_mines.
-		if a.factoryType == "mine" {
-			if ok, err := mineSlotAvailable(ctx, db, a.starID, a.planetID, a.productID); err != nil {
-				log.Printf("economy2: mine slot check facility %s: %v", a.facilityID, err)
+		// Extractor slot enforcement: max_mines per deposit.
+		if a.factoryType == FactoryTypeExtractor {
+			if ok, err := extractorSlotAvailable(ctx, db, a.starID, a.planetID, a.productID); err != nil {
+				log.Printf("economy2: extractor slot check facility %s: %v", a.facilityID, err)
 				continue
 			} else if !ok {
 				continue // deposit slots exhausted
@@ -168,14 +168,14 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 	return nil
 }
 
-// mineSlotAvailable returns true when the deposit still has free mine slots.
+// extractorSlotAvailable returns true when the deposit still has free extractor slots.
 // max_mines is read from planets.resource_deposits[goodID].max_mines.
 // When planetID is nil (orbit node), the home planet is resolved via starID.
-func mineSlotAvailable(ctx context.Context, db *pgxpool.Pool, starID uuid.UUID, planetID *uuid.UUID, goodID string) (bool, error) {
+func extractorSlotAvailable(ctx context.Context, db *pgxpool.Pool, starID uuid.UUID, planetID *uuid.UUID, goodID string) (bool, error) {
 	if planetID == nil {
 		pid, err := FindHomePlanet(ctx, db, starID)
 		if err != nil {
-			return false, fmt.Errorf("economy2: mine facility missing planet_id: %w", err)
+			return false, fmt.Errorf("economy2: extractor facility missing planet_id: %w", err)
 		}
 		planetID = pid
 	}
@@ -185,7 +185,7 @@ func mineSlotAvailable(ctx context.Context, db *pgxpool.Pool, starID uuid.UUID, 
 		return false, err
 	}
 
-	active, err := countActiveMines(ctx, db, *planetID, goodID)
+	active, err := countActiveExtractors(ctx, db, *planetID, goodID)
 	if err != nil {
 		return false, err
 	}

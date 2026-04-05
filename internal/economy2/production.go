@@ -55,9 +55,9 @@ func processFacility(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook, 
 		return fmt.Errorf("economy2: unknown recipe (%s, %s)", order.ProductID, order.FactoryType)
 	}
 
-	// Mine facilities draw from planets.resource_deposits, not goods storage.
-	if recipe.IsMine() {
-		return processMine(ctx, db, f, order, recipe)
+	// Extractor facilities draw from planets.resource_deposits, not goods storage.
+	if recipe.IsExtractor() {
+		return processExtractor(ctx, db, f, order, recipe)
 	}
 
 	// Consume allocated inputs.
