@@ -16,7 +16,7 @@ export default defineConfig({
     port: 5175,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8081',
         changeOrigin: true,
         // SSE support: keep connections alive and disable response buffering.
         configure: (proxy) => {
@@ -32,7 +32,7 @@ export default defineConfig({
         },
       },
       '/assets': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8081',
         changeOrigin: true,
       },
     },

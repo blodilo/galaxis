@@ -20,7 +20,7 @@ http_alive() { curl -s --max-time 1 "$1" &>/dev/null; }
 
 # ── Bereits laufend? ──────────────────────────────────────────────────────────
 if http_alive "$DEVCTL_URL/api/status" \
-   && http_alive "http://localhost:8080/health" \
+   && http_alive "http://localhost:8081/health" \
    && tcp_alive 5175; then
   echo "PROGRESS:100:Stack bereits laufend"
   exit 0
@@ -69,9 +69,9 @@ done
 echo "PROGRESS:50:NATS bereit"
 
 # ── 6. Auf Backend warten ────────────────────────────────────────────────────
-echo "PROGRESS:52:Warte auf galaxis-api (:8080) …"
+echo "PROGRESS:52:Warte auf galaxis-api (:8081) …"
 for i in $(seq 1 60); do
-  http_alive "http://localhost:8080/health" && break
+  http_alive "http://localhost:8081/health" && break
   sleep 1
   [ "$i" -eq 60 ] && { echo "galaxis-api Timeout" >&2; exit 1; }
 done

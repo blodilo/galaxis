@@ -301,8 +301,8 @@ func makeNATS() *component {
 }
 
 func makeGalaxisAPI() *component {
-	c := &component{id: "galaxis-api", display: "Galaxis API", port: 8080}
-	c.fnHealth = func() bool { return httpAlive("http://localhost:8080/health") }
+	c := &component{id: "galaxis-api", display: "Galaxis API", port: 8081}
+	c.fnHealth = func() bool { return httpAlive("http://localhost:8081/health") }
 	c.fnStart = func(c *component) error {
 		c.buf.add("[devctl] Build …")
 		if err := runShell(c, "go", "build", "-o", "bin/galaxis-api", "./cmd/server"); err != nil {
@@ -334,7 +334,7 @@ func makeGalaxisAPI() *component {
 		go c.watch(cmd)
 		return nil
 	}
-	if httpAlive("http://localhost:8080/health") {
+	if httpAlive("http://localhost:8081/health") {
 		c.st = stRunning
 		c.startedAt = time.Now()
 	} else {

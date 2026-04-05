@@ -26,14 +26,14 @@ done
 echo "      Postgres: bereit"
 
 # ── 2. Backend ───────────────────────────────────────────────────────────────
-echo "[2/4] Starte Backend (Port 8080) …"
+echo "[2/4] Starte Backend (Port 8081) …"
 go run ./cmd/server --config game-params_v1.2.yaml \
   >"$LOGDIR/server.log" 2>&1 &
 SERVER_PID=$!
 
 echo "      Warte auf Backend …"
 for i in $(seq 1 30); do
-  curl -s http://localhost:8080/health &>/dev/null && break
+  curl -s http://localhost:8081/health &>/dev/null && break
   sleep 1
 done
 echo "      Backend: bereit (PID $SERVER_PID)"
