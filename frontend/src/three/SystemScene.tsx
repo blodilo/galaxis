@@ -7,7 +7,6 @@ import { useVisualParams } from '../context/VisualParamsContext'
 import { createStarMaterial, createStarProminenceMaterial, uuidSeed } from './shaders/StarShader'
 import { createPlanetMaterial } from './shaders/PlanetShader'
 import { createMoonMaterial } from './shaders/MoonShader'
-import { BODY_VERTEX } from './shaders/noise.glsl'
 
 // ── BL-18: Logarithmische Planetengröße ──────────────────────────────────────
 
@@ -35,7 +34,7 @@ export function computeOrbitPos(
 
 // ── OrbitRing ─────────────────────────────────────────────────────────────────
 
-function OrbitRing({ radius, color, opacity }: { radius: number; color: string; opacity: number }) {
+function _OrbitRing({ radius, color, opacity }: { radius: number; color: string; opacity: number }) {
   const line = useMemo(() => {
     const pts: THREE.Vector3[] = []
     for (let i = 0; i <= 128; i++) {
@@ -420,7 +419,7 @@ function PlanetBody({
 
 // ── Moon mesh ─────────────────────────────────────────────────────────────────
 
-function MoonMesh({ moon, position, radius }: { moon: import('../types/galaxy').Moon; position: [number, number, number]; radius: number }) {
+function _MoonMesh({ moon, position, radius }: { moon: import('../types/galaxy').Moon; position: [number, number, number]; radius: number }) {
   const mat = useMemo(() => createMoonMaterial(moon), [moon.id])
   return (
     <mesh position={position} material={mat}>

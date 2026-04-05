@@ -14,7 +14,7 @@
  *  - Farben: Token-Palette, aber Cyan nur für eigene Einheiten; feindlich: Rot
  */
 
-import { useRef, useMemo } from 'react'
+import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { TacticalGrid } from './TacticalGrid'

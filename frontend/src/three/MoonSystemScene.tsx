@@ -46,7 +46,7 @@ function MoonOrbit({
   moon,
   moonR,
   orbitR,
-  phase,
+  phase: _phase,
 }: {
   moon: import('../types/galaxy').Moon
   moonR: number

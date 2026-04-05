@@ -271,7 +271,7 @@ function VelocityArrow({ trail, speed, color }: {
   const origin = trail[0]
   const dir    = trail[0].clone().sub(trail[1]).normalize()
   const tip    = origin.clone().addScaledVector(dir, speed)
-  const mid    = origin.clone().lerp(tip, 0.5)
+  const _mid   = origin.clone().lerp(tip, 0.5)
   const headH  = Math.max(1.6, speed * 0.13)
   const shaftH = Math.max(0, speed - headH)
 

@@ -1110,7 +1110,7 @@ function MyAssetsView({ onSelect }: { onSelect: (node: MyNodeEntry) => void }) {
 
 // ── Planetare Vorkommen ───────────────────────────────────────────────────────
 
-function VorkommenPanel({ deposits }: { deposits: Record<string, DepositEntry> }) {
+function _VorkommenPanel({ deposits }: { deposits: Record<string, DepositEntry> }) {
   const entries = Object.entries(deposits).filter(([, d]) => d.remaining > 0)
   if (entries.length === 0) return (
     <div>

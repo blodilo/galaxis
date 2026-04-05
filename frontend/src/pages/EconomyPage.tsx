@@ -353,7 +353,7 @@ function StorageTable({
   )
 }
 
-const MODE_LABELS: Record<string, string> = {
+const _MODE_LABELS: Record<string, string> = {
   continuous_full:   'Dauerlauf (voll)',
   continuous_demand: 'Bedarfsgesteuert',
   batch:             'Batch',

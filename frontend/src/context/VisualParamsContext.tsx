@@ -18,7 +18,7 @@ function loadFromStorage(): VisualParams {
     for (const key of Object.keys(parsed) as Array<keyof VisualParams>) {
       const val = parsed[key]
       if (val !== null && val !== undefined && key !== 'typeSizes' && key !== 'spectralColors') {
-        ;(result as Record<string, unknown>)[key] = val
+        ;(result as unknown as Record<string, unknown>)[key] = val
       }
     }
     // Deep-merge nested records separately
