@@ -12,15 +12,16 @@ import (
 
 // BuildTickHandler processes construction orders each tick.
 // When a mine facility is completed, it automatically creates a continuous mine order.
-func BuildTickHandler(db *pgxpool.Pool, recipes RecipeBook) func(ctx context.Context, tickN int64) {
+// mineBaseRate is set as MaxRate on newly built mine facilities (game-params mine.base_max_rate).
+func BuildTickHandler(db *pgxpool.Pool, recipes RecipeBook, mineBaseRate float64) func(ctx context.Context, tickN int64) {
 	return func(ctx context.Context, tickN int64) {
-		if err := runBuildTick(ctx, db, recipes); err != nil {
+		if err := runBuildTick(ctx, db, recipes, mineBaseRate); err != nil {
 			log.Printf("economy2: build tick %d: %v", tickN, err)
 		}
 	}
 }
 
-func runBuildTick(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook) error {
+func runBuildTick(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook, mineBaseRate float64) error {
 	// Move ready construction orders to running (no facility assignment step needed).
 	if _, err := db.Exec(ctx, `
 		UPDATE econ2_orders
@@ -83,7 +84,7 @@ func runBuildTick(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook) err
 		newQty := co.producedQty + 1
 		if int(newQty) >= co.recipeTicks {
 			if err := finishBuildOrder(ctx, db, co.id, co.playerID, co.starID, co.nodeID, co.planetID,
-				co.productID, co.inputs, co.allocatedInputs, recipes); err != nil {
+				co.productID, co.inputs, co.allocatedInputs, mineBaseRate, recipes); err != nil {
 				log.Printf("economy2: finish build order %s: %v", co.id, err)
 			}
 		} else {
@@ -102,6 +103,7 @@ func finishBuildOrder(
 	ctx context.Context, db *pgxpool.Pool,
 	orderID, playerID, starID, nodeID uuid.UUID, planetID *uuid.UUID,
 	productID string, inputs []RecipeInput, allocated map[string]float64,
+	mineBaseRate float64,
 	recipes RecipeBook,
 ) error {
 	tx, err := db.Begin(ctx)
@@ -128,21 +130,12 @@ func finishBuildOrder(
 	// Derive factory_type and deposit_good_id from product_id.
 	factoryType, depositGoodID := parseBuildProductID(productID)
 
-	// For mine facilities: ensure the node's planet has deposits initialised.
-	if factoryType == "mine" {
-		if planetID == nil {
-			pid, err := FindHomePlanet(ctx, db, starID)
-			if err == nil {
-				planetID = pid
-			}
-		}
-		if planetID != nil {
-			_ = EnsureDeposits(ctx, db, *planetID)
-		}
-	}
-
 	// Create the facility on the node.
-	cfg := FacilityConfig{Level: 1, DepositGoodID: depositGoodID}
+	maxRate := 0.0
+	if factoryType == "mine" {
+		maxRate = mineBaseRate
+	}
+	cfg := FacilityConfig{Level: 1, MaxRate: maxRate, DepositGoodID: depositGoodID}
 	cfgRaw, err := json.Marshal(cfg)
 	if err != nil {
 		return err

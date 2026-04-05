@@ -30,7 +30,7 @@ func NewRouter(
 	eng *tick.Engine,
 	recipes economy2.RecipeBook,
 	bootstrapCfg economy2.BootstrapConfig,
-	mineParams economy2.MineParams,
+	mineBaseRate float64,
 	natsWsURL string,
 ) http.Handler {
 	// JWT validator — nil when KEYCLOAK_JWKS_URL is not set (dev without Keycloak)
@@ -78,7 +78,7 @@ func NewRouter(
 	})
 
 	r.Route("/api/v2", func(r chi.Router) {
-		economy2.RegisterRoutes(r, db, recipes, bootstrapCfg, mineParams)
+		economy2.RegisterRoutes(r, db, recipes, bootstrapCfg, mineBaseRate)
 
 		// Admin: Tick-Steuerung (Dev/MVP only)
 		r.Post("/admin/tick/advance", func(w http.ResponseWriter, r *http.Request) {

@@ -81,12 +81,12 @@ func main() {
 	}
 	log.Printf("economy2: loaded %d recipes", len(recipes))
 
-	// ── Economy2 Mine Params ──────────────────────────────────────────────────
-	mineParams, err := loadMineParams(*configPath)
+	// ── Economy2 Mine Config ──────────────────────────────────────────────────
+	mineBaseRate, err := loadMineBaseRate(*configPath)
 	if err != nil {
-		log.Fatalf("economy2: load mine params: %v", err)
+		log.Fatalf("economy2: load mine base_max_rate: %v", err)
 	}
-	log.Printf("economy2: mine base_rate=%.1f levels=%d", mineParams.BaseRate, len(mineParams.LevelMultiplier))
+	log.Printf("economy2: mine base_max_rate=%.1f", mineBaseRate)
 
 	// ── Economy2 Bootstrap Config ─────────────────────────────────────────────
 	bootstrapCfg, err := loadBootstrapConfig(*configPath)
@@ -136,8 +136,8 @@ func main() {
 
 	// Neues Economy2-System
 	engine.Register(economy2.SchedulerHandler(pool, recipes))
-	engine.Register(economy2.BuildTickHandler(pool, recipes))
-	engine.Register(economy2.ProductionHandler(pool, recipes, mineParams))
+	engine.Register(economy2.BuildTickHandler(pool, recipes, mineBaseRate))
+	engine.Register(economy2.ProductionHandler(pool, recipes))
 	engine.Register(economy2.ShipTickHandler(pool))
 
 	// Tick-Event auf Bus publizieren (letzter Handler — nach allen Economy-Updates)
@@ -151,7 +151,7 @@ func main() {
 	jobStore := jobs.NewStore()
 
 	// ── HTTP Server ───────────────────────────────────────────────────────────
-	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, sseBus, engine, recipes, bootstrapCfg, mineParams, *natsWsURL)
+	router := api.NewRouter(pool, cfg, jobStore, *assetsDir, *catalogPath, reg, sseBus, engine, recipes, bootstrapCfg, mineBaseRate, *natsWsURL)
 	srv := &http.Server{
 		Addr:        *addr,
 		Handler:     router,
@@ -210,23 +210,22 @@ func loadBootstrapConfig(path string) (economy2.BootstrapConfig, error) {
 	return cfg.Bootstrap, nil
 }
 
-// loadMineParams reads the mine: section from the game-params YAML file.
-func loadMineParams(path string) (economy2.MineParams, error) {
+// loadMineBaseRate reads mine.base_max_rate from the game-params YAML file.
+func loadMineBaseRate(path string) (float64, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return economy2.MineParams{}, fmt.Errorf("read %s: %w", path, err)
+		return 0, fmt.Errorf("read %s: %w", path, err)
 	}
 	var cfg struct {
-		Mine economy2.MineParams `yaml:"mine"`
+		Mine struct {
+			BaseMaxRate float64 `yaml:"base_max_rate"`
+		} `yaml:"mine"`
 	}
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return economy2.MineParams{}, fmt.Errorf("parse mine params: %w", err)
+		return 0, fmt.Errorf("parse mine base_max_rate: %w", err)
 	}
-	if cfg.Mine.BaseRate <= 0 {
-		cfg.Mine.BaseRate = 5.0
+	if cfg.Mine.BaseMaxRate <= 0 {
+		cfg.Mine.BaseMaxRate = 10.0 // default from game-params
 	}
-	if len(cfg.Mine.LevelMultiplier) == 0 {
-		cfg.Mine.LevelMultiplier = []float64{0.5}
-	}
-	return cfg.Mine, nil
+	return cfg.Mine.BaseMaxRate, nil
 }

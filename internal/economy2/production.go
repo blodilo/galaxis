@@ -11,29 +11,29 @@ import (
 )
 
 // ProductionHandler returns a tick.Handler that advances all running economy2 facilities.
-func ProductionHandler(db *pgxpool.Pool, recipes RecipeBook, mineParams MineParams) func(ctx context.Context, tickN int64) {
+func ProductionHandler(db *pgxpool.Pool, recipes RecipeBook) func(ctx context.Context, tickN int64) {
 	return func(ctx context.Context, tickN int64) {
-		if err := runProductionTick(ctx, db, recipes, mineParams); err != nil {
+		if err := runProductionTick(ctx, db, recipes); err != nil {
 			log.Printf("economy2: production tick %d: %v", tickN, err)
 		}
 	}
 }
 
-func runProductionTick(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook, mineParams MineParams) error {
+func runProductionTick(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook) error {
 	facilities, err := loadRunningFacilities(ctx, db)
 	if err != nil {
 		return fmt.Errorf("economy2: load facilities: %w", err)
 	}
 
 	for _, f := range facilities {
-		if err := processFacility(ctx, db, recipes, mineParams, f); err != nil {
+		if err := processFacility(ctx, db, recipes, f); err != nil {
 			log.Printf("economy2: facility %s: %v", f.ID, err)
 		}
 	}
 	return nil
 }
 
-func processFacility(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook, mineParams MineParams, f *Facility) error {
+func processFacility(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook, f *Facility) error {
 	// Mid-batch: just decrement counter.
 	if f.Config.TicksRemaining > 1 {
 		f.Config.TicksRemaining--
@@ -55,9 +55,9 @@ func processFacility(ctx context.Context, db *pgxpool.Pool, recipes RecipeBook, 
 		return fmt.Errorf("economy2: unknown recipe (%s, %s)", order.ProductID, order.FactoryType)
 	}
 
-	// Mine facilities draw from planet_deposits, not goods storage.
+	// Mine facilities draw from planets.resource_deposits, not goods storage.
 	if recipe.IsMine() {
-		return processMine(ctx, db, f, order, recipe, mineParams)
+		return processMine(ctx, db, f, order, recipe)
 	}
 
 	// Consume allocated inputs.

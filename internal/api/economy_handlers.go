@@ -653,9 +653,27 @@ func loadPlanetResourceQualities(
 	if err != nil {
 		return nil, err
 	}
-	var qualities map[string]float64
-	if err := json.Unmarshal(raw, &qualities); err != nil {
+
+	// Support both formats:
+	//   v1 (old): {"iron": 0.8, ...}
+	//   v2 (migration 014): {"iron": {"amount":40000,"quality":0.8,"max_mines":4}, ...}
+	var rawMap map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &rawMap); err != nil {
 		return nil, fmt.Errorf("planet resource_deposits parse: %w", err)
+	}
+	qualities := make(map[string]float64, len(rawMap))
+	for k, v := range rawMap {
+		var entry struct {
+			Quality float64 `json:"quality"`
+		}
+		if json.Unmarshal(v, &entry) == nil && entry.Quality > 0 {
+			qualities[k] = entry.Quality
+			continue
+		}
+		var q float64
+		if json.Unmarshal(v, &q) == nil {
+			qualities[k] = q
+		}
 	}
 	return qualities, nil
 }

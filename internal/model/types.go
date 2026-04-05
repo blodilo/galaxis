@@ -104,6 +104,14 @@ type GalaxyRow struct {
 
 // ── Planet types ───────────────────────────────────────────────────────────────
 
+// DepositEntry is a per-resource entry in planets/moons.resource_deposits JSONB.
+// Introduced in migration 014; replaces the old plain-float quality value.
+type DepositEntry struct {
+	Amount   float64 `json:"amount"`   // current extractable stock
+	Quality  float64 `json:"quality"`  // geological modifier 0–1 (static, planet-bound)
+	MaxMines int     `json:"max_mines"` // max simultaneous mine facilities on this deposit
+}
+
 // Planet represents a generated planet in a star system.
 type Planet struct {
 	ID                    uuid.UUID
@@ -132,7 +140,7 @@ type Planet struct {
 	BiochemArchetype      string             // dominant archetype ID; "" = uninhabitable
 	BiomassPotential      map[string]float64 // archetype_id → 0.0–1.0
 	UsableSurfaceFraction float64
-	ResourceDeposits      map[string]float64 // resource_id → amount 0.0–1.0
+	ResourceDeposits      map[string]DepositEntry // resource_id → deposit
 }
 
 // Moon represents a moon orbiting a planet.
@@ -145,7 +153,7 @@ type Moon struct {
 	RadiusEarth      float64
 	CompositionType  string // rocky | icy | mixed
 	SurfaceTempK     float64
-	ResourceDeposits map[string]float64
+	ResourceDeposits map[string]DepositEntry
 }
 
 // PlanetRow is a planet record for API responses.
@@ -175,18 +183,18 @@ type PlanetRow struct {
 	BiochemArchetype      string             `json:"biochem_archetype"`
 	BiomassPotential      map[string]float64 `json:"biomass_potential"`
 	UsableSurfaceFraction float64            `json:"usable_surface_fraction"`
-	ResourceDeposits      map[string]float64 `json:"resource_deposits"`
-	Moons                 []MoonRow          `json:"moons"`
+	ResourceDeposits      map[string]DepositEntry `json:"resource_deposits"`
+	Moons                 []MoonRow               `json:"moons"`
 }
 
 // MoonRow is a moon record for API responses.
 type MoonRow struct {
-	ID               string             `json:"id"`
-	OrbitIndex       int                `json:"orbit_index"`
-	OrbitDistanceAU  float64            `json:"orbit_distance_au"`
-	MassEarth        float64            `json:"mass_earth"`
-	RadiusEarth      float64            `json:"radius_earth"`
-	CompositionType  string             `json:"composition_type"`
-	SurfaceTempK     float64            `json:"surface_temp_k"`
-	ResourceDeposits map[string]float64 `json:"resource_deposits"`
+	ID               string                  `json:"id"`
+	OrbitIndex       int                     `json:"orbit_index"`
+	OrbitDistanceAU  float64                 `json:"orbit_distance_au"`
+	MassEarth        float64                 `json:"mass_earth"`
+	RadiusEarth      float64                 `json:"radius_earth"`
+	CompositionType  string                  `json:"composition_type"`
+	SurfaceTempK     float64                 `json:"surface_temp_k"`
+	ResourceDeposits map[string]DepositEntry `json:"resource_deposits"`
 }

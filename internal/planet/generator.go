@@ -448,7 +448,7 @@ func makeMoon(
 	moonTemp := tEq * (0.85 + rng.Float64()*0.25)
 
 	isInner := frostLine <= 0 || distAU < frostLine
-	var resources map[string]float64
+	var resources map[string]model.DepositEntry
 	if comp == "icy" || comp == "mixed" {
 		resources = GenerateDeposits(rng, starType, "ice_giant", false)
 	} else {

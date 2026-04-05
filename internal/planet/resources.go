@@ -4,6 +4,8 @@ import (
 	"math"
 	"math/rand/v2"
 	"sort"
+
+	"galaxis/internal/model"
 )
 
 // Resource IDs – 24 Ressourcengruppen (ADR-006, game-params Sektion 6).
@@ -80,11 +82,15 @@ func init() {
 	sort.Strings(sortedResourceIDs)
 }
 
+// depositBaseUnits is the default amount at quality=1.0 (matches game-params common_deposit_units).
+const depositBaseUnits = 50_000.0
+
 // GenerateDeposits returns resource deposits for a planet or moon.
 // isInnerZone: planet is inside the frost line (suppresses ices, boosts heavy metals).
-// Returns a map of resource_id → amount (0.0–1.0 scale).
-func GenerateDeposits(rng *rand.Rand, starType, planetType string, isInnerZone bool) map[string]float64 {
-	deposits := make(map[string]float64, 10)
+// Each entry contains amount (initial stock), quality (geological modifier 0–1),
+// and max_mines (normally distributed accessibility, clamped 1–10).
+func GenerateDeposits(rng *rand.Rand, starType, planetType string, isInnerZone bool) map[string]model.DepositEntry {
+	deposits := make(map[string]model.DepositEntry, 10)
 
 	for _, resID := range sortedResourceIDs {
 		rw := resourceTable[resID]
@@ -112,9 +118,24 @@ func GenerateDeposits(rng *rand.Rand, starType, planetType string, isInnerZone b
 		}
 
 		// Log-normal-like distribution: most deposits small, occasional rich deposits.
-		amount := base * rng.Float64() * (0.4 + rng.Float64()*0.6)
-		if amount > 0.02 { // threshold: only log meaningful deposits
-			deposits[resID] = math.Min(amount, 1.0)
+		quality := math.Min(base*rng.Float64()*(0.4+rng.Float64()*0.6), 1.0)
+		if quality <= 0.02 {
+			continue // skip trace deposits
+		}
+
+		// max_mines: normally distributed N(4, 2), clamped to [1, 10]. [BALANCING]
+		maxMines := int(math.Round(4.0 + rng.NormFloat64()*2.0))
+		if maxMines < 1 {
+			maxMines = 1
+		}
+		if maxMines > 10 {
+			maxMines = 10
+		}
+
+		deposits[resID] = model.DepositEntry{
+			Amount:   quality * depositBaseUnits,
+			Quality:  quality,
+			MaxMines: maxMines,
 		}
 	}
 

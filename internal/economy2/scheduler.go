@@ -169,7 +169,7 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 }
 
 // mineSlotAvailable returns true when the deposit still has free mine slots.
-// max_mines is read from planet_deposits.state[goodID].max_rate.
+// max_mines is read from planets.resource_deposits[goodID].max_mines.
 // When planetID is nil (orbit node), the home planet is resolved via starID.
 func mineSlotAvailable(ctx context.Context, db *pgxpool.Pool, starID uuid.UUID, planetID *uuid.UUID, goodID string) (bool, error) {
 	if planetID == nil {
@@ -178,10 +178,6 @@ func mineSlotAvailable(ctx context.Context, db *pgxpool.Pool, starID uuid.UUID, 
 			return false, fmt.Errorf("economy2: mine facility missing planet_id: %w", err)
 		}
 		planetID = pid
-	}
-
-	if err := EnsureDeposits(ctx, db, *planetID); err != nil {
-		return false, fmt.Errorf("economy2: mine ensure deposits: %w", err)
 	}
 
 	ds, err := readDeposit(ctx, db, *planetID, goodID)
@@ -194,7 +190,7 @@ func mineSlotAvailable(ctx context.Context, db *pgxpool.Pool, starID uuid.UUID, 
 		return false, err
 	}
 
-	return float64(active) < ds.MaxRate, nil
+	return active < ds.MaxMines, nil
 }
 
 func assignFacility(ctx context.Context, db *pgxpool.Pool, facilityID, orderID uuid.UUID, ticks int) error {

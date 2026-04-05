@@ -12,10 +12,13 @@ import (
 // FacilityConfig is stored as JSONB in econ2_facilities.config.
 type FacilityConfig struct {
 	Level          int     `json:"level"`
+	// MaxRate is the extraction rate (units/tick) for mine facilities.
+	// Actual output = MaxRate × deposit.Quality.
+	// Upgradeable via tech; set to game-params mine.base_max_rate on build. [BALANCING]
+	MaxRate        float64 `json:"max_rate,omitempty"`
 	TicksRemaining int     `json:"ticks_remaining"`
 	EfficiencyAcc  float64 `json:"efficiency_acc"`
 	// DepositGoodID is set for mine facilities and names the good being extracted.
-	// It determines which planet_deposits entry to deplete each tick.
 	DepositGoodID string `json:"deposit_good_id,omitempty"`
 }
 

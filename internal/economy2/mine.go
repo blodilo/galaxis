@@ -9,39 +9,23 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// MineParams holds mining calibration values loaded from game-params.
-type MineParams struct {
-	// BaseRate is the output per tick for a level-1 mine before the level multiplier.
-	BaseRate float64 `yaml:"base_rate"`
-	// LevelMultiplier[i] is the multiplier for mine level i+1.
-	// Higher levels are unlocked by research; for MVP Lv1 is the only available level.
-	LevelMultiplier []float64 `yaml:"level_multiplier"`
-}
-
-// RateForLevel returns the output per tick for the given 1-based mine level.
-// Falls back to BaseRate × 1.0 for out-of-range levels.
-func (p MineParams) RateForLevel(level int) float64 {
-	if level < 1 || level > len(p.LevelMultiplier) {
-		return p.BaseRate
-	}
-	return p.BaseRate * p.LevelMultiplier[level-1]
-}
-
 // processMine handles one production tick for a mine facility.
 //
+// Extraction formula: extracted_per_tick = facility.config.max_rate × deposit.quality
+//
 // Flow:
-//  1. Read deposit state.
-//  2. If depleted → pause order + facility with status paused_depleted.
-//  3. Compute rate, deplete planet_deposits.
-//  4. Apply efficiency accumulator → floor → produce into goods stock.
-//  5. Reset batch counter.
+//  1. Resolve planet (fallback for orbit nodes with no planet_id).
+//  2. Read deposit state.
+//  3. If depleted → pause order + facility.
+//  4. Compute rate, deplete planets.resource_deposits.
+//  5. Apply efficiency accumulator → floor → produce into goods stock.
+//  6. Reset batch counter.
 func processMine(
 	ctx context.Context,
 	db *pgxpool.Pool,
 	f *Facility,
 	order *ProductionOrder,
 	recipe *Recipe,
-	params MineParams,
 ) error {
 	// Fallback: orbit nodes have no planet_id — resolve via home planet.
 	if f.PlanetID == nil {
@@ -54,18 +38,13 @@ func processMine(
 
 	goodID := recipe.GeologicalInput
 
-	// Lazily initialise planet_deposits if the planet was just colonised.
-	if err := EnsureDeposits(ctx, db, *f.PlanetID); err != nil {
-		return fmt.Errorf("economy2: mine ensure deposits: %w", err)
-	}
-
 	ds, err := readDeposit(ctx, db, *f.PlanetID, goodID)
 	if err != nil {
 		return fmt.Errorf("economy2: mine read deposit: %w", err)
 	}
 
 	// Deposit exhausted → pause.
-	if ds.Remaining <= 0 {
+	if ds.Amount <= 0 {
 		if _, err := db.Exec(ctx,
 			`UPDATE econ2_orders SET status='paused_depleted', updated_at=now() WHERE id=$1`,
 			order.ID,
@@ -79,11 +58,14 @@ func processMine(
 		return err
 	}
 
-	// Compute actual extraction rate.
-	rate := params.RateForLevel(f.Config.Level)
-	actual := math.Min(rate, ds.Remaining)
+	// extracted_per_tick = MaxRate × quality
+	rate := f.Config.MaxRate * ds.Quality
+	if rate <= 0 {
+		rate = 1.0 // safety floor for misconfigured facilities
+	}
+	actual := math.Min(rate, ds.Amount)
 
-	// Deplete planet_deposits.
+	// Deplete planets.resource_deposits.
 	_, depleted, err := depleteDeposit(ctx, db, *f.PlanetID, goodID, actual)
 	if err != nil {
 		return fmt.Errorf("economy2: mine deplete: %w", err)

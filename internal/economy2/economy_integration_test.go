@@ -27,7 +27,6 @@ var (
 	itCtx          = context.Background()
 	itSkip         bool
 	itRecipes      RecipeBook
-	itMineParams   = MineParams{BaseRate: 5.0, LevelMultiplier: []float64{1.0, 1.5, 2.0}}
 	itBootstrapCfg = BootstrapConfig{
 		Stock: map[string]float64{
 			"iron":     200.0,
@@ -110,10 +109,10 @@ func setupFixtures(t *testing.T) itFixtures {
 		t.Fatalf("Fixture star: %v", err)
 	}
 
-	resDeposits, _ := json.Marshal(map[string]float64{
-		"iron":     0.8,
-		"silicon":  0.5,
-		"helium_3": 0.3,
+	resDeposits, _ := json.Marshal(map[string]depositState{
+		"iron":     {Amount: 40000, Quality: 0.8, MaxMines: 4},
+		"silicon":  {Amount: 25000, Quality: 0.5, MaxMines: 4},
+		"helium_3": {Amount: 15000, Quality: 0.3, MaxMines: 4},
 	})
 	if err := itDB.QueryRow(itCtx,
 		`INSERT INTO planets (star_id, orbit_index, planet_type, orbit_distance_au, resource_deposits)
@@ -134,8 +133,8 @@ func setupFixtures(t *testing.T) itFixtures {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-// TestEconomyBootstrapCreatesDeposits prüft, dass nach RunBootstrap in planet_deposits
-// eine Zeile mit Vorkommen-Daten für das Heimat-Planeten existiert.
+// TestEconomyBootstrapCreatesDeposits prüft, dass nach RunBootstrap die
+// resource_deposits des Heimat-Planeten (v2-Format) korrekt lesbar sind.
 func TestEconomyBootstrapCreatesDeposits(t *testing.T) {
 	requireDB(t)
 	fx := setupFixtures(t)
@@ -144,42 +143,33 @@ func TestEconomyBootstrapCreatesDeposits(t *testing.T) {
 		t.Fatalf("RunBootstrap: %v", err)
 	}
 
-	// planet_deposits muss existieren
-	var stateRaw []byte
-	if err := itDB.QueryRow(itCtx,
-		`SELECT state FROM planet_deposits WHERE planet_id = $1`, fx.planetID,
-	).Scan(&stateRaw); err != nil {
-		t.Fatalf("planet_deposits nicht angelegt: %v", err)
+	state, err := ReadAllDeposits(itCtx, itDB, fx.planetID)
+	if err != nil {
+		t.Fatalf("ReadAllDeposits: %v", err)
 	}
 
-	var state map[string]depositState
-	if err := json.Unmarshal(stateRaw, &state); err != nil {
-		t.Fatalf("planet_deposits state parsen: %v", err)
-	}
-
-	// iron (quality=0.8): remaining = 0.8 × 50 000 = 40 000
+	// iron: amount=40000, quality=0.8, max_mines=4 (aus Fixture)
 	ds, ok := state["iron"]
 	if !ok {
-		t.Fatal("iron fehlt in planet_deposits")
+		t.Fatal("iron fehlt in resource_deposits")
 	}
-	want := 0.8 * 50_000.0
-	if ds.Remaining != want {
-		t.Errorf("iron remaining = %.1f, want %.1f", ds.Remaining, want)
+	if ds.Amount != 40000 {
+		t.Errorf("iron amount = %.1f, want 40000", ds.Amount)
 	}
-	if ds.MaxRate <= 0 {
-		t.Errorf("iron max_rate = %.2f, want > 0", ds.MaxRate)
+	if ds.MaxMines <= 0 {
+		t.Errorf("iron max_mines = %d, want > 0", ds.MaxMines)
 	}
 
 	// silicon und helium_3 müssen ebenfalls vorhanden sein
 	for _, good := range []string{"silicon", "helium_3"} {
 		if _, ok := state[good]; !ok {
-			t.Errorf("%s fehlt in planet_deposits", good)
+			t.Errorf("%s fehlt in resource_deposits", good)
 		}
 	}
 
-	t.Logf("Deposits: iron=%.0f (max_rate=%.2f), silicon=%.0f, helium_3=%.0f",
-		state["iron"].Remaining, state["iron"].MaxRate,
-		state["silicon"].Remaining, state["helium_3"].Remaining)
+	t.Logf("Deposits: iron=%.0f (max_mines=%d), silicon=%.0f, helium_3=%.0f",
+		state["iron"].Amount, state["iron"].MaxMines,
+		state["silicon"].Amount, state["helium_3"].Amount)
 }
 
 // TestEconomyBootstrapPlanetInAssets prüft, dass nach RunBootstrap der Knoten
@@ -348,7 +338,7 @@ func TestEconomyBuildOrderConsumesResources(t *testing.T) {
 
 	// Build-Tick ausführen (setzt ready→running, dann fertig weil produced_qty=0 ≥ recipe_ticks=1 → nein)
 	// Erster Tick: ready → running, produced_qty 0→1 → 1 ≥ 1 → finishBuildOrder
-	if err := runBuildTick(itCtx, itDB, itRecipes); err != nil {
+	if err := runBuildTick(itCtx, itDB, itRecipes, 10.0); err != nil {
 		t.Fatalf("runBuildTick: %v", err)
 	}
 
@@ -462,10 +452,10 @@ func TestEconomyMineIncreasesResources(t *testing.T) {
 	depositsBefore, _ := ReadAllDeposits(itCtx, itDB, fx.planetID)
 	stockBefore, _ := NodeStock(itCtx, itDB, nodeID)
 	t.Logf("Vor Tick: Vorkommen=%.1f, Lager=%.1f",
-		depositsBefore["iron_ore"].Remaining, stockBefore["iron_ore"].Total)
+		depositsBefore["iron_ore"].Amount, stockBefore["iron_ore"].Total)
 
 	// Produktions-Tick ausführen
-	if err := runProductionTick(itCtx, itDB, itRecipes, itMineParams); err != nil {
+	if err := runProductionTick(itCtx, itDB, itRecipes); err != nil {
 		t.Fatalf("runProductionTick: %v", err)
 	}
 
@@ -478,14 +468,14 @@ func TestEconomyMineIncreasesResources(t *testing.T) {
 
 	// Vorkommen muss gesunken sein
 	depositsAfter, _ := ReadAllDeposits(itCtx, itDB, fx.planetID)
-	if depositsAfter["iron_ore"].Remaining >= depositsBefore["iron_ore"].Remaining {
+	if depositsAfter["iron_ore"].Amount >= depositsBefore["iron_ore"].Amount {
 		t.Errorf("Vorkommen sank nicht: vor=%.1f, nach=%.1f",
-			depositsBefore["iron_ore"].Remaining, depositsAfter["iron_ore"].Remaining)
+			depositsBefore["iron_ore"].Amount, depositsAfter["iron_ore"].Amount)
 	}
 
-	extracted := depositsBefore["iron_ore"].Remaining - depositsAfter["iron_ore"].Remaining
+	extracted := depositsBefore["iron_ore"].Amount - depositsAfter["iron_ore"].Amount
 	gained := stockAfter["iron_ore"].Total - stockBefore["iron_ore"].Total
 	t.Logf("Nach Tick: Vorkommen=%.1f (−%.2f), Lager=%.1f (+%.2f)",
-		depositsAfter["iron_ore"].Remaining, extracted,
+		depositsAfter["iron_ore"].Amount, extracted,
 		stockAfter["iron_ore"].Total, gained)
 }
