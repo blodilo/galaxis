@@ -55,6 +55,13 @@ export interface StarFilter {
   onlyWithPlanets: boolean
 }
 
+// DepositEntry matches the v2 JSONB format from migration 014.
+export interface DepositEntry {
+  amount: number    // current extractable stock
+  quality: number   // geological modifier 0–1
+  max_mines: number // max simultaneous extractors
+}
+
 export interface Moon {
   id: string
   orbit_index: number
@@ -63,7 +70,7 @@ export interface Moon {
   radius_earth: number
   composition_type: 'rocky' | 'icy' | 'mixed'
   surface_temp_k: number
-  resource_deposits: Record<string, number>
+  resource_deposits: Record<string, DepositEntry>
 }
 
 export type PlanetType = 'rocky' | 'gas_giant' | 'ice_giant' | 'asteroid_belt'
@@ -94,7 +101,7 @@ export interface Planet {
   biochem_archetype: string
   biomass_potential: Record<string, number>
   usable_surface_fraction: number
-  resource_deposits: Record<string, number>
+  resource_deposits: Record<string, DepositEntry>
   moons: Moon[]
 }
 

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import type { Planet, Moon } from '../types/galaxy'
+import type { Planet, Moon, DepositEntry } from '../types/galaxy'
 import { setupHomePlanet } from '../api/economy'
 import { bootstrap } from '../api/economy2'
 
@@ -39,14 +39,16 @@ function TopGases({ comp }: { comp: Record<string, number> }) {
   return <span>{sorted.map(([g, f]) => `${g} ${(f * 100).toFixed(0)}%`).join(' · ')}</span>
 }
 
-function TopResources({ res }: { res: Record<string, number> }) {
-  const sorted = Object.entries(res).sort((a, b) => b[1] - a[1]).slice(0, 5)
+function TopResources({ res }: { res: Record<string, DepositEntry> }) {
+  const sorted = Object.entries(res)
+    .sort((a, b) => b[1].quality - a[1].quality)
+    .slice(0, 5)
   if (!sorted.length) return <span className="text-slate-600">—</span>
   return (
     <div className="flex flex-wrap gap-1 justify-end">
-      {sorted.map(([id, amt]) => (
+      {sorted.map(([id, dep]) => (
         <span key={id} className="bg-slate-800 px-1 rounded">
-          {id.replace(/_/g, '\u00a0')} {(amt * 100).toFixed(0)}
+          {id.replace(/_/g, '\u00a0')} {(dep.quality * 100).toFixed(0)}%
         </span>
       ))}
     </div>

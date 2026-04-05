@@ -725,14 +725,23 @@ func setupHomePlanet(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFunc
 			return
 		}
 
-		// 1. Build quality=1.0 map for all known deposit resources.
-		fullQualities := make(map[string]float64, len(reg.Deposits))
-		for goodID := range reg.Deposits {
-			fullQualities[goodID] = 1.0
+		// 1. Build v2 deposit map: {good_id: {amount, quality, max_mines}} for all known deposit resources.
+		type depositV2 struct {
+			Amount   float64 `json:"amount"`
+			Quality  float64 `json:"quality"`
+			MaxMines int     `json:"max_mines"`
+		}
+		depositsV2 := make(map[string]depositV2, len(reg.Deposits))
+		for goodID, spec := range reg.Deposits {
+			depositsV2[goodID] = depositV2{
+				Amount:   spec.BaseUnits,
+				Quality:  1.0,
+				MaxMines: spec.BaseSlots,
+			}
 		}
 
-		// 2. Overwrite planets.resource_deposits.
-		rawQ, _ := json.Marshal(fullQualities)
+		// 2. Overwrite planets.resource_deposits with v2 format.
+		rawQ, _ := json.Marshal(depositsV2)
 		if _, err := db.Exec(ctx,
 			`UPDATE planets SET resource_deposits = $1 WHERE id = $2`,
 			rawQ, planetID,
@@ -741,30 +750,37 @@ func setupHomePlanet(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFunc
 			return
 		}
 
-		// 3. Overwrite planet_deposits with full-quality state.
-		depositState := make(map[string]economy.DepositState, len(reg.Deposits))
+		// 3. planet_deposits table was dropped in migration 014 — deposits live in planets.resource_deposits.
+
+		// 4. Upsert quality=1.0 survey directly (bypasses defunct planet_deposits table).
+		//    At quality=1.0 all fields are revealed: exact amount, max_rate, slots.
+		type resourceSnap struct {
+			Present        bool     `json:"present"`
+			RemainingExact *float64 `json:"remaining_exact,omitempty"`
+			MaxRate        *float64 `json:"max_rate,omitempty"`
+			Slots          *int     `json:"slots,omitempty"`
+		}
+		snapshot := make(map[string]resourceSnap, len(reg.Deposits))
 		for goodID, spec := range reg.Deposits {
-			depositState[goodID] = economy.DepositState{
-				Remaining:     spec.BaseUnits,
-				MaxRate:       spec.BaseMaxRate,
-				Slots:         spec.BaseSlots,
-				SurveyQuality: 1.0,
+			remaining := spec.BaseUnits
+			maxRate := spec.BaseMaxRate
+			slots := spec.BaseSlots
+			snapshot[goodID] = resourceSnap{
+				Present:        true,
+				RemainingExact: &remaining,
+				MaxRate:        &maxRate,
+				Slots:          &slots,
 			}
 		}
-		rawDeposit, _ := json.Marshal(depositState)
+		rawSnap, _ := json.Marshal(snapshot)
 		if _, err := db.Exec(ctx,
-			`INSERT INTO planet_deposits (planet_id, state)
-			 VALUES ($1, $2)
-			 ON CONFLICT (planet_id) DO UPDATE SET state = $2, updated_at = now()`,
-			planetID, rawDeposit,
+			`INSERT INTO player_surveys (player_id, planet_id, tick_n, quality, snapshot, surveyed_at)
+			 VALUES ($1, $2, $3, $4, $5, now())
+			 ON CONFLICT (player_id, planet_id) DO UPDATE
+			   SET tick_n = EXCLUDED.tick_n, quality = EXCLUDED.quality,
+			       snapshot = EXCLUDED.snapshot, surveyed_at = now()`,
+			playerID, planetID, int64(0), float64(1.0), rawSnap,
 		); err != nil {
-			writeError(w, http.StatusInternalServerError, "deposit upsert failed: "+err.Error())
-			return
-		}
-
-		// 4. Upsert quality=1.0 survey (full information).
-		survey, err := economy.ExecuteSurvey(ctx, db, playerID, planetID, 1.0, 0, fullQualities, reg)
-		if err != nil {
 			writeError(w, http.StatusInternalServerError, "survey failed: "+err.Error())
 			return
 		}
@@ -838,7 +854,7 @@ func setupHomePlanet(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFunc
 		writeJSON(w, http.StatusOK, map[string]any{
 			"status":   "ok",
 			"deposits": len(reg.Deposits),
-			"survey":   survey.PlanetID,
+			"survey":   planetID,
 		})
 	}
 }
