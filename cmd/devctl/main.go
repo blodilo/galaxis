@@ -347,8 +347,9 @@ func makeFrontend() *component {
 	c := &component{id: "galaxis-frontend", display: "Galaxis Frontend", port: 5175}
 	c.fnHealth = func() bool { return tcpAlive(5175) }
 	c.fnStart = func(c *component) error {
-		cmd := exec.Command("npm", "run", "dev", "--prefix", "frontend")
-		cmd.Env = os.Environ()
+		npmBin, nodeBin := resolveNodeBin()
+		cmd := exec.Command(npmBin, "run", "dev", "--prefix", "frontend")
+		cmd.Env = appendNodePath(os.Environ(), nodeBin)
 		stdout, _ := cmd.StdoutPipe()
 		stderr, _ := cmd.StderrPipe()
 		if err := cmd.Start(); err != nil {
@@ -492,4 +493,36 @@ func main() {
 	if err := http.ListenAndServe(listenAddr, mux); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// resolveNodeBin returns the npm binary path and its directory.
+// Scans ~/.nvm/versions/node/*/bin so devctl works without an interactive shell.
+func resolveNodeBin() (npmBin, nodeDir string) {
+	home, _ := os.UserHomeDir()
+	nvmBase := home + "/.nvm/versions/node"
+	if entries, err := os.ReadDir(nvmBase); err == nil {
+		// Pick the last (highest-sorted) version that has npm.
+		for i := len(entries) - 1; i >= 0; i-- {
+			dir := nvmBase + "/" + entries[i].Name() + "/bin"
+			if _, err := os.Stat(dir + "/npm"); err == nil {
+				return dir + "/npm", dir
+			}
+		}
+	}
+	// Fallback: system PATH
+	return "npm", ""
+}
+
+// appendNodePath prepends nodeDir to the PATH entry in env.
+func appendNodePath(env []string, nodeDir string) []string {
+	if nodeDir == "" {
+		return env
+	}
+	for i, e := range env {
+		if strings.HasPrefix(e, "PATH=") {
+			env[i] = "PATH=" + nodeDir + string(os.PathListSeparator) + e[5:]
+			return env
+		}
+	}
+	return append(env, "PATH="+nodeDir)
 }
