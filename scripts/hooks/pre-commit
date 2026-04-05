@@ -6,7 +6,9 @@ set -euo pipefail
 PROJECT_DIR="$(git rev-parse --show-toplevel)"
 cd "$PROJECT_DIR"
 
-NPM="$HOME/.nvm/versions/node/v22.22.0/bin/npm"
+NVM_NODE_BIN="$HOME/.nvm/versions/node/v22.22.0/bin"
+[ -d "$NVM_NODE_BIN" ] && export PATH="$NVM_NODE_BIN:$PATH"
+NPM="$NVM_NODE_BIN/npm"
 [ ! -x "$NPM" ] && NPM="npm"
 
 FAILED=0
