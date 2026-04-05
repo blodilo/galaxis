@@ -322,21 +322,34 @@ function MinenPanel({
   const [activating, setActivating] = useState<Record<string, boolean>>({})
   const [building, setBuilding]     = useState<Record<string, boolean>>({})
   const [errors, setErrors]         = useState<Record<string, string>>({})
-  const [buildRecipes, setBuildRecipes] = useState<Recipe[]>([])
+  const [allRecipes, setAllRecipes] = useState<Recipe[]>([])
 
   useEffect(() => {
-    listRecipes()
-      .then(rs => setBuildRecipes(rs.filter(r => r.factory_type === 'construction')))
-      .catch(() => {})
+    listRecipes().then(setAllRecipes).catch(() => {})
   }, [])
 
-  const mines = facilities.filter(f => f.factory_type === 'mine' && f.status !== 'destroyed')
-  const mineOrders = orders.filter(o =>
-    o.factory_type === 'mine' && !TERMINAL_ORDER_STATUSES.has(o.status)
+  // Recipes keyed by geological_input: good_id → extraction recipe (e.g. extractor)
+  const extractorRecipeByGood = new Map<string, Recipe>(
+    allRecipes
+      .filter(r => r.geological_input != null)
+      .map(r => [r.geological_input!, r])
+  )
+  const buildRecipes = allRecipes.filter(r => r.factory_type === 'construction')
+
+  // Derive extractor factory types from recipes (not hardcoded).
+  const extractorFactoryTypes = new Set(
+    allRecipes.filter(r => r.geological_input != null).map(r => r.factory_type)
+  )
+
+  const mines = facilities.filter(
+    f => extractorFactoryTypes.has(f.factory_type) && f.status !== 'destroyed'
+  )
+  const mineOrders = orders.filter(
+    o => extractorFactoryTypes.has(o.factory_type) && !TERMINAL_ORDER_STATUSES.has(o.status)
   )
   const mineBuildOrders = orders.filter(o =>
     o.factory_type === 'construction' &&
-    o.product_id.startsWith('facility_mine_') &&
+    o.product_id.startsWith('facility_extractor_') &&
     !TERMINAL_ORDER_STATUSES.has(o.status)
   )
 
@@ -355,7 +368,7 @@ function MinenPanel({
 
   const buildsByGood = new Map<string, Order[]>()
   for (const o of mineBuildOrders) {
-    const g = o.product_id.replace('facility_mine_', '')
+    const g = o.product_id.replace('facility_extractor_', '')
     if (!buildsByGood.has(g)) buildsByGood.set(g, [])
     buildsByGood.get(g)!.push(o)
   }
@@ -367,12 +380,17 @@ function MinenPanel({
   }
 
   async function handleActivate(goodId: string) {
+    const recipe = extractorRecipeByGood.get(goodId)
+    if (!recipe) {
+      setErrors(e => ({ ...e, [goodId]: 'Kein Extraktions-Rezept für diesen Rohstoff' }))
+      return
+    }
     setActivating(a => ({ ...a, [goodId]: true }))
     setErrors(e => ({ ...e, [goodId]: '' }))
     try {
       await createOrder({
         node_id: nodeId, star_id: starId,
-        factory_type: 'mine', product_id: goodId,
+        factory_type: recipe.factory_type, product_id: recipe.product_id,
         order_type: 'continuous', target_qty: 999_999, priority: 8,
       })
       onRefresh()
@@ -384,7 +402,7 @@ function MinenPanel({
   }
 
   async function handleBuild(goodId: string) {
-    const recipe = buildRecipes.find(r => r.product_id === `facility_mine_${goodId}`)
+    const recipe = buildRecipes.find(r => r.product_id === `facility_extractor_${goodId}`)
     if (!recipe) return
     setBuilding(b => ({ ...b, [goodId]: true }))
     setErrors(e => ({ ...e, [goodId]: '' }))

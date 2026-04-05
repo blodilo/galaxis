@@ -656,7 +656,7 @@ func loadPlanetResourceQualities(
 
 	// Support both formats:
 	//   v1 (old): {"iron": 0.8, ...}
-	//   v2 (migration 014): {"iron": {"amount":40000,"quality":0.8,"max_mines":4}, ...}
+	//   v2 (migration 015): {"iron": {"remaining":40000,"quality":0.8,"max_mines":4}, ...}
 	var rawMap map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &rawMap); err != nil {
 		return nil, fmt.Errorf("planet resource_deposits parse: %w", err)
@@ -725,18 +725,18 @@ func setupHomePlanet(db *pgxpool.Pool, reg *economy.Registries) http.HandlerFunc
 			return
 		}
 
-		// 1. Build v2 deposit map: {good_id: {amount, quality, max_mines}} for all known deposit resources.
+		// 1. Build v2 deposit map: {good_id: {remaining, quality, max_mines}} for all known deposit resources.
 		type depositV2 struct {
-			Amount   float64 `json:"amount"`
-			Quality  float64 `json:"quality"`
-			MaxMines int     `json:"max_mines"`
+			Remaining float64 `json:"remaining"`
+			Quality   float64 `json:"quality"`
+			MaxMines  int     `json:"max_mines"`
 		}
 		depositsV2 := make(map[string]depositV2, len(reg.Deposits))
 		for goodID, spec := range reg.Deposits {
 			depositsV2[goodID] = depositV2{
-				Amount:   spec.BaseUnits,
-				Quality:  1.0,
-				MaxMines: spec.BaseSlots,
+				Remaining: spec.BaseUnits,
+				Quality:   1.0,
+				MaxMines:  spec.BaseSlots,
 			}
 		}
 

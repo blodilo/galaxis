@@ -42,7 +42,7 @@ func processExtractor(
 		return fmt.Errorf("economy2: extractor read deposit: %w", err)
 	}
 
-	if ds.Amount <= 0 {
+	if ds.Remaining <= 0 {
 		if _, err := db.Exec(ctx,
 			`UPDATE econ2_orders SET status='paused_depleted', updated_at=now() WHERE id=$1`,
 			order.ID,
@@ -60,7 +60,7 @@ func processExtractor(
 	if rate <= 0 {
 		rate = 1.0
 	}
-	actual := math.Min(rate, ds.Amount)
+	actual := math.Min(rate, ds.Remaining)
 
 	_, depleted, err := depleteDeposit(ctx, db, *f.PlanetID, goodID, actual)
 	if err != nil {

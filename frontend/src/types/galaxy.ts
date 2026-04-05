@@ -55,9 +55,9 @@ export interface StarFilter {
   onlyWithPlanets: boolean
 }
 
-// DepositEntry matches the v2 JSONB format from migration 014.
+// DepositEntry matches the v2 JSONB format (migration 015: remaining = still-extractable stock).
 export interface DepositEntry {
-  amount: number    // current extractable stock
+  remaining: number // current extractable stock
   quality: number   // geological modifier 0–1
   max_mines: number // max simultaneous extractors
 }

@@ -13,9 +13,9 @@ import (
 // depositState mirrors model.DepositEntry — the per-good entry in planets.resource_deposits.
 // Stored as JSONB directly on the planets row (no separate planet_deposits table).
 type depositState struct {
-	Amount   float64 `json:"amount"`   // current extractable stock
-	Quality  float64 `json:"quality"`  // geological modifier 0–1 (static)
-	MaxMines int     `json:"max_mines"` // max simultaneous mine facilities
+	Remaining float64 `json:"remaining"` // current extractable stock
+	Quality   float64 `json:"quality"`   // geological modifier 0–1 (static)
+	MaxMines  int     `json:"max_mines"` // max simultaneous mine facilities
 }
 
 // readDeposit loads the deposit state for a single good on a planet.
@@ -82,11 +82,11 @@ func depleteDeposit(ctx context.Context, db *pgxpool.Pool, planetID uuid.UUID, g
 		return 0, false, fmt.Errorf("economy2: parse deposit entry %q: %w", goodID, err)
 	}
 
-	ds.Amount -= qty
-	if ds.Amount < 0 {
-		ds.Amount = 0
+	ds.Remaining -= qty
+	if ds.Remaining < 0 {
+		ds.Remaining = 0
 	}
-	depleted = ds.Amount <= 0
+	depleted = ds.Remaining <= 0
 
 	updated, _ := json.Marshal(ds)
 	state[goodID] = updated
@@ -96,7 +96,7 @@ func depleteDeposit(ctx context.Context, db *pgxpool.Pool, planetID uuid.UUID, g
 		`UPDATE planets SET resource_deposits=$1 WHERE id=$2`,
 		finalRaw, planetID,
 	)
-	return ds.Amount, depleted, err
+	return ds.Remaining, depleted, err
 }
 
 // countActiveExtractors counts extractor facilities currently active on a given deposit.

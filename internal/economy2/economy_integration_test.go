@@ -110,9 +110,9 @@ func setupFixtures(t *testing.T) itFixtures {
 	}
 
 	resDeposits, _ := json.Marshal(map[string]depositState{
-		"iron":     {Amount: 40000, Quality: 0.8, MaxMines: 4},
-		"silicon":  {Amount: 25000, Quality: 0.5, MaxMines: 4},
-		"helium_3": {Amount: 15000, Quality: 0.3, MaxMines: 4},
+		"iron":     {Remaining: 40000, Quality: 0.8, MaxMines: 4},
+		"silicon":  {Remaining: 25000, Quality: 0.5, MaxMines: 4},
+		"helium_3": {Remaining: 15000, Quality: 0.3, MaxMines: 4},
 	})
 	if err := itDB.QueryRow(itCtx,
 		`INSERT INTO planets (star_id, orbit_index, planet_type, orbit_distance_au, resource_deposits)
@@ -153,8 +153,8 @@ func TestEconomyBootstrapCreatesDeposits(t *testing.T) {
 	if !ok {
 		t.Fatal("iron fehlt in resource_deposits")
 	}
-	if ds.Amount != 40000 {
-		t.Errorf("iron amount = %.1f, want 40000", ds.Amount)
+	if ds.Remaining != 40000 {
+		t.Errorf("iron remaining = %.1f, want 40000", ds.Remaining)
 	}
 	if ds.MaxMines <= 0 {
 		t.Errorf("iron max_mines = %d, want > 0", ds.MaxMines)
@@ -168,8 +168,8 @@ func TestEconomyBootstrapCreatesDeposits(t *testing.T) {
 	}
 
 	t.Logf("Deposits: iron=%.0f (max_mines=%d), silicon=%.0f, helium_3=%.0f",
-		state["iron"].Amount, state["iron"].MaxMines,
-		state["silicon"].Amount, state["helium_3"].Amount)
+		state["iron"].Remaining, state["iron"].MaxMines,
+		state["silicon"].Remaining, state["helium_3"].Remaining)
 }
 
 // TestEconomyBootstrapPlanetInAssets prüft, dass nach RunBootstrap der Knoten
@@ -396,7 +396,7 @@ func TestEconomyMineIncreasesResources(t *testing.T) {
 	depositsBefore, _ := ReadAllDeposits(itCtx, itDB, fx.planetID)
 	stockBefore, _ := NodeStock(itCtx, itDB, nodeID)
 	t.Logf("Vor Tick: Vorkommen=%.1f, Lager=%.1f",
-		depositsBefore["iron"].Amount, stockBefore["iron"].Total)
+		depositsBefore["iron"].Remaining, stockBefore["iron"].Total)
 
 	// Produktions-Tick ausführen
 	if err := runProductionTick(itCtx, itDB, itRecipes); err != nil {
@@ -412,14 +412,14 @@ func TestEconomyMineIncreasesResources(t *testing.T) {
 
 	// Vorkommen muss gesunken sein
 	depositsAfter, _ := ReadAllDeposits(itCtx, itDB, fx.planetID)
-	if depositsAfter["iron"].Amount >= depositsBefore["iron"].Amount {
+	if depositsAfter["iron"].Remaining >= depositsBefore["iron"].Remaining {
 		t.Errorf("Vorkommen sank nicht: vor=%.1f, nach=%.1f",
-			depositsBefore["iron"].Amount, depositsAfter["iron"].Amount)
+			depositsBefore["iron"].Remaining, depositsAfter["iron"].Remaining)
 	}
 
-	extracted := depositsBefore["iron"].Amount - depositsAfter["iron"].Amount
+	extracted := depositsBefore["iron"].Remaining - depositsAfter["iron"].Remaining
 	gained := stockAfter["iron"].Total - stockBefore["iron"].Total
 	t.Logf("Nach Tick: Vorkommen=%.1f (−%.2f), Lager=%.1f (+%.2f)",
-		depositsAfter["iron"].Amount, extracted,
+		depositsAfter["iron"].Remaining, extracted,
 		stockAfter["iron"].Total, gained)
 }

@@ -107,9 +107,9 @@ type GalaxyRow struct {
 // DepositEntry is a per-resource entry in planets/moons.resource_deposits JSONB.
 // Introduced in migration 014; replaces the old plain-float quality value.
 type DepositEntry struct {
-	Amount   float64 `json:"amount"`   // current extractable stock
-	Quality  float64 `json:"quality"`  // geological modifier 0–1 (static, planet-bound)
-	MaxMines int     `json:"max_mines"` // max simultaneous mine facilities on this deposit
+	Remaining float64 `json:"remaining"` // current extractable stock
+	Quality   float64 `json:"quality"`   // geological modifier 0–1 (static, planet-bound)
+	MaxMines  int     `json:"max_mines"` // max simultaneous mine facilities on this deposit
 }
 
 // Planet represents a generated planet in a star system.
