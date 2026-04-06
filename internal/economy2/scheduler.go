@@ -98,9 +98,12 @@ func tryAllocatePending(ctx context.Context, db *pgxpool.Pool, recipes RecipeBoo
 }
 
 // assignReadyOrders assigns ready orders to idle matching facilities.
+// For extractor facilities, also matches by deposit_good_id = product_id.
 // For mine facilities, enforces the deposit slot limit before assigning.
 func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 	// JOIN with econ2_nodes to get the node's planet_id (mine slot check needs it).
+	// Extractor matching: config->>'deposit_good_id' must equal order.product_id.
+	// Non-extractor matching: factory_type only.
 	rows, err := db.Query(ctx, `
 		SELECT
 		    f.id, f.factory_type, f.star_id, n.planet_id,
@@ -113,6 +116,10 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 		    WHERE node_id      = f.node_id
 		      AND factory_type = f.factory_type
 		      AND status       = 'ready'
+		      AND (
+		          f.factory_type != 'extractor'
+		          OR product_id = f.config->>'deposit_good_id'
+		      )
 		    ORDER BY priority DESC, created_at ASC
 		    LIMIT 1
 		) o
@@ -151,7 +158,6 @@ func assignReadyOrders(ctx context.Context, db *pgxpool.Pool) error {
 	}
 
 	for _, a := range assignments {
-		// Extractor slot enforcement: max_mines per deposit.
 		if a.factoryType == FactoryTypeExtractor {
 			if ok, err := extractorSlotAvailable(ctx, db, a.starID, a.planetID, a.productID); err != nil {
 				log.Printf("economy2: extractor slot check facility %s: %v", a.facilityID, err)

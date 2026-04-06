@@ -93,3 +93,42 @@ export interface MyNodeEntry {
   y: number
   facility_count: number
 }
+
+export interface Goal {
+  id: string
+  player_id: string
+  star_id: string
+  product_id: string
+  target_qty: number
+  priority: number
+  status: 'active' | 'completed' | 'cancelled'
+  transport_overrides: Record<string, string> // item_id → star_id
+  created_at: string
+}
+
+export interface AggregatedStock {
+  item_id: string
+  total: number
+  allocated: number
+  available: number
+}
+
+export type BOMStatus =
+  | { type: 'ok'; qty: number; node_id: string }
+  | { type: 'running' }
+  | { type: 'waiting' }
+  | { type: 'no_factory' }
+  | { type: 'route_missing'; available_at: string } // node_id where item exists
+  | { type: 'in_transit' }
+  | { type: 'transport_override'; source_star_id: string }
+  | { type: 'missing' }
+
+export interface BOMNode {
+  item_id: string
+  qty: number
+  recipe: Recipe | null      // null = raw material
+  factory_type: string | null
+  status: BOMStatus
+  children: BOMNode[]
+  transport_override?: string // star_id if active
+}

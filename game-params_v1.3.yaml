@@ -345,24 +345,34 @@ mine:
 # ═══════════════════════════════════════════════════════════════════
 economy2_bootstrap:
   # Anfangsbestand an Gütern, der beim ersten Kolonisieren eines Sterns
-  # auf den Node gebucht wird. [BALANCING]
+  # auf den Node gebucht wird. Alle IDs = economy2-Bezeichner (post-Migration 016). [BALANCING]
   stock:
-    iron_ore:       200.0   # Roheisenvorrat für erste Schmelzdurchgänge
-    silicates:      100.0   # Silikat-Startvorrat für Halbleiter
-    titan:           50.0   # Titan für Titanstahl
-    rare_earths:     30.0   # Seltene Erden
-    he3:             40.0   # Helium-3 für Fusionskraftstoff
-    hydrogen:        60.0   # Wasserstoff
-    steel:          150.0   # Stahl für erste Anlagenbauten
-    base_component:  20.0   # Basiskomponenten für erste Produktionsanlagen
+    iron:               200.0   # Eisen für Stahl/Titanstahl
+    silicon:            100.0   # Silizium für Halbleiter-Wafer
+    titanium:            50.0   # Titan für Titanstahl
+    rare_earth:          30.0   # Seltene Erden
+    helium_3:            40.0   # Helium-3 für Fusionskraftstoff
+    hydrogen:            60.0   # Wasserstoff
+    steel:              150.0   # Stahl für erste Bauten
+    titansteel:          50.0   # Titanstahl für erste Fabrikbauten
+    semiconductor_wafer: 20.0   # Halbleiter für erste Fabrikbauten
+    base_component:      40.0   # Basiskomponenten
+    structural_frame:     4.0   # Rahmen für erste Assembly/Werft
+    reactor_module:       2.0   # Reaktormodule für Werft-Bau
+    drive_unit:           2.0   # Antriebseinheiten für Werft-Bau
 
   # Anlagen, die beim Spielstart sofort im Status 'idle' bereitstehen.
-  # Die ersten Minen decken die Grundressourcen ab. [BALANCING]
+  # Vollständige Produktionskette: Extraktor → Raffinerie → Werk → Montagehalle → Werft [BALANCING]
   facilities:
-    - factory_type: mine
-      deposit_good_id: iron_ore
-    - factory_type: mine
-      deposit_good_id: silicates
-    - factory_type: mine
-      deposit_good_id: he3
-    - factory_type: smelter
+    # Extraktoren für die drei Grundressourcen
+    - factory_type: extractor
+      deposit_good_id: iron
+    - factory_type: extractor
+      deposit_good_id: silicon
+    - factory_type: extractor
+      deposit_good_id: helium_3
+    # Weiterverarbeitung
+    - factory_type: refinery            # Stahl, Titanstahl, Halbleiter, Fusionskraftstoff
+    - factory_type: plant               # Basisbauteile, Extraktoren bauen, Raffinerien bauen
+    - factory_type: assembly_plant      # Rahmen, Reaktormodule, Antriebseinheiten, Werke bauen
+    - factory_type: construction_yard   # Werften, Schiffe bauen

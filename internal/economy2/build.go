@@ -38,7 +38,10 @@ func DeployItem(
 		`SELECT COALESCE(total - allocated, 0) FROM econ2_item_stock
 		 WHERE node_id=$1 AND item_id=$2 FOR UPDATE`,
 		nodeID, itemID,
-	).Scan(&available); err != nil || available < 1 {
+	).Scan(&available); err != nil {
+		return nil, fmt.Errorf("economy2: deploy %s: stock query: %w", itemID, err)
+	}
+	if available < 1 {
 		return nil, fmt.Errorf("economy2: deploy %s: not enough in stock (available=%.1f)", itemID, available)
 	}
 	if _, err := tx.Exec(ctx,

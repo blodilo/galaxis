@@ -31,12 +31,12 @@ const (
 
 // ProductionOrder is the in-memory representation of an econ2_orders row.
 type ProductionOrder struct {
-	ID         uuid.UUID  `json:"id"`
-	PlayerID   uuid.UUID  `json:"player_id"`
-	StarID     uuid.UUID  `json:"star_id"`
-	NodeID     uuid.UUID  `json:"node_id"`
-	FacilityID *uuid.UUID `json:"facility_id"`
-	OrderType  OrderType  `json:"order_type"`
+	ID         uuid.UUID   `json:"id"`
+	PlayerID   uuid.UUID   `json:"player_id"`
+	StarID     uuid.UUID   `json:"star_id"`
+	NodeID     uuid.UUID   `json:"node_id"`
+	FacilityID *uuid.UUID  `json:"facility_id"`
+	OrderType  OrderType   `json:"order_type"`
 	Status     OrderStatus `json:"status"`
 
 	// Snapshot — copied from recipe at creation, never modified.
@@ -52,6 +52,7 @@ type ProductionOrder struct {
 	AllocatedInputs map[string]float64 `json:"allocated_inputs"`
 	ProducedQty     float64            `json:"produced_qty"`
 	Priority        int                `json:"priority"`
+	GoalID          *uuid.UUID         `json:"goal_id,omitempty"`
 }
 
 // TransportNeedPerTick returns the total input units needed per tick to sustain production.
@@ -84,13 +85,13 @@ func CreateOrder(ctx context.Context, db *pgxpool.Pool, o *ProductionOrder) erro
 		INSERT INTO econ2_orders
 		    (player_id, star_id, node_id, order_type, status,
 		     recipe_id, product_id, factory_type, inputs, base_yield, recipe_ticks, efficiency,
-		     target_qty, allocated_inputs, priority)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+		     target_qty, allocated_inputs, priority, goal_id)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
 		RETURNING id
 	`,
 		o.PlayerID, o.StarID, o.NodeID, string(o.OrderType), string(o.Status),
 		o.RecipeID, o.ProductID, o.FactoryType, inputsJSON, o.BaseYield, o.RecipeTicks, o.Efficiency,
-		o.TargetQty, allocJSON, o.Priority,
+		o.TargetQty, allocJSON, o.Priority, o.GoalID,
 	).Scan(&o.ID)
 }
 
@@ -106,12 +107,12 @@ func LoadOrderByID(ctx context.Context, db *pgxpool.Pool, id uuid.UUID) (*Produc
 	err := db.QueryRow(ctx, `
 		SELECT id, player_id, star_id, node_id, facility_id, order_type, status,
 		       recipe_id, product_id, factory_type, inputs, base_yield, recipe_ticks, efficiency,
-		       target_qty, allocated_inputs, produced_qty, priority
+		       target_qty, allocated_inputs, produced_qty, priority, goal_id
 		FROM econ2_orders WHERE id = $1
 	`, id).Scan(
 		&o.ID, &o.PlayerID, &o.StarID, &o.NodeID, &o.FacilityID, &orderType, &status,
 		&o.RecipeID, &o.ProductID, &o.FactoryType, &inputsRaw, &o.BaseYield, &o.RecipeTicks, &o.Efficiency,
-		&o.TargetQty, &allocRaw, &o.ProducedQty, &o.Priority,
+		&o.TargetQty, &allocRaw, &o.ProducedQty, &o.Priority, &o.GoalID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("economy2: load order %s: %w", id, err)
@@ -129,7 +130,7 @@ func ListOrdersByNode(ctx context.Context, db *pgxpool.Pool, nodeID uuid.UUID) (
 	rows, err := db.Query(ctx, `
 		SELECT id, player_id, star_id, node_id, facility_id, order_type, status,
 		       recipe_id, product_id, factory_type, inputs, base_yield, recipe_ticks, efficiency,
-		       target_qty, allocated_inputs, produced_qty, priority
+		       target_qty, allocated_inputs, produced_qty, priority, goal_id
 		FROM econ2_orders WHERE node_id = $1
 		ORDER BY priority DESC, created_at ASC
 	`, nodeID)
@@ -157,7 +158,7 @@ func scanOrders(rows interface {
 		if err := rows.Scan(
 			&o.ID, &o.PlayerID, &o.StarID, &o.NodeID, &o.FacilityID, &orderType, &status,
 			&o.RecipeID, &o.ProductID, &o.FactoryType, &inputsRaw, &o.BaseYield, &o.RecipeTicks, &o.Efficiency,
-			&o.TargetQty, &allocRaw, &o.ProducedQty, &o.Priority,
+			&o.TargetQty, &allocRaw, &o.ProducedQty, &o.Priority, &o.GoalID,
 		); err != nil {
 			return nil, err
 		}

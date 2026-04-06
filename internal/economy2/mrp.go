@@ -43,6 +43,68 @@ func ResolveDemand(
 	return nil
 }
 
+// WalkNode is a single node in the recipe walk tree.
+type WalkNode struct {
+	ProductID   string
+	FactoryType string
+	Qty         float64
+	Recipe      *Recipe
+	Children    []*WalkNode
+}
+
+// walkRecipeTree recursively builds a production tree for goal BOM creation.
+// Each node represents one production step; leaves are raw materials (no recipe).
+// fn is called for each non-leaf node (factory step that needs an order).
+// visiting prevents infinite recursion on cyclic recipes.
+func walkRecipeTree(
+	productID string,
+	qty float64,
+	recipes RecipeBook,
+	visiting map[string]bool,
+	fn func(node *WalkNode),
+) (*WalkNode, error) {
+	if visiting[productID] {
+		return nil, fmt.Errorf("economy2: mrp cycle at %s", productID)
+	}
+
+	// Find recipe — try all factory types for this product.
+	var recipe *Recipe
+	for key, r := range recipes {
+		if key.ProductID == productID {
+			recipe = r
+			break
+		}
+	}
+
+	node := &WalkNode{
+		ProductID: productID,
+		Qty:       qty,
+		Recipe:    recipe,
+	}
+
+	if recipe == nil {
+		// Raw material leaf — no further resolution.
+		return node, nil
+	}
+
+	node.FactoryType = recipe.FactoryType
+
+	visiting[productID] = true
+	defer delete(visiting, productID)
+
+	runs := qty / recipe.BaseYield
+	for _, input := range recipe.Inputs {
+		child, err := walkRecipeTree(input.ItemID, input.Amount*runs, recipes, visiting, fn)
+		if err != nil {
+			return nil, err
+		}
+		node.Children = append(node.Children, child)
+	}
+
+	fn(node)
+	return node, nil
+}
+
 // AllocateOrder atomically checks and reserves all materials for an order.
 // Sets order.Status = OrderStatusReady on success, OrderStatusWaiting if stock insufficient.
 // Uses a DB transaction with row-level locking to prevent double-allocation.

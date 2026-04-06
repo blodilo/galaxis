@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    include: ['nats.ws'],
+    include: ['nats.ws', 'cytoscape', 'cytoscape-dagre', 'react-cytoscapejs'],
   },
   server: {
     port: 5175,

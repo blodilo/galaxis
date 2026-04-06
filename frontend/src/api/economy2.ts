@@ -1,4 +1,4 @@
-import type { ItemStock, Facility, Order, Route, Recipe, DepositEntry } from '../types/economy2'
+import type { ItemStock, Facility, Order, Route, Recipe, DepositEntry, Goal, AggregatedStock } from '../types/economy2'
 
 const BASE = '/api/v2/econ2'
 const PLAYER_ID = '00000000-0000-0000-0000-000000000001'
@@ -27,6 +27,16 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 async function del(url: string): Promise<void> {
   const res = await fetch(url, { method: 'DELETE', headers: HEADERS })
   if (!res.ok) throw new Error(`API error ${res.status}: ${url}`)
+}
+
+async function patch<T>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: HEADERS,
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`API error ${res.status}: ${url}`)
+  return res.json()
 }
 
 // Nodes
@@ -63,6 +73,14 @@ export async function listFacilities(starId: string): Promise<Facility[]> {
 
 export async function destroyFacility(id: string): Promise<void> {
   return del(`${BASE}/facilities/${id}`)
+}
+
+export async function startFacility(id: string): Promise<void> {
+  await post(`${BASE}/facilities/${id}/start`, {})
+}
+
+export async function stopFacility(id: string): Promise<void> {
+  await post(`${BASE}/facilities/${id}/stop`, {})
 }
 
 // Orders
@@ -122,6 +140,44 @@ export async function bootstrap(starId: string): Promise<BootstrapResult> {
 // Deposits
 export async function getDeposits(starId: string): Promise<{ planet_id: string; deposits: Record<string, DepositEntry>; mine_rate_lv1: number }> {
   return get<{ planet_id: string; deposits: Record<string, DepositEntry>; mine_rate_lv1: number }>(`${BASE}/deposits?star_id=${starId}`)
+}
+
+// Goals
+export async function listGoals(): Promise<Goal[]> {
+  const data = await get<{ goals: Goal[] }>(`${BASE}/goals`)
+  return data.goals ?? []
+}
+
+export async function createGoal(data: {
+  star_id: string
+  product_id: string
+  target_qty: number
+}): Promise<{ goal: Goal; orders: Order[] }> {
+  return post<{ goal: Goal; orders: Order[] }>(`${BASE}/goals`, data)
+}
+
+export async function deleteGoal(id: string): Promise<void> {
+  return del(`${BASE}/goals/${id}`)
+}
+
+export async function reorderGoals(ids: string[]): Promise<void> {
+  return patch<void>(`${BASE}/goals/reorder`, { ids })
+}
+
+// Player-wide aggregates
+export async function stockAll(): Promise<AggregatedStock[]> {
+  const data = await get<{ stock: AggregatedStock[] }>(`${BASE}/stock-all`)
+  return data.stock ?? []
+}
+
+export async function facilitiesAll(): Promise<Facility[]> {
+  const data = await get<{ facilities: Facility[] }>(`${BASE}/facilities-all`)
+  return data.facilities ?? []
+}
+
+export async function ordersAll(): Promise<Order[]> {
+  const data = await get<{ orders: Order[] }>(`${BASE}/orders-all`)
+  return data.orders ?? []
 }
 
 // My nodes
